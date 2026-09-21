@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0d1020">
+  <title>Dailysonh</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">DESAFIO MUSICAL DIÁRIO</p>
+        <h1>Dailysonh</h1>
+      </div>
+      <div class="day-chip" id="dayChip">#—</div>
+    </header>
+
+    <section class="game-card" id="gameCard" aria-live="polite">
+      <div class="status-row">
+        <div>
+          <p class="muted">Música do dia</p>
+          <p class="date" id="songDate">Carregando…</p>
+        </div>
+        <div class="round-label" id="roundLabel">Rodada 1 de 5</div>
+      </div>
+
+      <div class="visualizer" id="visualizer" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <button class="play-btn" id="playBtn" type="button" disabled>▶ Ouvir trecho</button>
+
+      <div class="rounds" id="rounds">
+        <div class="round active"><span>1</span><small>Bateria</small></div>
+        <div class="round"><span>2</span><small>+ Baixo</small></div>
+        <div class="round"><span>3</span><small>+ Instrumentos</small></div>
+        <div class="round"><span>4</span><small>+ Melodia</small></div>
+        <div class="round"><span>5</span><small>Revelação</small></div>
+      </div>
+
+      <form class="guess-form" id="guessForm">
+        <label for="guessInput">Qual é a música?</label>
+        <div class="guess-row">
+          <input id="guessInput" autocomplete="off" placeholder="Digite o título da música" disabled>
+          <button type="submit" id="guessBtn" disabled>Adivinhar</button>
+        </div>
+      </form>
+
+      <div class="actions">
+        <button class="secondary" id="skipBtn" type="button" disabled>Pular rodada</button>
+      </div>
+
+      <div class="attempts" id="attempts"></div>
+      <div class="message" id="message"></div>
+
+      <section class="reveal hidden" id="reveal">
+        <p class="muted">Era esta música</p>
+        <h2 id="revealTitle"></h2>
+        <p id="revealArtist"></p>
+        <div class="reveal-actions">
+          <a id="youtubeLink" target="_blank" rel="noopener">Abrir no YouTube</a>
+          <button class="secondary" id="shareBtn" type="button">Compartilhar resultado</button>
+        </div>
+      </section>
+    </section>
+
+    <p class="footer-note">Uma música. Cinco camadas. Uma chance por dia.</p>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

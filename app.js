@@ -334,27 +334,39 @@
     }
   }
 
+  async function switchRound(targetIndex, message) {
+    if (!song) return;
+
+    var wasPlaying = Boolean(audio && !audio.paused && !audio.ended);
+    roundIndex = Math.max(0, Math.min(4, targetIndex));
+
+    if (message) {
+      E.message.textContent = message;
+    }
+
+    renderRounds();
+    prepareAudio();
+    save();
+
+    if (wasPlaying) {
+      await playCurrent();
+    } else {
+      setPlaybackState(false);
+    }
+  }
+
   function advance(message) {
     if (roundIndex >= 4) {
       reveal(false, true);
       return;
     }
 
-    roundIndex += 1;
-    E.message.textContent = message || "Nova camada liberada.";
-    renderRounds();
-    prepareAudio();
-    save();
+    switchRound(roundIndex + 1, message || "Nova camada liberada.");
   }
 
   function previousTrack() {
     if (!song || roundIndex <= 0) return;
-
-    roundIndex -= 1;
-    E.message.textContent = "Faixa anterior.";
-    renderRounds();
-    prepareAudio();
-    save();
+    switchRound(roundIndex - 1, "Faixa anterior.");
   }
 
   function nextOrSkip() {
@@ -362,10 +374,7 @@
 
     if (finished) {
       if (roundIndex < 4) {
-        roundIndex += 1;
-        renderRounds();
-        prepareAudio();
-        save();
+        switchRound(roundIndex + 1, "Próxima faixa.");
       }
       return;
     }

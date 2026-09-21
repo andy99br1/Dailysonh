@@ -35,6 +35,14 @@
 
       <button class="play-btn" id="playBtn" type="button" disabled>▶ Ouvir trecho</button>
 
+      <div class="audio-progress">
+        <input class="seek-bar" id="seekBar" type="range" min="0" max="1000" value="0" disabled aria-label="Progresso do áudio">
+        <div class="time-row">
+          <span id="elapsedTime">0:00</span>
+          <span id="remainingTime">0:18 restantes</span>
+        </div>
+      </div>
+
       <div class="rounds" id="rounds">
         <div class="round active"><span>1</span><small>Bateria</small></div>
         <div class="round"><span>2</span><small>+ Baixo</small></div>
@@ -52,6 +60,7 @@
       </form>
 
       <div class="actions">
+        <button class="secondary" id="prevBtn" type="button" disabled>← Faixa anterior</button>
         <button class="secondary" id="skipBtn" type="button" disabled>Pular rodada</button>
       </div>
 

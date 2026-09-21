@@ -2,12 +2,12 @@
   "songs": [
     {
       "date": "2026-09-21",
-      "title": "Secretária (2001) - Amado Batista (youtube)",
-      "artist": "Amado Batista",
-      "clipStart": 129.0,
+      "title": "Save a Prayer",
+      "artist": "Duran Duran",
+      "clipStart": 147.0,
       "source": "upload",
-      "sourceName": "Amado Batista - Secretária (2001) - Amado Batista (youtube).mp3",
-      "version": 5,
+      "sourceName": "Duran Duran -  Save a Prayer.mp3",
+      "version": 6,
       "safeRevealRound": 4,
       "rounds": [
         "songs/2026-09-21/round-1.ogg",

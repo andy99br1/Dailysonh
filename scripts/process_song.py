@@ -75,32 +75,62 @@ def infer_metadata(info):
 
 def download_youtube(url, work):
     template = str(work / "source.%(ext)s")
-    run([
-        "yt-dlp",
-        "--no-playlist",
-        "--js-runtimes", "deno",
-        "--write-info-json",
-        "--no-write-comments",
-        "--no-write-playlist-metafiles",
-        "-f", "bestaudio/best",
-        "-o", template,
-        url,
-    ])
-
-    info_path = work / "source.info.json"
-    if not info_path.exists():
-        raise RuntimeError("yt-dlp não gerou source.info.json")
-
-    info = json.loads(info_path.read_text(encoding="utf-8"))
-    candidates = [
-        p for p in work.glob("source.*")
-        if p.name != "source.info.json" and not p.name.endswith(".part")
+    strategies = [
+        ("mweb + PO token", "youtube:player_client=mweb,default"),
+        ("web_safari", "youtube:player_client=web_safari"),
+        ("android_vr", "youtube:player_client=android_vr"),
+        ("web_embedded", "youtube:player_client=web_embedded"),
     ]
-    if not candidates:
-        raise RuntimeError("Nenhum arquivo de áudio foi baixado.")
-    source = max(candidates, key=lambda p: p.stat().st_size)
-    return source, info
+    failures = []
 
+    for label, extractor_args in strategies:
+        print(f"Tentando YouTube com: {label}", flush=True)
+        for old in work.glob("source.*"):
+            try:
+                old.unlink()
+            except OSError:
+                pass
+
+        cmd = [
+            "yt-dlp",
+            "--no-playlist",
+            "--js-runtimes", "deno",
+            "--remote-components", "ejs:github",
+            "--extractor-args", extractor_args,
+            "--write-info-json",
+            "--no-write-comments",
+            "--no-write-playlist-metafiles",
+            "--retries", "3",
+            "--fragment-retries", "3",
+            "--retry-sleep", "2",
+            "-f", "bestaudio/best",
+            "-o", template,
+            url,
+        ]
+
+        try:
+            run(cmd)
+        except subprocess.CalledProcessError as exc:
+            failures.append(f"{label}: exit {exc.returncode}")
+            continue
+
+        info_path = work / "source.info.json"
+        candidates = [
+            p for p in work.glob("source.*")
+            if p.name != "source.info.json" and not p.name.endswith(".part")
+        ]
+        if info_path.exists() and candidates:
+            info = json.loads(info_path.read_text(encoding="utf-8"))
+            source = max(candidates, key=lambda p: p.stat().st_size)
+            print(f"YouTube funcionou com: {label}", flush=True)
+            return source, info
+
+        failures.append(f"{label}: não gerou áudio completo")
+
+    raise RuntimeError(
+        "O YouTube bloqueou todas as estratégias do runner. "
+        + " | ".join(failures)
+    )
 
 def choose_clip_start(source, work):
     analysis_wav = work / "analysis.wav"

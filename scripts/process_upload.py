@@ -2,6 +2,7 @@
 import argparse
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -15,7 +16,6 @@ import librosa
 import numpy as np
 import soundfile as sf
 from basic_pitch.inference import predict as basic_pitch_predict
-from audio_separator.separator import Separator
 from scipy.ndimage import median_filter
 from mutagen import File as MutagenFile
 
@@ -178,38 +178,51 @@ def separate_stems(clip, work):
 
 
 def separate_vocal_instrumental(clip, work):
-    """Usa um modelo dedicado de karaoke para voz/instrumental limpos."""
+    """Roda BS-Roformer em um ambiente Python isolado do Basic Pitch."""
     out = work / "roformer"
     out.mkdir(parents=True, exist_ok=True)
 
     model_dir = Path.home() / ".cache" / "audio-separator-models"
     model_dir.mkdir(parents=True, exist_ok=True)
 
-    separator = Separator(
-        output_dir=str(out),
-        output_format="WAV",
-        model_file_dir=str(model_dir),
-        normalization_threshold=0.9,
-    )
-    separator.load_model(
-        model_filename="model_bs_roformer_ep_317_sdr_12.9755.ckpt"
-    )
-    separator.separate(
-        str(clip),
-        {
-            "Vocals": "roformer_vocals",
-            "Instrumental": "roformer_instrumental",
-        },
+    separator_bin = Path(
+        os.environ.get(
+            "AUDIO_SEPARATOR_BIN",
+            str(Path(sys.executable).with_name("audio-separator")),
+        )
     )
 
-    vocals = out / "roformer_vocals.wav"
-    instrumental = out / "roformer_instrumental.wav"
+    if not separator_bin.exists():
+        raise RuntimeError(f"audio-separator não encontrado: {separator_bin}")
 
-    if not vocals.exists() or not instrumental.exists():
-        found = [p.name for p in out.glob("*")]
+    run([
+        separator_bin,
+        clip,
+        "--model_filename", "model_bs_roformer_ep_317_sdr_12.9755.ckpt",
+        "--output_format", "WAV",
+        "--output_dir", out,
+        "--model_file_dir", model_dir,
+        "--normalization", "0.9",
+    ])
+
+    wavs = list(out.glob("*.wav"))
+    vocals = next(
+        (p for p in wavs if "vocal" in p.name.lower()),
+        None,
+    )
+    instrumental = next(
+        (p for p in wavs if "instrumental" in p.name.lower() or "karaoke" in p.name.lower()),
+        None,
+    )
+
+    if not vocals or not instrumental:
+        found = [p.name for p in wavs]
         raise RuntimeError(
             "BS-Roformer não gerou os stems esperados. Arquivos: " + ", ".join(found)
         )
+
+    print(f"BS-Roformer vocal: {vocals.name}", flush=True)
+    print(f"BS-Roformer instrumental: {instrumental.name}", flush=True)
 
     return {
         "vocals": vocals,

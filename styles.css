@@ -41,6 +41,9 @@ h1 { margin: 0; font-size: clamp(32px, 8vw, 54px); letter-spacing: -.04em; }
 @keyframes bounce { from { transform: scaleY(.38); opacity: .55; } to { transform: scaleY(1.08); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .visualizer.playing span { animation: none; } }
 .play-btn { width: 100%; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: white; font-weight: 900; cursor: pointer; }
+.audio-progress { margin: 12px 0 4px; }
+.seek-bar { width: 100%; accent-color: var(--accent); cursor: pointer; }
+.time-row { display: flex; justify-content: space-between; gap: 12px; margin-top: 3px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .play-btn:disabled, button:disabled, input:disabled { opacity: .48; cursor: not-allowed; }
 .rounds { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 18px 0 26px; }
 .round { min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 9px 5px; text-align: center; color: var(--muted); }
@@ -55,7 +58,7 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,92,255
 .guess-row button, .secondary { min-height: 48px; border-radius: 12px; padding: 0 16px; border: 1px solid var(--line); font-weight: 800; cursor: pointer; }
 .guess-row button { border-color: transparent; background: var(--text); color: #0b0d14; }
 .secondary { background: transparent; color: var(--text); }
-.actions { margin-top: 10px; display: flex; justify-content: flex-end; }
+.actions { margin-top: 10px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .attempts { margin-top: 20px; display: grid; gap: 8px; }
 .attempt { background: rgba(255,255,255,.035); border: 1px solid var(--line); padding: 10px 12px; border-radius: 10px; color: var(--muted); }
 .attempt strong { color: var(--danger); margin-right: 7px; }

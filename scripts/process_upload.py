@@ -494,26 +494,25 @@ def build_rounds(clip, stems, karaoke, target):
         gains=[1.0, 1.0],
     )
 
-    # Rodada 3: em vez do problemático stem "other", usamos um instrumental
-    # dedicado já sem voz. Assim todos os instrumentos entram juntos e limpos.
+    # Rodada 3: instrumental sem voz. Mantemos um pouco abaixo do volume
+    # máximo para os artefatos da separação não dominarem a experiência.
     encode_or_mix(
         [karaoke["instrumental"]],
         target / "round-3.ogg",
+        gains=[0.82],
     )
 
-    # Rodada 4: instrumental completo + uma pista de melodia mais discreta.
+    # Rodada 4: a melodia precisa ficar claramente audível sobre o instrumental.
     encode_or_mix(
         [karaoke["instrumental"], melody],
         target / "round-4.ogg",
-        gains=[0.88, 0.42],
+        gains=[0.68, 1.18],
     )
 
-    # Rodada 5 / revelação: continua sem a gravação vocal original, mas a
-    # melodia sintetizada fica bem mais presente.
+    # Rodada 5 / revelação: toca o trecho real da música, sem separação.
     encode_or_mix(
-        [karaoke["instrumental"], melody],
+        [clip],
         target / "round-5.ogg",
-        gains=[0.84, 0.95],
     )
 
     if melody.exists():

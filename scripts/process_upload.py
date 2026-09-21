@@ -15,6 +15,7 @@ import librosa
 import numpy as np
 import soundfile as sf
 from basic_pitch.inference import predict as basic_pitch_predict
+from audio_separator.separator import Separator
 from scipy.ndimage import median_filter
 from mutagen import File as MutagenFile
 
@@ -174,6 +175,46 @@ def separate_stems(clip, work):
     if missing:
         raise RuntimeError("Demucs não gerou: " + ", ".join(missing))
     return stems
+
+
+def separate_vocal_instrumental(clip, work):
+    """Usa um modelo dedicado de karaoke para voz/instrumental limpos."""
+    out = work / "roformer"
+    out.mkdir(parents=True, exist_ok=True)
+
+    model_dir = Path.home() / ".cache" / "audio-separator-models"
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    separator = Separator(
+        output_dir=str(out),
+        output_format="WAV",
+        model_file_dir=str(model_dir),
+        normalization_threshold=0.9,
+    )
+    separator.load_model(
+        model_filename="model_bs_roformer_ep_317_sdr_12.9755.ckpt"
+    )
+    separator.separate(
+        str(clip),
+        {
+            "Vocals": "roformer_vocals",
+            "Instrumental": "roformer_instrumental",
+        },
+    )
+
+    vocals = out / "roformer_vocals.wav"
+    instrumental = out / "roformer_instrumental.wav"
+
+    if not vocals.exists() or not instrumental.exists():
+        found = [p.name for p in out.glob("*")]
+        raise RuntimeError(
+            "BS-Roformer não gerou os stems esperados. Arquivos: " + ", ".join(found)
+        )
+
+    return {
+        "vocals": vocals,
+        "instrumental": instrumental,
+    }
 
 
 def synthesize_vocal_melody(vocal_path, out_path):
@@ -379,12 +420,16 @@ def synthesize_vocal_melody(vocal_path, out_path):
     sf.write(out_path, stereo, sr, subtype="PCM_16")
 
 
-def encode_or_mix(inputs, output):
+def encode_or_mix(inputs, output, gains=None):
+    gains = gains or [1.0] * len(inputs)
+    if len(gains) != len(inputs):
+        raise ValueError("gains precisa ter o mesmo tamanho de inputs")
+
     cmd = ["ffmpeg", "-y", "-v", "error"]
     for item in inputs:
         cmd += ["-i", item]
 
-    if len(inputs) == 1:
+    if len(inputs) == 1 and abs(float(gains[0]) - 1.0) < 1e-6:
         cmd += [
             "-map", "0:a:0",
             "-c:a", "libopus", "-b:a", "96k",
@@ -392,9 +437,22 @@ def encode_or_mix(inputs, output):
             output,
         ]
     else:
+        chains = []
+        labels = []
+        for index, gain in enumerate(gains):
+            label = f"a{index}"
+            chains.append(f"[{index}:a]volume={float(gain):.4f}[{label}]")
+            labels.append(f"[{label}]")
+
+        chains.append(
+            "".join(labels)
+            + f"amix=inputs={len(inputs)}:duration=longest:normalize=0,"
+            + "alimiter=limit=0.95[out]"
+        )
+
         cmd += [
-            "-filter_complex",
-            f"amix=inputs={len(inputs)}:duration=longest:normalize=0,alimiter=limit=0.95",
+            "-filter_complex", ";".join(chains),
+            "-map", "[out]",
             "-c:a", "libopus", "-b:a", "96k",
             "-ar", "48000",
             output,
@@ -403,23 +461,47 @@ def encode_or_mix(inputs, output):
     run(cmd)
 
 
-def build_rounds(clip, stems, target):
+def build_rounds(clip, stems, karaoke, target):
     target.mkdir(parents=True, exist_ok=True)
     melody = target.parent / "_melody.wav"
-    synthesize_vocal_melody(stems["vocals"], melody)
 
-    specs = [
-        ("round-1.ogg", [stems["drums"]]),
-        ("round-2.ogg", [stems["drums"], stems["bass"]]),
-        ("round-3.ogg", [stems["drums"], stems["bass"], stems["other"]]),
-        # A melodia aparece antes da revelação, mas ainda sem todo o arranjo.
-        ("round-4.ogg", [stems["drums"], stems["bass"], melody]),
-        # Revelação segura: arranjo completo sem o vocal original.
-        ("round-5.ogg", [stems["drums"], stems["bass"], stems["other"], melody]),
-    ]
+    # A melodia agora é extraída do vocal dedicado do BS-Roformer,
+    # não do stem vocal do Demucs.
+    synthesize_vocal_melody(karaoke["vocals"], melody)
 
-    for filename, inputs in specs:
-        encode_or_mix(inputs, target / filename)
+    # Rodada 1 e 2: mantemos Demucs, que teve o melhor resultado prático
+    # para bateria e baixo.
+    encode_or_mix(
+        [stems["drums"]],
+        target / "round-1.ogg",
+    )
+    encode_or_mix(
+        [stems["drums"], stems["bass"]],
+        target / "round-2.ogg",
+        gains=[1.0, 1.0],
+    )
+
+    # Rodada 3: em vez do problemático stem "other", usamos um instrumental
+    # dedicado já sem voz. Assim todos os instrumentos entram juntos e limpos.
+    encode_or_mix(
+        [karaoke["instrumental"]],
+        target / "round-3.ogg",
+    )
+
+    # Rodada 4: instrumental completo + uma pista de melodia mais discreta.
+    encode_or_mix(
+        [karaoke["instrumental"], melody],
+        target / "round-4.ogg",
+        gains=[0.88, 0.42],
+    )
+
+    # Rodada 5 / revelação: continua sem a gravação vocal original, mas a
+    # melodia sintetizada fica bem mais presente.
+    encode_or_mix(
+        [karaoke["instrumental"], melody],
+        target / "round-5.ogg",
+        gains=[0.84, 0.95],
+    )
 
     if melody.exists():
         melody.unlink()
@@ -486,7 +568,8 @@ def main():
         print(f"Trecho selecionado: {start:.1f}s → {start + CLIP_SECONDS:.1f}s", flush=True)
         clip = extract_clip(source, start, work)
         stems = separate_stems(clip, work)
-        build_rounds(clip, stems, target)
+        karaoke = separate_vocal_instrumental(clip, work)
+        build_rounds(clip, stems, karaoke, target)
 
     entry = update_catalog(day, title, artist, start, source.name)
     print(json.dumps(entry, ensure_ascii=False, indent=2))

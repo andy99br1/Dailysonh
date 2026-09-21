@@ -112,8 +112,8 @@ def choose_clip_start(source, work):
 
     # Evita intros e, principalmente, finais/outros. Esses trechos costumam
     # concentrar backing vocals e camadas que atrapalham a transcrição da voz.
-    min_start = int(max(12.0, duration * 0.15))
-    max_start = int(min(duration - CLIP_SECONDS - 6.0, duration * 0.72))
+    min_start = int(max(12.0, duration * 0.18))
+    max_start = int(min(duration - CLIP_SECONDS - 8.0, duration * 0.62))
 
     if max_start <= min_start:
         min_start = 0
@@ -131,12 +131,12 @@ def choose_clip_start(source, work):
         loudness = np.ones_like(region)
 
     starts = np.arange(lo, hi + 1, dtype=np.float64)
-    preferred = duration * 0.54
-    distance = np.abs(starts - preferred) / max(duration * 0.35, 1.0)
+    preferred = duration * 0.46
+    distance = np.abs(starts - preferred) / max(duration * 0.24, 1.0)
 
     # A atividade musical ainda pesa mais, mas damos preferência ao miolo da
     # faixa em vez de escolher cegamente o trecho mais alto do final.
-    score = loudness - 0.28 * distance
+    score = loudness - 0.48 * distance
     best = lo + int(np.argmax(score))
     return float(best)
 

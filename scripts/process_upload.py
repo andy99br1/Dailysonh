@@ -173,8 +173,7 @@ def synthesize_vocal_melody(vocal_path, out_path):
         sf.write(out_path, np.zeros((1, 2), dtype=np.float32), sr)
         return
 
-    # Remove DC/subgrave e normaliza sem esmagar a dinâmica.
-    y = librosa.effects.preemphasis(y, coef=0.94)
+    # Mantém o waveform natural para o modelo e apenas normaliza picos.
     peak = float(np.max(np.abs(y))) if len(y) else 0.0
     if peak > 1e-6:
         y = y / max(1.0, peak / 0.95)

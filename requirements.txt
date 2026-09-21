@@ -5,4 +5,3 @@ soundfile>=0.12
 scipy>=1.10
 mutagen>=1.47
 basic-pitch==0.4.0
-audio-separator[cpu]==0.47.0

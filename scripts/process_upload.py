@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 import librosa
 import numpy as np
 import soundfile as sf
+from scipy.ndimage import median_filter
 from mutagen import File as MutagenFile
 
 
@@ -143,13 +144,13 @@ def separate_stems(clip, work):
     out = work / "separated"
     run([
         sys.executable, "-m", "demucs.separate",
-        "-n", "htdemucs",
+        "-n", "htdemucs_ft",
         "--device", "cpu",
         "--out", out,
         clip,
     ])
 
-    stem_dir = out / "htdemucs" / clip.stem
+    stem_dir = out / "htdemucs_ft" / clip.stem
     stems = {
         name: stem_dir / f"{name}.wav"
         for name in ("drums", "bass", "vocals", "other")
@@ -161,50 +162,143 @@ def separate_stems(clip, work):
 
 
 def synthesize_vocal_melody(vocal_path, out_path):
-    y, sr = librosa.load(vocal_path, sr=44100, mono=True)
+    """Transforma o vocal isolado em notas estáveis, sem preservar a voz/letra."""
+    y, sr = librosa.load(vocal_path, sr=22050, mono=True)
     if len(y) == 0:
         sf.write(out_path, np.zeros((1, 2), dtype=np.float32), sr)
         return
 
-    hop = 512
-    f0, voiced_flag, _ = librosa.pyin(
+    # Reduz resíduos de bateria/instrumentos que vazaram para o stem vocal.
+    y = librosa.effects.harmonic(y, margin=5.0)
+
+    hop = 256
+    frame_length = 2048
+    f0, voiced_flag, voiced_prob = librosa.pyin(
         y,
         fmin=librosa.note_to_hz("C2"),
         fmax=librosa.note_to_hz("C6"),
         sr=sr,
-        frame_length=2048,
+        frame_length=frame_length,
         hop_length=hop,
     )
-    rms = librosa.feature.rms(y=y, frame_length=2048, hop_length=hop)[0]
+    rms = librosa.feature.rms(
+        y=y,
+        frame_length=frame_length,
+        hop_length=hop,
+    )[0]
 
     if f0 is None or len(f0) == 0:
-        synth = np.zeros(len(y), dtype=np.float32)
-    else:
-        valid = np.isfinite(f0) & np.asarray(voiced_flag, dtype=bool)
-        quantized = np.zeros_like(f0, dtype=np.float64)
+        sf.write(out_path, np.zeros((len(y), 2), dtype=np.float32), sr)
+        return
 
-        if np.any(valid):
-            midi = np.round(librosa.hz_to_midi(f0[valid]))
-            quantized[valid] = librosa.midi_to_hz(midi)
+    n = len(f0)
+    if voiced_prob is None:
+        voiced_prob = np.ones(n, dtype=np.float32)
+    if voiced_flag is None:
+        voiced_flag = np.isfinite(f0)
 
-        frame_index = np.minimum(np.arange(len(y)) // hop, len(quantized) - 1)
-        freq = quantized[frame_index]
+    rms = np.pad(rms, (0, max(0, n - len(rms))), mode="edge")[:n]
+    rms_floor = max(float(np.percentile(rms, 18)), 1e-5)
 
-        if len(rms) < len(quantized):
-            rms = np.pad(rms, (0, len(quantized) - len(rms)), mode="edge")
-        env = rms[:len(quantized)][frame_index]
-        if np.max(env) > 0:
-            env = env / np.max(env)
-        env = np.power(np.clip(env, 0, 1), 0.65) * (freq > 0)
+    midi = np.full(n, np.nan, dtype=np.float64)
+    valid = (
+        np.isfinite(f0)
+        & np.asarray(voiced_flag, dtype=bool)
+        & (np.asarray(voiced_prob) >= 0.58)
+        & (rms >= rms_floor)
+    )
+    midi[valid] = librosa.hz_to_midi(f0[valid])
 
-        phase = 2.0 * math.pi * np.cumsum(freq) / sr
-        synth = (np.sin(phase) + 0.22 * np.sin(2 * phase)) * env * 0.28
+    if not np.any(np.isfinite(midi)):
+        sf.write(out_path, np.zeros((len(y), 2), dtype=np.float32), sr)
+        return
 
-        fade = min(int(sr * 0.04), len(synth) // 2)
-        if fade > 1:
-            ramp = np.linspace(0, 1, fade)
-            synth[:fade] *= ramp
-            synth[-fade:] *= ramp[::-1]
+    # Interpola apenas para suavização e depois restaura os silêncios.
+    idx = np.arange(n)
+    good = np.isfinite(midi)
+    smooth = np.interp(idx, idx[good], midi[good])
+    smooth = median_filter(smooth, size=7, mode="nearest")
+    notes = np.round(smooth).astype(np.int16)
+    notes[~valid] = -1
+
+    # Une microfalhas de detecção quando a mesma nota continua dos dois lados.
+    max_gap = 4
+    i = 0
+    while i < n:
+        if notes[i] != -1:
+            i += 1
+            continue
+        j = i
+        while j < n and notes[j] == -1:
+            j += 1
+        if (
+            i > 0 and j < n and
+            j - i <= max_gap and
+            notes[i - 1] == notes[j]
+        ):
+            notes[i:j] = notes[i - 1]
+        i = j
+
+    # Suprime notas espúrias muito curtas e pequenos saltos de uma única janela.
+    min_frames = 5
+    segments = []
+    i = 0
+    while i < n:
+        note = int(notes[i])
+        j = i + 1
+        while j < n and int(notes[j]) == note:
+            j += 1
+        if note >= 0 and j - i >= min_frames:
+            segments.append([i, j, note])
+        i = j
+
+    # Mescla fragmentos vizinhos da mesma altura separados por um gap minúsculo.
+    merged = []
+    for seg in segments:
+        if (
+            merged and
+            seg[2] == merged[-1][2] and
+            seg[0] - merged[-1][1] <= 3
+        ):
+            merged[-1][1] = seg[1]
+        else:
+            merged.append(seg)
+
+    synth = np.zeros(len(y), dtype=np.float32)
+    peak_rms = max(float(np.percentile(rms, 95)), 1e-5)
+
+    for start_frame, end_frame, note in merged:
+        start = int(start_frame * hop)
+        end = min(len(y), int(end_frame * hop + frame_length // 2))
+        if end <= start:
+            continue
+
+        freq = float(librosa.midi_to_hz(note))
+        length = end - start
+        t = np.arange(length, dtype=np.float64) / sr
+
+        # Timbre simples tipo synth/piano eletrônico; não imita o cantor.
+        tone = (
+            np.sin(2 * math.pi * freq * t)
+            + 0.20 * np.sin(2 * math.pi * freq * 2 * t)
+            + 0.06 * np.sin(2 * math.pi * freq * 3 * t)
+        )
+
+        seg_rms = float(np.median(rms[start_frame:min(end_frame, len(rms))]))
+        velocity = np.clip(seg_rms / peak_rms, 0.35, 1.0)
+        env = np.ones(length, dtype=np.float64)
+        attack = min(int(sr * 0.018), max(1, length // 4))
+        release = min(int(sr * 0.045), max(1, length // 3))
+        if attack > 1:
+            env[:attack] = np.linspace(0.0, 1.0, attack)
+        if release > 1:
+            env[-release:] *= np.linspace(1.0, 0.0, release)
+
+        synth[start:end] += (tone * env * velocity * 0.32).astype(np.float32)
+
+    max_amp = float(np.max(np.abs(synth))) if len(synth) else 0.0
+    if max_amp > 0.92:
+        synth *= 0.92 / max_amp
 
     stereo = np.column_stack([synth, synth]).astype(np.float32)
     sf.write(out_path, stereo, sr, subtype="PCM_16")
@@ -243,8 +337,10 @@ def build_rounds(clip, stems, target):
         ("round-1.ogg", [stems["drums"]]),
         ("round-2.ogg", [stems["drums"], stems["bass"]]),
         ("round-3.ogg", [stems["drums"], stems["bass"], stems["other"]]),
-        ("round-4.ogg", [stems["drums"], stems["bass"], stems["other"], melody]),
-        ("round-5.ogg", [clip]),
+        # A melodia aparece antes da revelação, mas ainda sem todo o arranjo.
+        ("round-4.ogg", [stems["drums"], stems["bass"], melody]),
+        # Revelação segura: arranjo completo sem o vocal original.
+        ("round-5.ogg", [stems["drums"], stems["bass"], stems["other"], melody]),
     ]
 
     for filename, inputs in specs:
@@ -262,6 +358,7 @@ def update_catalog(day, title, artist, start, source_name):
         "clipStart": round(float(start), 2),
         "source": "upload",
         "sourceName": source_name,
+        "safeRevealRound": 4,
         "rounds": [f"songs/{day}/round-{i}.ogg" for i in range(1, 6)],
     }
 

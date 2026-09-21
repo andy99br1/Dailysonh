@@ -20,6 +20,7 @@
     revealArtist: el("revealArtist"),
     youtubeLink: el("youtubeLink"),
     shareBtn: el("shareBtn"),
+    restartBtn: el("restartBtn"),
     visualizer: el("visualizer"),
     rounds: Array.prototype.slice.call(document.querySelectorAll(".round"))
   };
@@ -83,7 +84,16 @@
     return min + ":" + sec;
   }
 
+  function songVersion() {
+    var value = Number(song && song.version);
+    return Number.isFinite(value) && value >= 1 ? Math.floor(value) : 1;
+  }
+
   function key() {
+    return song ? "dailysonh:" + song.date + ":v" + songVersion() : "";
+  }
+
+  function legacyKey() {
     return song ? "dailysonh:" + song.date : "";
   }
 
@@ -100,12 +110,26 @@
   function load() {
     try {
       var raw = localStorage.getItem(key());
+      var migratedLegacy = false;
+
+      // Mantém o progresso já existente da versão 1. Quando a música é
+      // reprocessada, a versão aumenta e este fallback deixa de ser usado.
+      if (!raw && songVersion() === 1) {
+        raw = localStorage.getItem(legacyKey());
+        migratedLegacy = Boolean(raw);
+      }
+
       if (!raw) return;
+
       var state = JSON.parse(raw);
       roundIndex = Math.max(0, Math.min(4, Number(state.roundIndex) || 0));
       guesses = Array.isArray(state.guesses) ? state.guesses.slice(0, 5) : [];
       finished = Boolean(state.finished);
       won = Boolean(state.won);
+
+      if (migratedLegacy) {
+        save();
+      }
     } catch (_) {}
   }
 
@@ -328,6 +352,34 @@
     }
   }
 
+  function restartGame() {
+    if (!song) return;
+
+    stopAudio();
+    localStorage.removeItem(key());
+
+    if (songVersion() === 1) {
+      localStorage.removeItem(legacyKey());
+    }
+
+    roundIndex = 0;
+    guesses = [];
+    finished = false;
+    won = false;
+
+    E.reveal.classList.add("hidden");
+    E.guessInput.disabled = false;
+    E.guessInput.value = "";
+    E.guessBtn.disabled = false;
+    E.message.textContent = "Jogo reiniciado.";
+    E.message.className = "message";
+
+    renderAttempts();
+    renderRounds();
+    prepareAudio();
+    save();
+  }
+
   function resultText() {
     var marks = [0, 1, 2, 3, 4].map(function (i) {
       if (finished && i <= roundIndex) return "🟩";
@@ -436,5 +488,6 @@
   });
 
   E.shareBtn.addEventListener("click", share);
+  E.restartBtn.addEventListener("click", restartGame);
   init();
 })();

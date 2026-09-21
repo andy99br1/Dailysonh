@@ -14,12 +14,14 @@ from zoneinfo import ZoneInfo
 import librosa
 import numpy as np
 import soundfile as sf
+import imageio_ffmpeg
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG_PATH = ROOT / "catalog.json"
 SONGS_DIR = ROOT / "songs"
 CLIP_SECONDS = 18.0
+FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def run(cmd, cwd=None, capture=False):
@@ -76,10 +78,9 @@ def infer_metadata(info):
 def download_youtube(url, work):
     template = str(work / "source.%(ext)s")
     strategies = [
-        ("mweb + PO token", "youtube:player_client=mweb,default"),
-        ("web_safari", "youtube:player_client=web_safari"),
+        ("default", "youtube:player_client=default"),
         ("android_vr", "youtube:player_client=android_vr"),
-        ("web_embedded", "youtube:player_client=web_embedded"),
+        ("web_safari", "youtube:player_client=web_safari"),
     ]
     failures = []
 
@@ -95,8 +96,8 @@ def download_youtube(url, work):
             "yt-dlp",
             "--no-playlist",
             "--js-runtimes", "deno",
-            "--remote-components", "ejs:github",
             "--extractor-args", extractor_args,
+            "--ffmpeg-location", FFMPEG,
             "--write-info-json",
             "--no-write-comments",
             "--no-write-playlist-metafiles",
@@ -135,7 +136,7 @@ def download_youtube(url, work):
 def choose_clip_start(source, work):
     analysis_wav = work / "analysis.wav"
     run([
-        "ffmpeg", "-y", "-v", "error",
+        FFMPEG, "-y", "-v", "error",
         "-i", source,
         "-vn", "-ac", "1", "-ar", "8000",
         analysis_wav,
@@ -179,7 +180,7 @@ def choose_clip_start(source, work):
 def extract_clip(source, start, work):
     clip = work / "clip.wav"
     run([
-        "ffmpeg", "-y", "-v", "error",
+        FFMPEG, "-y", "-v", "error",
         "-ss", f"{start:.3f}",
         "-t", f"{CLIP_SECONDS:.3f}",
         "-i", source,
@@ -254,7 +255,7 @@ def synthesize_vocal_melody(vocal_path, out_path):
 
 
 def encode_or_mix(inputs, output):
-    cmd = ["ffmpeg", "-y", "-v", "error"]
+    cmd = [FFMPEG, "-y", "-v", "error"]
     for item in inputs:
         cmd += ["-i", item]
     if len(inputs) == 1:

@@ -181,46 +181,78 @@
   }
 
   function stopAudio() {
+    setPlaybackState(false);
+
     if (!audio) {
       resetProgress();
       return;
     }
+
     audio.pause();
     audio.currentTime = 0;
-    setPlaybackState(false);
     updateProgress();
   }
 
   function prepareAudio() {
-    if (audio) {
-      audio.pause();
-      audio.src = "";
-    }
+    var oldAudio = audio;
+    audio = null;
 
+    // Sempre reseta visual e botão imediatamente ao trocar de faixa.
+    setPlaybackState(false);
     resetProgress();
+
+    if (oldAudio) {
+      try {
+        oldAudio.pause();
+        oldAudio.removeAttribute("src");
+        oldAudio.load();
+      } catch (_) {}
+    }
 
     if (!song) return;
 
     var src = getRoundSource(roundIndex);
     if (!src) return;
 
-    audio = new Audio(src);
-    audio.preload = "auto";
+    // Evita o navegador reaproveitar uma faixa antiga depois de reprocessar a música.
+    src += (src.indexOf("?") >= 0 ? "&" : "?") + "v=" + songVersion();
 
-    audio.addEventListener("loadedmetadata", updateProgress);
-    audio.addEventListener("timeupdate", updateProgress);
-    audio.addEventListener("play", function () {
-      setPlaybackState(true);
+    var currentAudio = new Audio(src);
+    currentAudio.preload = "auto";
+    audio = currentAudio;
+
+    function isCurrentAudio() {
+      return audio === currentAudio;
+    }
+
+    currentAudio.addEventListener("loadedmetadata", function () {
+      if (isCurrentAudio()) updateProgress();
     });
-    audio.addEventListener("pause", function () {
-      if (!audio.ended) setPlaybackState(false);
+
+    currentAudio.addEventListener("timeupdate", function () {
+      if (isCurrentAudio()) updateProgress();
     });
-    audio.addEventListener("ended", function () {
+
+    currentAudio.addEventListener("play", function () {
+      if (isCurrentAudio()) setPlaybackState(true);
+    });
+
+    currentAudio.addEventListener("pause", function () {
+      if (isCurrentAudio() && !currentAudio.ended) {
+        setPlaybackState(false);
+      }
+    });
+
+    currentAudio.addEventListener("ended", function () {
+      if (!isCurrentAudio()) return;
       setPlaybackState(false);
       E.playBtn.textContent = "↻ Ouvir novamente";
       updateProgress();
     });
-    audio.addEventListener("error", function () {
+
+    currentAudio.addEventListener("error", function () {
+      if (!isCurrentAudio()) return;
+      setPlaybackState(false);
       E.message.textContent = "Não consegui carregar esta faixa.";
     });
   }

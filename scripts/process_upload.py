@@ -14,6 +14,8 @@ from zoneinfo import ZoneInfo
 import librosa
 import numpy as np
 import soundfile as sf
+import torch
+import torchcrepe
 from scipy.ndimage import median_filter
 from mutagen import File as MutagenFile
 
@@ -162,104 +164,131 @@ def separate_stems(clip, work):
 
 
 def synthesize_vocal_melody(vocal_path, out_path):
-    """Transforma o vocal isolado em notas estáveis, sem preservar a voz/letra."""
-    y, sr = librosa.load(vocal_path, sr=22050, mono=True)
+    """Extrai a linha melódica principal com CREPE e a ressintetiza sem voz/letra."""
+    # CREPE foi treinado para pitch monofônico e lida melhor com vibrato e
+    # mudanças rápidas do que a estimativa espectral anterior.
+    sr = 16000
+    y, _ = librosa.load(vocal_path, sr=sr, mono=True)
     if len(y) == 0:
         sf.write(out_path, np.zeros((1, 2), dtype=np.float32), sr)
         return
 
-    # Reduz resíduos de bateria/instrumentos que vazaram para o stem vocal.
-    y = librosa.effects.harmonic(y, margin=5.0)
+    # Remove DC/subgrave e normaliza sem esmagar a dinâmica.
+    y = librosa.effects.preemphasis(y, coef=0.94)
+    peak = float(np.max(np.abs(y))) if len(y) else 0.0
+    if peak > 1e-6:
+        y = y / max(1.0, peak / 0.95)
 
-    hop = 256
-    frame_length = 2048
-    f0, voiced_flag, voiced_prob = librosa.pyin(
-        y,
-        fmin=librosa.note_to_hz("C2"),
-        fmax=librosa.note_to_hz("C6"),
-        sr=sr,
-        frame_length=frame_length,
-        hop_length=hop,
-    )
+    hop = 160  # 10 ms
+    audio_tensor = torch.from_numpy(y.astype(np.float32)).unsqueeze(0)
+
+    with torch.no_grad():
+        pitch_t, periodicity_t = torchcrepe.predict(
+            audio_tensor,
+            sr,
+            hop,
+            65.0,
+            1100.0,
+            model="full",
+            batch_size=1024,
+            device="cpu",
+            return_periodicity=True,
+        )
+
+    pitch = pitch_t.squeeze(0).cpu().numpy().astype(np.float64)
+    periodicity = periodicity_t.squeeze(0).cpu().numpy().astype(np.float64)
+
+    if len(pitch) == 0:
+        sf.write(out_path, np.zeros((len(y), 2), dtype=np.float32), sr)
+        return
+
+    # Suaviza confiança e pitch. O Viterbi do TorchCrepe já reduz erros de
+    # meia/dobra de frequência; esta etapa remove jitter residual.
+    periodicity = median_filter(periodicity, size=5, mode="nearest")
+    log_pitch = np.log2(np.maximum(pitch, 1.0))
+    log_pitch = median_filter(log_pitch, size=5, mode="nearest")
+    pitch = np.power(2.0, log_pitch)
+
     rms = librosa.feature.rms(
         y=y,
-        frame_length=frame_length,
+        frame_length=1024,
         hop_length=hop,
+        center=True,
     )[0]
+    if len(rms) < len(pitch):
+        rms = np.pad(rms, (0, len(pitch) - len(rms)), mode="edge")
+    rms = rms[:len(pitch)]
 
-    if f0 is None or len(f0) == 0:
-        sf.write(out_path, np.zeros((len(y), 2), dtype=np.float32), sr)
-        return
-
-    n = len(f0)
-    if voiced_prob is None:
-        voiced_prob = np.ones(n, dtype=np.float32)
-    if voiced_flag is None:
-        voiced_flag = np.isfinite(f0)
-
-    rms = np.pad(rms, (0, max(0, n - len(rms))), mode="edge")[:n]
-    rms_floor = max(float(np.percentile(rms, 18)), 1e-5)
-
-    midi = np.full(n, np.nan, dtype=np.float64)
+    # Thresholds conservadores: é melhor perder um pedaço duvidoso da frase
+    # do que tocar notas erradas causadas por backing vocal ou vazamento.
+    rms_gate = max(float(np.percentile(rms, 24)), 1e-5)
     valid = (
-        np.isfinite(f0)
-        & np.asarray(voiced_flag, dtype=bool)
-        & (np.asarray(voiced_prob) >= 0.58)
-        & (rms >= rms_floor)
+        np.isfinite(pitch)
+        & (pitch >= 65.0)
+        & (pitch <= 1100.0)
+        & (periodicity >= 0.60)
+        & (rms >= rms_gate)
     )
-    midi[valid] = librosa.hz_to_midi(f0[valid])
 
-    if not np.any(np.isfinite(midi)):
-        sf.write(out_path, np.zeros((len(y), 2), dtype=np.float32), sr)
-        return
+    midi = np.full(len(pitch), -1, dtype=np.int16)
+    if np.any(valid):
+        raw_midi = librosa.hz_to_midi(pitch[valid])
+        midi[valid] = np.round(raw_midi).astype(np.int16)
 
-    # Interpola apenas para suavização e depois restaura os silêncios.
-    idx = np.arange(n)
-    good = np.isfinite(midi)
-    smooth = np.interp(idx, idx[good], midi[good])
-    smooth = median_filter(smooth, size=7, mode="nearest")
-    notes = np.round(smooth).astype(np.int16)
-    notes[~valid] = -1
-
-    # Une microfalhas de detecção quando a mesma nota continua dos dois lados.
-    max_gap = 4
+    # Remove notas isoladas de 10–30 ms e estabiliza pequenas oscilações.
+    stable = midi.copy()
     i = 0
-    while i < n:
-        if notes[i] != -1:
-            i += 1
-            continue
-        j = i
-        while j < n and notes[j] == -1:
+    while i < len(stable):
+        note = int(stable[i])
+        j = i + 1
+        while j < len(stable) and int(stable[j]) == note:
             j += 1
-        if (
-            i > 0 and j < n and
-            j - i <= max_gap and
-            notes[i - 1] == notes[j]
-        ):
-            notes[i:j] = notes[i - 1]
+        if note >= 0 and (j - i) < 5:
+            stable[i:j] = -1
         i = j
 
-    # Suprime notas espúrias muito curtas e pequenos saltos de uma única janela.
-    min_frames = 5
+    # Fecha gaps curtíssimos quando a mesma nota existe antes/depois.
+    i = 0
+    while i < len(stable):
+        if stable[i] >= 0:
+            i += 1
+            continue
+        j = i + 1
+        while j < len(stable) and stable[j] < 0:
+            j += 1
+        if (
+            i > 0
+            and j < len(stable)
+            and (j - i) <= 4
+            and stable[i - 1] == stable[j]
+        ):
+            stable[i:j] = stable[i - 1]
+        i = j
+
+    # Corrige "blips" de uma nota entre duas notas iguais.
+    if len(stable) >= 3:
+        for i in range(1, len(stable) - 1):
+            if stable[i - 1] >= 0 and stable[i + 1] == stable[i - 1]:
+                if stable[i] < 0 or abs(int(stable[i]) - int(stable[i - 1])) >= 2:
+                    stable[i] = stable[i - 1]
+
+    # Segmenta em notas reais. Um mínimo de ~60 ms evita o efeito "metralhadora".
     segments = []
     i = 0
-    while i < n:
-        note = int(notes[i])
+    min_frames = 6
+    while i < len(stable):
+        note = int(stable[i])
         j = i + 1
-        while j < n and int(notes[j]) == note:
+        while j < len(stable) and int(stable[j]) == note:
             j += 1
-        if note >= 0 and j - i >= min_frames:
+        if note >= 0 and (j - i) >= min_frames:
             segments.append([i, j, note])
         i = j
 
-    # Mescla fragmentos vizinhos da mesma altura separados por um gap minúsculo.
+    # Mescla notas idênticas muito próximas.
     merged = []
     for seg in segments:
-        if (
-            merged and
-            seg[2] == merged[-1][2] and
-            seg[0] - merged[-1][1] <= 3
-        ):
+        if merged and seg[2] == merged[-1][2] and seg[0] - merged[-1][1] <= 5:
             merged[-1][1] = seg[1]
         else:
             merged.append(seg)
@@ -269,39 +298,43 @@ def synthesize_vocal_melody(vocal_path, out_path):
 
     for start_frame, end_frame, note in merged:
         start = int(start_frame * hop)
-        end = min(len(y), int(end_frame * hop + frame_length // 2))
-        if end <= start:
+        end = min(len(y), int(end_frame * hop + 320))
+        if end - start < int(sr * 0.05):
             continue
 
         freq = float(librosa.midi_to_hz(note))
         length = end - start
         t = np.arange(length, dtype=np.float64) / sr
 
-        # Timbre simples tipo synth/piano eletrônico; não imita o cantor.
+        # Timbre limpo e claramente instrumental, com menos harmônicos para
+        # não soar como voz robótica.
         tone = (
-            np.sin(2 * math.pi * freq * t)
-            + 0.20 * np.sin(2 * math.pi * freq * 2 * t)
-            + 0.06 * np.sin(2 * math.pi * freq * 3 * t)
+            np.sin(2.0 * math.pi * freq * t)
+            + 0.12 * np.sin(2.0 * math.pi * freq * 2.0 * t)
         )
 
-        seg_rms = float(np.median(rms[start_frame:min(end_frame, len(rms))]))
-        velocity = np.clip(seg_rms / peak_rms, 0.35, 1.0)
+        local_rms = rms[start_frame:min(end_frame, len(rms))]
+        strength = float(np.median(local_rms)) if len(local_rms) else peak_rms
+        velocity = float(np.clip(strength / peak_rms, 0.28, 0.90))
+
         env = np.ones(length, dtype=np.float64)
-        attack = min(int(sr * 0.018), max(1, length // 4))
-        release = min(int(sr * 0.045), max(1, length // 3))
+        attack = min(int(sr * 0.025), max(1, length // 4))
+        release = min(int(sr * 0.055), max(1, length // 3))
         if attack > 1:
             env[:attack] = np.linspace(0.0, 1.0, attack)
         if release > 1:
             env[-release:] *= np.linspace(1.0, 0.0, release)
 
-        synth[start:end] += (tone * env * velocity * 0.32).astype(np.float32)
+        synth[start:end] += (tone * env * velocity * 0.30).astype(np.float32)
 
     max_amp = float(np.max(np.abs(synth))) if len(synth) else 0.0
-    if max_amp > 0.92:
-        synth *= 0.92 / max_amp
+    if max_amp > 0.88:
+        synth *= 0.88 / max_amp
 
-    stereo = np.column_stack([synth, synth]).astype(np.float32)
-    sf.write(out_path, stereo, sr, subtype="PCM_16")
+    # Entrega em 44.1 kHz para casar com os stems do Demucs.
+    synth_44 = librosa.resample(synth, orig_sr=sr, target_sr=44100)
+    stereo = np.column_stack([synth_44, synth_44]).astype(np.float32)
+    sf.write(out_path, stereo, 44100, subtype="PCM_16")
 
 
 def encode_or_mix(inputs, output):

@@ -11,6 +11,9 @@ on:
       - "songs/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Process uploaded audio"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -23,14 +26,17 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout latest main
+        uses: actions/checkout@v5
+        with:
+          ref: main
 
       - name: Build static site
         run: |

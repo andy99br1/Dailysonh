@@ -86,40 +86,84 @@ jobs:
           set -euo pipefail
           FILE=""
           REMOVE_FILE=""
+          ORIGINAL_PATH=""
 
-          if [ -n "$REQUESTED_PATH" ] && [ -f "$REQUESTED_PATH" ]; then
-            FILE="$REQUESTED_PATH"
-            REMOVE_FILE="$REQUESTED_PATH"
-          fi
+          recover_from_latest_upload() {
+            local wanted="${1:-}"
+            local commit=""
+            local path=""
 
-          if [ -z "$FILE" ]; then
-            FILE="$(find incoming -maxdepth 1 -type f \( -iname '*.mp3' -o -iname '*.wav' -o -iname '*.m4a' -o -iname '*.flac' -o -iname '*.ogg' -o -iname '*.aac' \) -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2- || true)"
-            if [ -n "$FILE" ]; then
-              REMOVE_FILE="$FILE"
+            while IFS= read -r candidate_commit; do
+              [ -z "$candidate_commit" ] && continue
+
+              while IFS=$'\t' read -r status candidate_path; do
+                [ -z "${candidate_path:-}" ] && continue
+
+                if [[ ! "$candidate_path" =~ \.(mp3|wav|m4a|flac|ogg|aac)$ ]]; then
+                  continue
+                fi
+
+                # Só considera arquivos adicionados/modificados por upload.
+                if [[ "$status" != A && "$status" != M ]]; then
+                  continue
+                fi
+
+                if [ -n "$wanted" ] && [ "$candidate_path" != "$wanted" ]; then
+                  continue
+                fi
+
+                commit="$candidate_commit"
+                path="$candidate_path"
+                break 2
+              done < <(git diff-tree --no-commit-id --name-status -r "$candidate_commit" -- incoming/)
+            done < <(git log --format='%H' -- incoming/)
+
+            if [ -z "$commit" ] || [ -z "$path" ]; then
+              return 1
             fi
-          fi
 
-          # Se o upload já foi processado e removido, recupera o áudio mais recente
-          # do histórico apenas para permitir reprocessar com um algoritmo novo.
-          if [ -z "$FILE" ]; then
-            DELETED="$(git log --all --diff-filter=D --name-only --pretty=format: -- incoming | grep -Ei '\.(mp3|wav|m4a|flac|ogg|aac)$' | head -n 1 || true)"
-            if [ -n "$DELETED" ]; then
-              DELETE_COMMIT="$(git log --all --diff-filter=D --format='%H' -- "$DELETED" | head -n 1)"
-              RECOVERED="$RUNNER_TEMP/$(basename "$DELETED")"
-              git show "${DELETE_COMMIT}^:${DELETED}" > "$RECOVERED"
+            ORIGINAL_PATH="$path"
+
+            if [ -f "$path" ]; then
+              FILE="$path"
+              REMOVE_FILE="$path"
+            else
+              RECOVERED="$RUNNER_TEMP/$(basename "$path")"
+              git show "$commit:$path" > "$RECOVERED"
               FILE="$RECOVERED"
-              echo "Áudio recuperado do histórico: $DELETED"
             fi
+
+            echo "Último upload encontrado: $path"
+            echo "Commit do upload: $commit"
+          }
+
+          # Se o usuário informar um caminho, usa exatamente esse arquivo,
+          # inclusive recuperando a versão mais recente dele do histórico.
+          if [ -n "$REQUESTED_PATH" ]; then
+            if [ -f "$REQUESTED_PATH" ]; then
+              FILE="$REQUESTED_PATH"
+              REMOVE_FILE="$REQUESTED_PATH"
+              ORIGINAL_PATH="$REQUESTED_PATH"
+            else
+              recover_from_latest_upload "$REQUESTED_PATH" || true
+            fi
+          fi
+
+          # Vazio = sempre escolhe o upload mais recente de verdade pela ordem
+          # dos commits, nunca pela data do arquivo no runner.
+          if [ -z "$FILE" ]; then
+            recover_from_latest_upload "" || true
           fi
 
           if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
-            echo "Nenhum áudio encontrado em incoming/ nem no histórico recente."
+            echo "Nenhum áudio enviado foi encontrado no histórico de incoming/."
             exit 1
           fi
 
           echo "file=$FILE" >> "$GITHUB_OUTPUT"
           echo "remove_file=$REMOVE_FILE" >> "$GITHUB_OUTPUT"
-          echo "Áudio selecionado: $FILE"
+          echo "original_path=$ORIGINAL_PATH" >> "$GITHUB_OUTPUT"
+          echo "Áudio selecionado: $ORIGINAL_PATH"
 
       - name: Process audio
         env:

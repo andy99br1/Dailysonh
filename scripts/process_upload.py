@@ -351,6 +351,14 @@ def build_rounds(clip, stems, target):
 
 
 def update_catalog(day, title, artist, start, source_name):
+    if CATALOG_PATH.exists():
+        catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    else:
+        catalog = {"songs": []}
+
+    previous = next((item for item in catalog.get("songs", []) if item.get("date") == day), None)
+    version = int(previous.get("version", 1)) + 1 if previous else 1
+
     entry = {
         "date": day,
         "title": title,
@@ -358,14 +366,10 @@ def update_catalog(day, title, artist, start, source_name):
         "clipStart": round(float(start), 2),
         "source": "upload",
         "sourceName": source_name,
+        "version": version,
         "safeRevealRound": 4,
         "rounds": [f"songs/{day}/round-{i}.ogg" for i in range(1, 6)],
     }
-
-    if CATALOG_PATH.exists():
-        catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
-    else:
-        catalog = {"songs": []}
 
     songs = [s for s in catalog.get("songs", []) if s.get("date") != day]
     songs.append(entry)

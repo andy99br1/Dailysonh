@@ -14,7 +14,8 @@
         "songs/2026-09-21/round-4.ogg",
         "songs/2026-09-21/round-5.ogg"
       ],
-      "safeRevealRound": 3
+      "safeRevealRound": 3,
+      "version": 1
     }
   ]
 }

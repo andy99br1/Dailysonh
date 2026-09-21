@@ -1,3 +1,19 @@
 {
-  "songs": []
+  "songs": [
+    {
+      "date": "2026-09-21",
+      "title": "Save a Prayer",
+      "artist": "Duran Duran",
+      "clipStart": 251.0,
+      "source": "upload",
+      "sourceName": "Duran Duran -  Save a Prayer.mp3",
+      "rounds": [
+        "songs/2026-09-21/round-1.ogg",
+        "songs/2026-09-21/round-2.ogg",
+        "songs/2026-09-21/round-3.ogg",
+        "songs/2026-09-21/round-4.ogg",
+        "songs/2026-09-21/round-5.ogg"
+      ]
+    }
+  ]
 }

@@ -45,6 +45,12 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
+      - name: Cache Demucs models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/torch/hub/checkpoints
+          key: demucs-htdemucs-ft-v1
+
       - name: FFmpeg
         run: |
           sudo apt-get update
@@ -63,16 +69,41 @@ jobs:
           REQUESTED_PATH: ${{ inputs.audio_path }}
         run: |
           set -euo pipefail
-          if [ -n "$REQUESTED_PATH" ]; then
+          FILE=""
+          REMOVE_FILE=""
+
+          if [ -n "$REQUESTED_PATH" ] && [ -f "$REQUESTED_PATH" ]; then
             FILE="$REQUESTED_PATH"
-          else
-            FILE="$(find incoming -maxdepth 1 -type f \( -iname '*.mp3' -o -iname '*.wav' -o -iname '*.m4a' -o -iname '*.flac' -o -iname '*.ogg' -o -iname '*.aac' \) -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
+            REMOVE_FILE="$REQUESTED_PATH"
           fi
-          if [ -z "${FILE:-}" ] || [ ! -f "$FILE" ]; then
-            echo "Nenhum áudio encontrado em incoming/."
+
+          if [ -z "$FILE" ]; then
+            FILE="$(find incoming -maxdepth 1 -type f \( -iname '*.mp3' -o -iname '*.wav' -o -iname '*.m4a' -o -iname '*.flac' -o -iname '*.ogg' -o -iname '*.aac' \) -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2- || true)"
+            if [ -n "$FILE" ]; then
+              REMOVE_FILE="$FILE"
+            fi
+          fi
+
+          # Se o upload já foi processado e removido, recupera o áudio mais recente
+          # do histórico apenas para permitir reprocessar com um algoritmo novo.
+          if [ -z "$FILE" ]; then
+            DELETED="$(git log --all --diff-filter=D --name-only --pretty=format: -- incoming | grep -Ei '\.(mp3|wav|m4a|flac|ogg|aac)$' | head -n 1 || true)"
+            if [ -n "$DELETED" ]; then
+              DELETE_COMMIT="$(git log --all --diff-filter=D --format='%H' -- "$DELETED" | head -n 1)"
+              RECOVERED="$RUNNER_TEMP/$(basename "$DELETED")"
+              git show "${DELETE_COMMIT}^:${DELETED}" > "$RECOVERED"
+              FILE="$RECOVERED"
+              echo "Áudio recuperado do histórico: $DELETED"
+            fi
+          fi
+
+          if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+            echo "Nenhum áudio encontrado em incoming/ nem no histórico recente."
             exit 1
           fi
+
           echo "file=$FILE" >> "$GITHUB_OUTPUT"
+          echo "remove_file=$REMOVE_FILE" >> "$GITHUB_OUTPUT"
           echo "Áudio selecionado: $FILE"
 
       - name: Process audio
@@ -87,12 +118,15 @@ jobs:
       - name: Commit generated game assets
         env:
           AUDIO_FILE: ${{ steps.audio.outputs.file }}
+          REMOVE_FILE: ${{ steps.audio.outputs.remove_file }}
           SONG_DATE: ${{ inputs.date }}
         run: |
           git config user.name "dailysonh-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add catalog.json songs/
-          git rm --ignore-unmatch "$AUDIO_FILE"
+          if [ -n "$REMOVE_FILE" ] && [ -f "$REMOVE_FILE" ]; then
+            git rm --ignore-unmatch "$REMOVE_FILE"
+          fi
           if git diff --cached --quiet; then
             echo "Nenhuma alteração para publicar."
             exit 0

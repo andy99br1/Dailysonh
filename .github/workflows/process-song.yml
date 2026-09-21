@@ -26,14 +26,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.11"
           cache: pip
           cache-dependency-path: requirements.txt
 
@@ -53,12 +53,23 @@ jobs:
           pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
           pip install -r requirements.txt
 
+      - name: Start YouTube PO token provider
+        run: |
+          docker pull brainicism/bgutil-ytdlp-pot-provider:2.0.0
+          docker run --rm -d --name bgutil-provider             -p 127.0.0.1:4416:4416             brainicism/bgutil-ytdlp-pot-provider:2.0.0
+          sleep 3
+          docker ps --filter name=bgutil-provider
+
       - name: Process song
         env:
           YOUTUBE_URL: ${{ inputs.youtube_url }}
           SONG_DATE: ${{ inputs.date }}
         run: |
           python scripts/process_song.py --url "$YOUTUBE_URL" --date "$SONG_DATE"
+
+      - name: Stop PO token provider
+        if: always()
+        run: docker rm -f bgutil-provider || true
 
       - name: Commit generated game assets
         run: |

@@ -115,7 +115,7 @@ jobs:
                 commit="$candidate_commit"
                 path="$candidate_path"
                 break 2
-              done < <(git diff-tree --no-commit-id --name-status -r "$candidate_commit" -- incoming/)
+              done < <(git -c core.quotePath=false diff-tree --no-commit-id --name-status -r "$candidate_commit" -- incoming/)
             done < <(git log --format='%H' -- incoming/)
 
             if [ -z "$commit" ] || [ -z "$path" ]; then

@@ -1,26 +1,29 @@
 # Dailysonh
 
-Jogo musical diário inspirado em jogos de adivinhação por camadas de instrumentos.
+Jogo musical diário por camadas de instrumentos.
 
-## Como funciona
+## Fluxo atual: upload de áudio
 
-1. Abra **Actions → Process daily song → Run workflow**.
-2. Cole uma URL do YouTube de uma música que você tem autorização para processar.
-3. O workflow baixa o áudio, escolhe automaticamente um trecho de aproximadamente 18 segundos, separa bateria/baixo/vocal/outros com Demucs, extrai a melodia do vocal, sintetiza essa melodia como notas e gera as rodadas.
-4. Os arquivos finais são adicionados ao catálogo e o GitHub Pages publica o jogo.
+1. Abra a pasta `incoming/` no repositório.
+2. Use **Add file → Upload files** e envie MP3, WAV, M4A, FLAC, OGG ou AAC.
+3. Vá em **Actions → Process uploaded audio → Run workflow**.
+4. Você pode deixar `audio_path` vazio para usar automaticamente o áudio mais recente em `incoming/`.
+5. `title`, `artist` e `date` são opcionais. Se título/artista ficarem vazios, o script tenta ler as tags do arquivo e depois o nome no formato `Artista - Música.ext`.
+6. O GitHub escolhe aproximadamente 18 segundos, separa stems com Demucs, transforma a melodia vocal em notas sintetizadas, gera cinco rodadas e publica o jogo.
+7. Ao final, o áudio original é removido da branch principal e ficam apenas os pequenos arquivos das rodadas.
 
 ## Rodadas
 
-- 1: bateria
-- 2: bateria + baixo
-- 3: bateria + baixo + outros instrumentos
-- 4: instrumentos + melodia vocal sintetizada
-- 5: trecho completo para revelação
+1. Bateria
+2. Bateria + baixo
+3. Bateria + baixo + outros instrumentos
+4. Instrumentos + melodia vocal sintetizada
+5. Trecho completo / revelação
 
-## Publicação
+## GitHub Pages
 
-Ative **Settings → Pages → Source → GitHub Actions** uma única vez. O workflow `pages.yml` cuida do deploy a cada atualização do catálogo.
+Em **Settings → Pages**, use **GitHub Actions** como Source. Depois do processamento bem-sucedido, o workflow de deploy roda automaticamente.
 
-## Observação sobre conteúdo
+## Observação
 
-Use apenas conteúdo para o qual você tenha os direitos ou autorização adequada. O projeto não inclui músicas comerciais; ele apenas contém o código de processamento.
+Use somente áudio para o qual você tenha os direitos ou autorização adequada. O repositório não inclui músicas comerciais por padrão.

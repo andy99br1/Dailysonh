@@ -211,6 +211,8 @@ def synthesize_vocal_melody(vocal_path, out_path):
             "amp": amplitude,
         })
 
+    print(f"Basic Pitch: {len(note_events)} eventos brutos, {len(events)} eventos úteis.", flush=True)
+
     if not events:
         sf.write(
             out_path,
@@ -335,6 +337,8 @@ def synthesize_vocal_melody(vocal_path, out_path):
             merged[-1][1] = end
         else:
             merged.append([start, end, pitch])
+
+    print(f"Melodia principal: {len(merged)} notas escolhidas.", flush=True)
 
     sr = 44100
     synth = np.zeros(int(CLIP_SECONDS * sr), dtype=np.float32)

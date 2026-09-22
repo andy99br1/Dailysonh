@@ -70,6 +70,11 @@ button {
   cursor: default;
 }
 
+.brand-mark {
+  font-size: 23px;
+  font-weight: 900;
+}
+
 .day-chip {
   font-size: 12px;
 }
@@ -258,8 +263,18 @@ button {
 .side-control {
   width: 48px;
   height: 48px;
-  font-size: 25px;
+  font-size: 0;
   font-weight: 900;
+}
+
+#prevBtn::before {
+  content: "↶";
+  font-size: 25px;
+}
+
+#skipBtn::before {
+  content: "↷";
+  font-size: 25px;
 }
 
 .play-btn {

@@ -2,6 +2,7 @@
   function el(id) { return document.getElementById(id); }
   var E = {
     dayChip: el("dayChip"),
+    challengeNumber: el("challengeNumber"),
     songDate: el("songDate"),
     roundLabel: el("roundLabel"),
     playBtn: el("playBtn"),
@@ -178,6 +179,7 @@
   function setPlaybackState(playing) {
     E.visualizer.classList.toggle("playing", playing);
     E.playBtn.textContent = playing ? "Ⅱ Pausar" : "▶ Ouvir trecho";
+    E.playBtn.setAttribute("aria-label", playing ? "Pausar" : "Tocar trecho");
   }
 
   function stopAudio() {
@@ -247,6 +249,7 @@
       if (!isCurrentAudio()) return;
       setPlaybackState(false);
       E.playBtn.textContent = "↻ Ouvir novamente";
+      E.playBtn.setAttribute("aria-label", "Tocar novamente");
       updateProgress();
     });
 
@@ -474,6 +477,7 @@
       catalogIndex = songs.findIndex(function (item) { return item.date === song.date; });
 
       E.dayChip.textContent = "#" + (catalogIndex + 1);
+      if (E.challengeNumber) E.challengeNumber.textContent = "#" + (catalogIndex + 1);
       E.songDate.textContent = formatDate(song.date);
 
       load();

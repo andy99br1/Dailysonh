@@ -84,16 +84,16 @@ button, input { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
 
 .shell {
-  width: min(520px, 100%);
+  width: min(600px, 100%);
   min-height: 100dvh;
   margin: 0 auto;
-  padding: 9px 14px 16px;
+  padding: 14px 18px 22px;
 }
 
 .topbar {
-  min-height: 50px;
+  min-height: 60px;
   display: grid;
-  grid-template-columns: 38px 1fr 38px;
+  grid-template-columns: 42px 1fr 42px;
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
@@ -101,8 +101,8 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .theme-toggle,
 .day-chip {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -114,7 +114,7 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .theme-toggle {
   cursor: pointer;
-  font-size: 20px;
+  font-size: 24px;
 }
 
 .day-chip { font-size: 11px; }
@@ -129,8 +129,8 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 .brand-logo {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   flex: 0 0 auto;
   display: block;
 }
@@ -139,7 +139,7 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .brand h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 24px;
   line-height: 1;
   letter-spacing: -.025em;
   white-space: nowrap;
@@ -147,7 +147,7 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .brand p {
   margin: 4px 0 0;
-  font-size: 9.5px;
+  font-size: 10.5px;
   color: var(--muted);
   font-weight: 700;
   white-space: nowrap;
@@ -157,10 +157,10 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .game-title {
   text-align: center;
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.1;
   font-weight: 900;
-  margin: 3px 0 8px;
+  margin: 5px 0 11px;
 }
 
 .info-card {
@@ -168,11 +168,11 @@ button { -webkit-tap-highlight-color: transparent; }
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 2px 0 var(--shadow);
-  padding: 7px 7px;
+  padding: 9px 8px;
   display: grid;
   grid-template-columns: .72fr 1.45fr 1fr;
   gap: 4px;
-  margin-bottom: 7px;
+  margin-bottom: 9px;
 }
 
 .info-item {
@@ -182,14 +182,14 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .info-item span {
   display: block;
-  font-size: 9px;
-  margin-bottom: 2px;
+  font-size: 10px;
+  margin-bottom: 3px;
   color: var(--muted);
 }
 
 .info-item strong {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
@@ -203,8 +203,8 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .song-stat {
   min-width: 0;
-  min-height: 47px;
-  padding: 6px 5px;
+  min-height: 56px;
+  padding: 8px 6px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface-2);
@@ -216,14 +216,14 @@ button { -webkit-tap-highlight-color: transparent; }
   display: block;
   margin-bottom: 3px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 800;
   line-height: 1.05;
 }
 
 .song-stat strong {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
@@ -233,19 +233,19 @@ body.dark .song-stat:last-child strong { color: #ffd38e; }
 
 .rounds {
   display: grid;
-  gap: 5px;
+  gap: 7px;
 }
 
 .round {
-  min-height: 39px;
+  min-height: 46px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--pill);
   box-shadow: 0 2px 0 var(--shadow);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 16px;
+  gap: 10px;
+  padding: 0 18px;
   color: var(--text);
   position: relative;
   transition: transform .15s ease, background .15s ease;
@@ -253,12 +253,12 @@ body.dark .song-stat:last-child strong { color: #ffd38e; }
 
 .round span {
   width: 20px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 900;
 }
 
 .round small {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 900;
 }
 
@@ -276,7 +276,7 @@ body.dark .song-stat:last-child strong { color: #ffd38e; }
   content: "♫";
   position: absolute;
   right: 16px;
-  font-size: 19px;
+  font-size: 21px;
   color: var(--green);
   font-weight: 900;
 }
@@ -286,7 +286,7 @@ body.dark .song-stat:last-child strong { color: #ffd38e; }
   position: absolute;
   right: 17px;
   color: var(--red);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
 }
 
@@ -334,7 +334,7 @@ body.dark .song-stat:last-child strong { color: #ffd38e; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 23px;
+  gap: 28px;
   margin: 3px 0 5px;
 }
 
@@ -349,8 +349,8 @@ body.dark .song-stat:last-child strong { color: #ffd38e; }
 }
 
 .seek-circle {
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
   padding: 5px 0 4px;
   display: flex;
   flex-direction: column;
@@ -368,7 +368,7 @@ body.dark .song-stat:last-child strong { color: #ffd38e; }
 .seek-number {
   position: static;
   display: block;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 900;
   line-height: 1;
   letter-spacing: .02em;
@@ -381,8 +381,8 @@ body.dark .song-stat:last-child strong { color: #ffd38e; }
 }
 
 .play-btn {
-  width: 68px;
-  height: 68px;
+  width: 76px;
+  height: 76px;
   padding: 0;
   border: 3px solid var(--play-border);
   outline: 3px solid var(--surface);
@@ -394,9 +394,9 @@ body.dark .song-stat:last-child strong { color: #ffd38e; }
   display: block;
   width: 0;
   height: 0;
-  border-top: 13px solid transparent;
-  border-bottom: 13px solid transparent;
-  border-left: 21px solid #171512;
+  border-top: 15px solid transparent;
+  border-bottom: 15px solid transparent;
+  border-left: 24px solid #171512;
   margin-left: 5px;
 }
 
@@ -436,7 +436,7 @@ button:disabled {
 }
 
 .audio-progress {
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .seek-bar {
@@ -451,7 +451,7 @@ button:disabled {
   justify-content: space-between;
   margin-top: 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -465,11 +465,11 @@ button:disabled {
 
 .skip-action,
 .guess-action {
-  min-height: 42px;
+  min-height: 48px;
   border-radius: 13px;
   padding: 0 14px;
   color: #fff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 900;
   letter-spacing: .02em;
   cursor: pointer;
@@ -657,38 +657,38 @@ button:disabled {
   }
 
   .topbar {
-    min-height: 44px;
-    grid-template-columns: 34px 1fr 34px;
-    margin-bottom: 1px;
+    min-height: 48px;
+    grid-template-columns: 36px 1fr 36px;
+    margin-bottom: 2px;
   }
 
   .theme-toggle,
   .day-chip {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brand-logo {
     width: 34px;
     height: 34px;
   }
 
-  .brand-logo {
-    width: 31px;
-    height: 31px;
-  }
-
-  .brand h1 { font-size: 18px; }
-  .brand p { font-size: 8.5px; margin-top: 2px; }
+  .brand h1 { font-size: 20px; }
+  .brand p { font-size: 9px; margin-top: 2px; }
 
   .game-title {
-    font-size: 13px;
-    margin: 1px 0 5px;
+    font-size: 14px;
+    margin: 2px 0 6px;
   }
 
   .info-card {
-    padding: 5px 5px;
-    margin-bottom: 5px;
+    padding: 6px 6px;
+    margin-bottom: 6px;
     border-radius: 10px;
   }
 
-  .info-item span { font-size: 8px; }
-  .info-item strong { font-size: 9.5px; }
+  .info-item span { font-size: 8.5px; }
+  .info-item strong { font-size: 10.5px; }
 
   .song-stats {
     gap: 4px;
@@ -696,27 +696,27 @@ button:disabled {
   }
 
   .song-stat {
-    min-height: 39px;
-    padding: 4px 3px;
+    min-height: 43px;
+    padding: 5px 4px;
     border-radius: 9px;
   }
 
-  .song-stat span { font-size: 7px; margin-bottom: 2px; }
-  .song-stat strong { font-size: 9.5px; }
+  .song-stat span { font-size: 7.5px; margin-bottom: 2px; }
+  .song-stat strong { font-size: 10.5px; }
 
   .rounds { gap: 4px; }
 
   .round {
-    min-height: 34px;
-    padding: 0 13px;
+    min-height: 38px;
+    padding: 0 14px;
   }
 
   .round span {
-    width: 18px;
-    font-size: 12px;
+    width: 19px;
+    font-size: 13px;
   }
 
-  .round small { font-size: 12px; }
+  .round small { font-size: 13.5px; }
   .round.active::after { right: 13px; font-size: 16px; }
   .round.done::after { right: 14px; font-size: 17px; }
 
@@ -733,8 +733,8 @@ button:disabled {
   }
 
   .play-btn {
-    width: 60px;
-    height: 60px;
+    width: 66px;
+    height: 66px;
     border-width: 3px;
     outline-width: 2px;
   }
@@ -757,8 +757,8 @@ button:disabled {
   }
 
   .seek-circle {
-    width: 44px;
-    height: 44px;
+    width: 47px;
+    height: 47px;
   }
 
   .seek-arrow { font-size: 20px; }
@@ -774,9 +774,9 @@ button:disabled {
 
   .skip-action,
   .guess-action {
-    min-height: 38px;
+    min-height: 41px;
     border-radius: 11px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .message {
@@ -812,14 +812,14 @@ button:disabled {
 }
 
 @media (max-height: 690px) and (max-width: 600px) {
-  .topbar { min-height: 39px; }
-  .brand-logo { width: 27px; height: 27px; }
-  .brand h1 { font-size: 17px; }
+  .topbar { min-height: 41px; }
+  .brand-logo { width: 29px; height: 29px; }
+  .brand h1 { font-size: 18px; }
 
   .theme-toggle,
   .day-chip {
-    width: 31px;
-    height: 31px;
+    width: 33px;
+    height: 33px;
   }
 
   .game-title { display: none; }
@@ -837,18 +837,18 @@ button:disabled {
   .song-stats { margin-bottom: 4px; }
 
   .rounds { gap: 3px; }
-  .round { min-height: 30px; }
+  .round { min-height: 32px; }
 
   .visualizer { display: none; }
 
   .play-btn {
-    width: 54px;
-    height: 54px;
+    width: 58px;
+    height: 58px;
   }
 
   .seek-circle {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
   }
 
   .audio-progress { margin-top: 3px; }
@@ -856,7 +856,7 @@ button:disabled {
   .primary-actions { margin-top: 4px; }
 
   .skip-action,
-  .guess-action { min-height: 35px; }
+  .guess-action { min-height: 37px; }
 
   .attempts { margin-top: 3px; }
   .message { margin-top: 2px; }

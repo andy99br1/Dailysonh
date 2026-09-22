@@ -137,13 +137,13 @@
   }
 
   function loadTheme() {
-    var saved = localStorage.getItem("dailysonh:theme");
+    var saved = localStorage.getItem("musicadodia:theme") || localStorage.getItem("dailysonh:theme");
     applyTheme(saved === "dark" ? "dark" : "light");
   }
 
   function toggleTheme() {
     var next = document.body.classList.contains("dark") ? "light" : "dark";
-    localStorage.setItem("dailysonh:theme", next);
+    localStorage.setItem("musicadodia:theme", next);
     applyTheme(next);
   }
 
@@ -496,7 +496,7 @@
       return "⬜";
     }).join("");
 
-    return "Dailysonh #" + (catalogIndex + 1) + " " + marks;
+    return "Música do Dia #" + (catalogIndex + 1) + " " + marks;
   }
 
   async function share() {
@@ -505,7 +505,7 @@
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Dailysonh",
+          title: "Música do Dia",
           text: text,
           url: location.href
         });

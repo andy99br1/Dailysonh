@@ -2,24 +2,79 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f6efe3" id="themeColor">
-  <title>Dailysonh</title>
-  <link rel="stylesheet" href="styles.css?v=20260922-4">
+  <meta name="description" content="Música do Dia é um jogo musical diário grátis. Ouça bateria, baixo, instrumentos e melodia em camadas e tente adivinhar a música do dia.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="application-name" content="Música do Dia">
+  <meta name="apple-mobile-web-app-title" content="Música do Dia">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Música do Dia">
+  <meta property="og:title" content="Música do Dia — Jogo musical diário">
+  <meta property="og:description" content="Adivinhe a música do dia ouvindo as camadas de bateria, baixo, instrumentos e melodia.">
+  <meta property="og:url" content="https://musicadodia.com/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Música do Dia — Jogo musical diário">
+  <meta name="twitter:description" content="Adivinhe a música do dia, uma camada por vez.">
+  <link rel="canonical" href="https://musicadodia.com/">
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/logo.svg">
+  <link rel="manifest" href="/site.webmanifest">
+  <title>Música do Dia — Jogo musical diário</title>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://musicadodia.com/#website",
+        "url": "https://musicadodia.com/",
+        "name": "Música do Dia",
+        "alternateName": "Musica do Dia",
+        "description": "Jogo musical diário para adivinhar a música por camadas de bateria, baixo, instrumentos e melodia.",
+        "inLanguage": "pt-BR"
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://musicadodia.com/#app",
+        "url": "https://musicadodia.com/",
+        "name": "Música do Dia",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Any",
+        "inLanguage": "pt-BR",
+        "description": "Jogo musical diário grátis para descobrir a música do dia ouvindo novas camadas a cada rodada.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "BRL"
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="stylesheet" href="styles.css?v=20260922-5">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Ativar modo noturno" title="Alternar tema">☾</button>
+
       <div class="brand">
-        <h1>Dailysonh</h1>
-        <p>Adivinhe a música, uma camada por vez</p>
+        <img class="brand-logo" src="/logo.svg" width="38" height="38" alt="" aria-hidden="true">
+        <div class="brand-copy">
+          <h1>Música do Dia</h1>
+          <p>Jogo musical diário · uma camada por vez</p>
+        </div>
       </div>
-      <div class="day-chip" id="dayChip">#—</div>
+
+      <div class="day-chip" id="dayChip" aria-label="Número do desafio">#—</div>
     </header>
 
     <section class="game-card" id="gameCard" aria-live="polite">
-      <div class="game-title">Adivinhe a música tocada pela banda</div>
+      <h2 class="game-title">Adivinhe a música do dia</h2>
 
       <div class="info-card">
         <div class="info-item">
@@ -51,7 +106,7 @@
         </div>
       </div>
 
-      <div class="rounds" id="rounds">
+      <div class="rounds" id="rounds" aria-label="Camadas da música">
         <div class="round active"><span>1</span><small>Bateria</small></div>
         <div class="round"><span>2</span><small>Baixo</small></div>
         <div class="round"><span>3</span><small>Instrumentos</small></div>
@@ -66,13 +121,15 @@
 
         <div class="player-controls">
           <button class="seek-circle seek-back" id="rewindBtn" type="button" disabled aria-label="Voltar 5 segundos">
-            <span class="seek-arrow">↶</span><span class="seek-number">5</span>
+            <span class="seek-arrow" aria-hidden="true">↶</span><span class="seek-number">5</span>
           </button>
 
-          <button class="play-btn" id="playBtn" type="button" disabled aria-label="Tocar trecho"></button>
+          <button class="play-btn" id="playBtn" type="button" disabled aria-label="Tocar trecho">
+            <span class="play-symbol" aria-hidden="true"></span>
+          </button>
 
           <button class="seek-circle seek-forward" id="forwardBtn" type="button" disabled aria-label="Avançar 5 segundos">
-            <span class="seek-arrow">↷</span><span class="seek-number">5</span>
+            <span class="seek-arrow" aria-hidden="true">↷</span><span class="seek-number">5</span>
           </button>
         </div>
 
@@ -93,12 +150,12 @@
       <form class="guess-form hidden" id="guessForm">
         <label for="guessInput">Qual é a música?</label>
         <div class="guess-row">
-          <input id="guessInput" autocomplete="off" placeholder="Digite o nome da música" disabled>
+          <input id="guessInput" autocomplete="off" inputmode="text" placeholder="Digite o nome da música" disabled>
           <button type="submit" id="guessBtn" disabled>Enviar palpite</button>
         </div>
       </form>
 
-      <div class="attempts" id="attempts"></div>
+      <div class="attempts" id="attempts" aria-label="Tentativas"></div>
       <div class="message" id="message"></div>
 
       <section class="reveal hidden" id="reveal">
@@ -114,11 +171,11 @@
     </section>
 
     <footer class="footer-note">
-      <span>🎵 Dailysonh</span>
-      <span>Uma música por dia</span>
+      <span>Música do Dia · jogo musical diário grátis</span>
+      <span>Uma música nova por dia</span>
     </footer>
   </main>
 
-  <script src="app.js?v=20260922-3"></script>
+  <script src="app.js?v=20260922-5"></script>
 </body>
 </html>

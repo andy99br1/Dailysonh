@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-  <meta name="theme-color" content="#f6efe3">
+  <meta name="theme-color" content="#f6efe3" id="themeColor">
   <title>Dailysonh</title>
-  <link rel="stylesheet" href="styles.css?v=20260922-2">
+  <link rel="stylesheet" href="styles.css?v=20260922-3">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
-      <div class="icon-btn brand-mark" aria-hidden="true">♪</div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Ativar modo noturno" title="Alternar tema">☾</button>
       <div class="brand">
         <h1>Dailysonh</h1>
         <p>Adivinhe a música, uma camada por vez</p>
@@ -59,15 +59,21 @@
         <div class="round"><span>5</span><small>Revelação</small></div>
       </div>
 
-      <div class="visualizer" id="visualizer" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span>
-      </div>
-
       <div class="player-area">
+        <div class="visualizer" id="visualizer" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+
         <div class="player-controls">
-          <button class="circle-btn side-control" id="prevBtn" type="button" disabled aria-label="Faixa anterior">↶</button>
-          <button class="play-btn" id="playBtn" type="button" disabled aria-label="Tocar trecho">▶</button>
-          <button class="circle-btn side-control" id="skipBtn" type="button" disabled aria-label="Próxima faixa">↷</button>
+          <button class="seek-circle seek-back" id="rewindBtn" type="button" disabled aria-label="Voltar 5 segundos">
+            <span class="seek-arrow">↶</span><span class="seek-number">5</span>
+          </button>
+
+          <button class="play-btn" id="playBtn" type="button" disabled aria-label="Tocar trecho"></button>
+
+          <button class="seek-circle seek-forward" id="forwardBtn" type="button" disabled aria-label="Avançar 5 segundos">
+            <span class="seek-arrow">↷</span><span class="seek-number">5</span>
+          </button>
         </div>
 
         <div class="audio-progress">
@@ -77,13 +83,18 @@
             <span id="remainingTime">0:18 restantes</span>
           </div>
         </div>
+
+        <div class="primary-actions">
+          <button class="skip-action" id="skipBtn" type="button" disabled>PULAR</button>
+          <button class="guess-action" id="openGuessBtn" type="button" disabled>ADIVINHAR</button>
+        </div>
       </div>
 
-      <form class="guess-form" id="guessForm">
+      <form class="guess-form hidden" id="guessForm">
         <label for="guessInput">Qual é a música?</label>
         <div class="guess-row">
           <input id="guessInput" autocomplete="off" placeholder="Digite o nome da música" disabled>
-          <button type="submit" id="guessBtn" disabled>Adivinhar</button>
+          <button type="submit" id="guessBtn" disabled>Enviar palpite</button>
         </div>
       </form>
 
@@ -108,6 +119,6 @@
     </footer>
   </main>
 
-  <script src="app.js?v=20260922-2"></script>
+  <script src="app.js?v=20260922-3"></script>
 </body>
 </html>

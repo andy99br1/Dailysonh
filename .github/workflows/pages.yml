@@ -8,6 +8,10 @@ on:
       - "styles.css"
       - "app.js"
       - "catalog.json"
+      - "logo.svg"
+      - "robots.txt"
+      - "sitemap.xml"
+      - "site.webmanifest"
       - "songs/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
@@ -41,7 +45,7 @@ jobs:
       - name: Build static site
         run: |
           mkdir -p _site
-          cp index.html styles.css app.js catalog.json _site/
+          cp index.html styles.css app.js catalog.json logo.svg robots.txt sitemap.xml site.webmanifest _site/
           if [ -d songs ]; then cp -R songs _site/; fi
           touch _site/.nojekyll
 

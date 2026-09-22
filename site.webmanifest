@@ -1,0 +1,19 @@
+{
+  "name": "Música do Dia",
+  "short_name": "Música do Dia",
+  "description": "Jogo musical diário para adivinhar a música por camadas de bateria, baixo, instrumentos e melodia.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6efe3",
+  "theme_color": "#f6efe3",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

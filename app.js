@@ -1,5 +1,6 @@
 (function () {
   function el(id) { return document.getElementById(id); }
+
   var E = {
     dayChip: el("dayChip"),
     challengeNumber: el("challengeNumber"),
@@ -8,9 +9,13 @@
     viewsInfo: el("viewsInfo"),
     difficultyInfo: el("difficultyInfo"),
     roundLabel: el("roundLabel"),
+    themeToggle: el("themeToggle"),
+    themeColor: el("themeColor"),
     playBtn: el("playBtn"),
-    prevBtn: el("prevBtn"),
+    rewindBtn: el("rewindBtn"),
+    forwardBtn: el("forwardBtn"),
     skipBtn: el("skipBtn"),
+    openGuessBtn: el("openGuessBtn"),
     seekBar: el("seekBar"),
     elapsedTime: el("elapsedTime"),
     remainingTime: el("remainingTime"),
@@ -116,6 +121,32 @@
     return min + ":" + sec;
   }
 
+  function applyTheme(theme) {
+    var dark = theme === "dark";
+    document.body.classList.toggle("dark", dark);
+
+    if (E.themeToggle) {
+      E.themeToggle.textContent = dark ? "☀" : "☾";
+      E.themeToggle.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo noturno");
+      E.themeToggle.title = dark ? "Modo claro" : "Modo noturno";
+    }
+
+    if (E.themeColor) {
+      E.themeColor.setAttribute("content", dark ? "#061536" : "#f6efe3");
+    }
+  }
+
+  function loadTheme() {
+    var saved = localStorage.getItem("dailysonh:theme");
+    applyTheme(saved === "dark" ? "dark" : "light");
+  }
+
+  function toggleTheme() {
+    var next = document.body.classList.contains("dark") ? "light" : "dark";
+    localStorage.setItem("dailysonh:theme", next);
+    applyTheme(next);
+  }
+
   function songVersion() {
     var value = Number(song && song.version);
     return Number.isFinite(value) && value >= 1 ? Math.floor(value) : 1;
@@ -144,8 +175,6 @@
       var raw = localStorage.getItem(key());
       var migratedLegacy = false;
 
-      // Mantém o progresso já existente da versão 1. Quando a música é
-      // reprocessada, a versão aumenta e este fallback deixa de ser usado.
       if (!raw && songVersion() === 1) {
         raw = localStorage.getItem(legacyKey());
         migratedLegacy = Boolean(raw);
@@ -159,9 +188,7 @@
       finished = Boolean(state.finished);
       won = Boolean(state.won);
 
-      if (migratedLegacy) {
-        save();
-      }
+      if (migratedLegacy) save();
     } catch (_) {}
   }
 
@@ -177,8 +204,6 @@
     if (!song || !Array.isArray(song.rounds)) return "";
     var last = song.rounds.length - 1;
 
-    // Para músicas antigas em que a faixa 5 ainda era o trecho original,
-    // a revelação usa explicitamente uma faixa segura.
     if (index === last) {
       return song.rounds[safeRevealIndex()] || "";
     }
@@ -207,9 +232,16 @@
     E.remainingTime.textContent = formatTime(Math.max(0, duration - current)) + " restantes";
   }
 
+  function seekBy(seconds) {
+    if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+
+    var next = (Number(audio.currentTime) || 0) + seconds;
+    audio.currentTime = Math.max(0, Math.min(audio.duration, next));
+    updateProgress();
+  }
+
   function setPlaybackState(playing) {
     E.visualizer.classList.toggle("playing", playing);
-    E.playBtn.textContent = playing ? "Ⅱ Pausar" : "▶ Ouvir trecho";
     E.playBtn.setAttribute("aria-label", playing ? "Pausar" : "Tocar trecho");
   }
 
@@ -230,7 +262,6 @@
     var oldAudio = audio;
     audio = null;
 
-    // Sempre reseta visual e botão imediatamente ao trocar de faixa.
     setPlaybackState(false);
     resetProgress();
 
@@ -247,7 +278,6 @@
     var src = getRoundSource(roundIndex);
     if (!src) return;
 
-    // Evita o navegador reaproveitar uma faixa antiga depois de reprocessar a música.
     src += (src.indexOf("?") >= 0 ? "&" : "?") + "v=" + songVersion();
 
     var currentAudio = new Audio(src);
@@ -271,15 +301,12 @@
     });
 
     currentAudio.addEventListener("pause", function () {
-      if (isCurrentAudio() && !currentAudio.ended) {
-        setPlaybackState(false);
-      }
+      if (isCurrentAudio() && !currentAudio.ended) setPlaybackState(false);
     });
 
     currentAudio.addEventListener("ended", function () {
       if (!isCurrentAudio()) return;
       setPlaybackState(false);
-      E.playBtn.textContent = "↻ Ouvir novamente";
       E.playBtn.setAttribute("aria-label", "Tocar novamente");
       updateProgress();
     });
@@ -293,6 +320,7 @@
 
   function renderAttempts() {
     E.attempts.innerHTML = "";
+
     guesses.forEach(function (guess, i) {
       var div = document.createElement("div");
       div.className = "attempt";
@@ -318,16 +346,18 @@
       E.roundLabel.textContent = "Faixa " + (roundIndex + 1) + " de 5";
     }
 
-    E.prevBtn.disabled = !song || roundIndex <= 0;
-    E.skipBtn.textContent = finished ? "Próxima faixa →" : "Pular rodada";
+    E.skipBtn.textContent = finished ? "PRÓXIMA FAIXA" : "PULAR";
     E.skipBtn.disabled = !song || (finished && roundIndex >= 4);
+    E.openGuessBtn.disabled = !song || finished;
+    E.rewindBtn.disabled = !song;
+    E.forwardBtn.disabled = !song;
   }
 
   async function playCurrent() {
     if (!audio) prepareAudio();
     if (!audio) return;
 
-    if (audio.ended || audio.currentTime >= audio.duration) {
+    if (audio.ended || (Number.isFinite(audio.duration) && audio.currentTime >= audio.duration)) {
       audio.currentTime = 0;
     }
 
@@ -344,6 +374,7 @@
     roundIndex = 4;
 
     E.reveal.classList.remove("hidden");
+    E.guessForm.classList.add("hidden");
     E.revealTitle.textContent = song.title;
     E.revealArtist.textContent = song.artist;
 
@@ -363,9 +394,7 @@
     prepareAudio();
     save();
 
-    if (autoplay) {
-      await playCurrent();
-    }
+    if (autoplay) await playCurrent();
   }
 
   async function switchRound(targetIndex, message) {
@@ -374,9 +403,7 @@
     var wasPlaying = Boolean(audio && !audio.paused && !audio.ended);
     roundIndex = Math.max(0, Math.min(4, targetIndex));
 
-    if (message) {
-      E.message.textContent = message;
-    }
+    if (message) E.message.textContent = message;
 
     renderRounds();
     prepareAudio();
@@ -398,18 +425,11 @@
     switchRound(roundIndex + 1, message || "Nova camada liberada.");
   }
 
-  function previousTrack() {
-    if (!song || roundIndex <= 0) return;
-    switchRound(roundIndex - 1, "Faixa anterior.");
-  }
-
   function nextOrSkip() {
     if (!song) return;
 
     if (finished) {
-      if (roundIndex < 4) {
-        switchRound(roundIndex + 1, "Próxima faixa.");
-      }
+      if (roundIndex < 4) switchRound(roundIndex + 1, "Próxima faixa.");
       return;
     }
 
@@ -424,6 +444,19 @@
       await playCurrent();
     } else {
       audio.pause();
+    }
+  }
+
+  function toggleGuessForm() {
+    if (!song || finished) return;
+
+    var opening = E.guessForm.classList.contains("hidden");
+    E.guessForm.classList.toggle("hidden");
+
+    if (opening) {
+      setTimeout(function () {
+        E.guessInput.focus();
+      }, 0);
     }
   }
 
@@ -443,6 +476,7 @@
     won = false;
 
     E.reveal.classList.add("hidden");
+    E.guessForm.classList.add("hidden");
     E.guessInput.disabled = false;
     E.guessInput.value = "";
     E.guessBtn.disabled = false;
@@ -488,6 +522,8 @@
   }
 
   async function init() {
+    loadTheme();
+
     try {
       var response = await fetch("catalog.json?v=" + Date.now(), { cache: "no-store" });
       if (!response.ok) throw new Error("catalog");
@@ -519,12 +555,16 @@
 
       E.playBtn.disabled = false;
       E.seekBar.disabled = false;
+      E.rewindBtn.disabled = false;
+      E.forwardBtn.disabled = false;
+      E.openGuessBtn.disabled = false;
 
       if (finished) {
         await reveal(won, false);
       } else {
         E.guessInput.disabled = false;
         E.guessBtn.disabled = false;
+        E.guessForm.classList.add("hidden");
         renderRounds();
         prepareAudio();
       }
@@ -535,8 +575,11 @@
   }
 
   E.playBtn.addEventListener("click", toggleAudio);
-  E.prevBtn.addEventListener("click", previousTrack);
+  E.rewindBtn.addEventListener("click", function () { seekBy(-5); });
+  E.forwardBtn.addEventListener("click", function () { seekBy(5); });
   E.skipBtn.addEventListener("click", nextOrSkip);
+  E.openGuessBtn.addEventListener("click", toggleGuessForm);
+  E.themeToggle.addEventListener("click", toggleTheme);
 
   E.seekBar.addEventListener("input", function () {
     if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
@@ -563,10 +606,12 @@
 
     guesses.push(guess);
     renderAttempts();
+    E.guessForm.classList.add("hidden");
     advance("Não foi dessa vez. Uma nova camada foi liberada.");
   });
 
   E.shareBtn.addEventListener("click", share);
   E.restartBtn.addEventListener("click", restartGame);
+
   init();
 })();

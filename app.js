@@ -4,6 +4,9 @@
     dayChip: el("dayChip"),
     challengeNumber: el("challengeNumber"),
     songDate: el("songDate"),
+    releaseInfo: el("releaseInfo"),
+    viewsInfo: el("viewsInfo"),
+    difficultyInfo: el("difficultyInfo"),
     roundLabel: el("roundLabel"),
     playBtn: el("playBtn"),
     prevBtn: el("prevBtn"),
@@ -75,6 +78,34 @@
       year: "numeric",
       timeZone: "UTC"
     }).format(new Date(Date.UTC(p[0], p[1] - 1, p[2])));
+  }
+
+  function detectReleaseYear() {
+    if (!song) return "—";
+    if (song.releaseYear) return String(song.releaseYear);
+    if (song.releaseDate) return String(song.releaseDate);
+
+    var source = [song.title, song.sourceName].filter(Boolean).join(" ");
+    var match = source.match(/\b(19\d{2}|20\d{2})\b/);
+    return match ? match[1] : "—";
+  }
+
+  function formatYoutubeViews(value) {
+    if (value === undefined || value === null || value === "") return "—";
+
+    var numeric = Number(value);
+    if (!Number.isFinite(numeric)) return String(value);
+
+    if (numeric >= 1000000000) {
+      return (numeric / 1000000000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " bi";
+    }
+    if (numeric >= 1000000) {
+      return (numeric / 1000000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mi";
+    }
+    if (numeric >= 1000) {
+      return (numeric / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mil";
+    }
+    return numeric.toLocaleString("pt-BR");
   }
 
   function formatTime(seconds) {
@@ -479,6 +510,9 @@
       E.dayChip.textContent = "#" + (catalogIndex + 1);
       if (E.challengeNumber) E.challengeNumber.textContent = "#" + (catalogIndex + 1);
       E.songDate.textContent = formatDate(song.date);
+      if (E.releaseInfo) E.releaseInfo.textContent = detectReleaseYear();
+      if (E.viewsInfo) E.viewsInfo.textContent = formatYoutubeViews(song.youtubeViews);
+      if (E.difficultyInfo) E.difficultyInfo.textContent = song.difficulty || "—";
 
       load();
       renderAttempts();

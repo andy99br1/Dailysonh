@@ -519,7 +519,7 @@ def build_rounds(clip, stems, karaoke, target):
         melody.unlink()
 
 
-def update_catalog(day, title, artist, start, source_name):
+def update_catalog(day, title, artist, start, source_name, release_year="", youtube_views="", difficulty="", youtube_url=""):
     if CATALOG_PATH.exists():
         catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
     else:
@@ -527,6 +527,20 @@ def update_catalog(day, title, artist, start, source_name):
 
     previous = next((item for item in catalog.get("songs", []) if item.get("date") == day), None)
     version = int(previous.get("version", 1)) + 1 if previous else 1
+
+    previous = previous or {}
+
+    inferred_year = release_year.strip()
+    if not inferred_year:
+        year_match = re.search(r"\b(19\d{2}|20\d{2})\b", f"{title} {source_name}")
+        if year_match:
+            inferred_year = year_match.group(1)
+        else:
+            inferred_year = str(previous.get("releaseYear", "")).strip()
+
+    views_value = youtube_views.strip() or str(previous.get("youtubeViews", "")).strip()
+    difficulty_value = difficulty.strip() or str(previous.get("difficulty", "")).strip()
+    youtube_url_value = youtube_url.strip() or str(previous.get("youtubeUrl", "")).strip()
 
     entry = {
         "date": day,
@@ -536,6 +550,10 @@ def update_catalog(day, title, artist, start, source_name):
         "source": "upload",
         "sourceName": source_name,
         "version": version,
+        "releaseYear": inferred_year,
+        "youtubeViews": views_value,
+        "difficulty": difficulty_value,
+        "youtubeUrl": youtube_url_value,
         "safeRevealRound": 4,
         "rounds": [f"songs/{day}/round-{i}.ogg" for i in range(1, 6)],
     }
@@ -557,6 +575,10 @@ def main():
     parser.add_argument("--date", default="")
     parser.add_argument("--title", default="")
     parser.add_argument("--artist", default="")
+    parser.add_argument("--release-year", default="")
+    parser.add_argument("--youtube-views", default="")
+    parser.add_argument("--difficulty", default="")
+    parser.add_argument("--youtube-url", default="")
     args = parser.parse_args()
 
     source = Path(args.file).resolve()
@@ -583,7 +605,17 @@ def main():
         karaoke = separate_vocal_instrumental(clip, work)
         build_rounds(clip, stems, karaoke, target)
 
-    entry = update_catalog(day, title, artist, start, source.name)
+    entry = update_catalog(
+        day,
+        title,
+        artist,
+        start,
+        source.name,
+        args.release_year,
+        args.youtube_views,
+        args.difficulty,
+        args.youtube_url,
+    )
     print(json.dumps(entry, ensure_ascii=False, indent=2))
 
 

@@ -19,6 +19,22 @@ on:
         description: "Data do desafio (YYYY-MM-DD). Vazio = hoje no Brasil"
         required: false
         type: string
+      release_year:
+        description: "Ano de lançamento (ex.: 2001). Opcional"
+        required: false
+        type: string
+      youtube_views:
+        description: "Views no YouTube (ex.: 125000000 ou 125 mi). Opcional"
+        required: false
+        type: string
+      difficulty:
+        description: "Dificuldade (Fácil, Médio ou Difícil). Opcional"
+        required: false
+        type: string
+      youtube_url:
+        description: "Link do YouTube para a revelação. Opcional"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -171,8 +187,20 @@ jobs:
           SONG_TITLE: ${{ inputs.title }}
           SONG_ARTIST: ${{ inputs.artist }}
           SONG_DATE: ${{ inputs.date }}
+          RELEASE_YEAR: ${{ inputs.release_year }}
+          YOUTUBE_VIEWS: ${{ inputs.youtube_views }}
+          DIFFICULTY: ${{ inputs.difficulty }}
+          YOUTUBE_URL: ${{ inputs.youtube_url }}
         run: |
-          python scripts/process_upload.py             --file "$AUDIO_FILE"             --title "$SONG_TITLE"             --artist "$SONG_ARTIST"             --date "$SONG_DATE"
+          python scripts/process_upload.py \
+            --file "$AUDIO_FILE" \
+            --title "$SONG_TITLE" \
+            --artist "$SONG_ARTIST" \
+            --date "$SONG_DATE" \
+            --release-year "$RELEASE_YEAR" \
+            --youtube-views "$YOUTUBE_VIEWS" \
+            --difficulty "$DIFFICULTY" \
+            --youtube-url "$YOUTUBE_URL"
 
       - name: Commit generated game assets
         env:

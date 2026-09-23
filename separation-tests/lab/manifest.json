@@ -1,0 +1,53 @@
+{
+  "createdAt": "2026-09-23T03:37:49.375504+00:00",
+  "title": "Página de Amigos",
+  "artist": "Chitãozinho e Xororó",
+  "sourceName": "1790133108001-Pagina-De-Amigos.mp3",
+  "clipStart": 84.0,
+  "clipSeconds": 18.0,
+  "contextSeconds": 36.0,
+  "methods": [
+    {
+      "id": "current",
+      "name": "Atual",
+      "description": "Pipeline usado hoje no jogo: corta 18s primeiro e depois separa.",
+      "rounds": [
+        "separation-tests/lab/current/round-1.ogg",
+        "separation-tests/lab/current/round-2.ogg",
+        "separation-tests/lab/current/round-3.ogg",
+        "separation-tests/lab/current/round-4.ogg",
+        "separation-tests/lab/current/round-5.ogg"
+      ]
+    },
+    {
+      "id": "six",
+      "name": "6 stems",
+      "description": "Separa com contexto em bateria, baixo, guitarra, piano, outros e voz. A 3ª rodada adiciona o instrumento dominante.",
+      "rounds": [
+        "separation-tests/lab/six/round-1.ogg",
+        "separation-tests/lab/six/round-2.ogg",
+        "separation-tests/lab/six/round-3.ogg",
+        "separation-tests/lab/six/round-4.ogg",
+        "separation-tests/lab/six/round-5.ogg"
+      ],
+      "primaryInstrument": "guitar",
+      "stemEnergy": {
+        "guitar": 0.042202,
+        "piano": 0.006287,
+        "other": 0.012084
+      }
+    },
+    {
+      "id": "context",
+      "name": "Contexto avançado",
+      "description": "Demucs FT + BS-Roformer recebem um trecho maior e os 18s são recortados só depois da separação.",
+      "rounds": [
+        "separation-tests/lab/context/round-1.ogg",
+        "separation-tests/lab/context/round-2.ogg",
+        "separation-tests/lab/context/round-3.ogg",
+        "separation-tests/lab/context/round-4.ogg",
+        "separation-tests/lab/context/round-5.ogg"
+      ]
+    }
+  ]
+}

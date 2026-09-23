@@ -23,6 +23,30 @@
       "spotifyUrl": "",
       "appleMusicUrl": "",
       "deezerUrl": ""
+    },
+    {
+      "date": "2026-09-22",
+      "title": "Filha",
+      "artist": "Rick e Renner",
+      "clipStart": 163.0,
+      "source": "upload",
+      "sourceName": "1790128434136-Rick-Renner-Filha-Warner-Music-Brasil-youtube.mp3",
+      "version": 1,
+      "releaseYear": "2001",
+      "youtubeViews": "40 Milhões",
+      "difficulty": "Médio",
+      "youtubeUrl": "",
+      "spotifyUrl": "",
+      "appleMusicUrl": "",
+      "deezerUrl": "",
+      "safeRevealRound": 4,
+      "rounds": [
+        "songs/2026-09-22/round-1.ogg",
+        "songs/2026-09-22/round-2.ogg",
+        "songs/2026-09-22/round-3.ogg",
+        "songs/2026-09-22/round-4.ogg",
+        "songs/2026-09-22/round-5.ogg"
+      ]
     }
   ]
 }

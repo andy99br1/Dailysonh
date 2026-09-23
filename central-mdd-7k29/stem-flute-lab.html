@@ -64,7 +64,7 @@
               <span class="lab-safe-chip">ISOLADO</span>
             </div>
 
-            <p class="muted">Envie apenas o MP3. O GitHub escolhe automaticamente um trecho de 18 segundos, separa bateria, baixo, guitarra/violão, piano/teclas, outros e voz; depois transforma a voz em uma flauta contínua sem usar MIDI.</p>
+            <p class="muted">Envie apenas o MP3. O GitHub escolhe automaticamente um trecho de 18 segundos. Bateria e baixo ficam no Demucs FT; voz, guitarra/violão, piano/teclas e outros usam BS-RoFormer-SW. Depois a voz vira uma flauta estabilizada, sem copiar o vibrato quadro a quadro e sem usar MIDI.</p>
 
             <form id="labForm">
               <div class="upload-zone lab-upload-zone" id="labUploadZone">
@@ -89,8 +89,8 @@
             <h2>O que acontece</h2>
             <div class="process-flow">
               <div><i>1</i><p><strong>Escolha dos 18s</strong><span>Procura um trecho forte e movimentado, evitando intro e final.</span></p></div>
-              <div><i>2</i><p><strong>6 stems</strong><span>Demucs separa bateria, baixo, voz, guitarra, piano e outros.</span></p></div>
-              <div><i>3</i><p><strong>Voz → flauta</strong><span>Segue a afinação contínua da voz, mantendo slides e vibrato, sem MIDI.</span></p></div>
+              <div><i>2</i><p><strong>Separação híbrida</strong><span>Demucs FT cuida de bateria/baixo e BS-RoFormer-SW dos outros stems.</span></p></div>
+              <div><i>3</i><p><strong>Voz → flauta</strong><span>Estabiliza as notas, preenche falhas curtas e evita copiar o vibrato da cantora.</span></p></div>
               <div><i>4</i><p><strong>Comparação</strong><span>Você ouve cada stem, a flauta, o original e um mix sem voz + flauta.</span></p></div>
             </div>
           </aside>

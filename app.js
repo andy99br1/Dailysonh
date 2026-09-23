@@ -40,6 +40,7 @@
     shareBtn: el("shareBtn"),
     restartBtn: el("restartBtn"),
     visualizer: el("visualizer"),
+    roundsContainer: el("rounds"),
     rounds: Array.prototype.slice.call(document.querySelectorAll(".round"))
   };
 
@@ -571,14 +572,70 @@
       if (!raw) return;
 
       var state = JSON.parse(raw);
-      roundIndex = Math.max(0, Math.min(4, Number(state.roundIndex) || 0));
-      guesses = Array.isArray(state.guesses) ? state.guesses.slice(0, 5) : [];
+      roundIndex = Math.max(0, Math.min(revealRoundIndex(), Number(state.roundIndex) || 0));
+      guesses = Array.isArray(state.guesses) ? state.guesses.slice(0, playableRoundCount()) : [];
       finished = Boolean(state.finished);
       won = Boolean(state.won);
       solvedRound = Number.isFinite(Number(state.solvedRound)) ? Number(state.solvedRound) : null;
 
       if (migratedLegacy) save();
     } catch (_) {}
+  }
+
+  function totalAudioRounds() {
+    if (!song || !Array.isArray(song.rounds) || !song.rounds.length) return 5;
+    return song.rounds.length;
+  }
+
+  function playableRoundCount() {
+    var total = totalAudioRounds();
+    var configured = Number(song && song.challengeRounds);
+    if (!Number.isFinite(configured)) return total;
+    return Math.max(1, Math.min(total, Math.floor(configured)));
+  }
+
+  function revealRoundIndex() {
+    var total = totalAudioRounds();
+    var playable = playableRoundCount();
+    return playable < total ? playable : total - 1;
+  }
+
+  function roundLabels() {
+    var total = totalAudioRounds();
+    var custom = song && Array.isArray(song.roundLabels) ? song.roundLabels.slice(0, total) : [];
+    var defaults = total >= 6
+      ? ["Bateria", "Baixo", "Instrumentos 1", "Instrumentos 2", "Melodia", "Revelação"]
+      : ["Bateria", "Baixo", "Instrumentos", "Melodia", "Revelação"];
+    while (custom.length < total) custom.push(defaults[custom.length] || ("Faixa " + (custom.length + 1)));
+    return custom;
+  }
+
+  function ensureRoundNodes() {
+    if (!E.roundsContainer) return;
+    var total = totalAudioRounds();
+    var labels = roundLabels();
+
+    if (E.rounds.length !== total) {
+      E.roundsContainer.innerHTML = "";
+      for (var i = 0; i < total; i += 1) {
+        var node = document.createElement("div");
+        node.className = "round";
+        var num = document.createElement("span");
+        num.textContent = String(i + 1);
+        var label = document.createElement("small");
+        label.textContent = labels[i] || ("Faixa " + (i + 1));
+        node.append(num, label);
+        E.roundsContainer.appendChild(node);
+      }
+      E.rounds = Array.prototype.slice.call(E.roundsContainer.querySelectorAll(".round"));
+    } else {
+      E.rounds.forEach(function (node, i) {
+        var label = node.querySelector("small");
+        var num = node.querySelector("span");
+        if (label) label.textContent = labels[i] || ("Faixa " + (i + 1));
+        if (num) num.textContent = String(i + 1);
+      });
+    }
   }
 
   function safeRevealIndex() {
@@ -725,19 +782,23 @@
   }
 
   function renderRounds() {
+    ensureRoundNodes();
+    var revealIndex = revealRoundIndex();
+    var playable = playableRoundCount();
+
     E.rounds.forEach(function (node, i) {
       node.classList.toggle("active", i === roundIndex);
-      node.classList.toggle("done", finished ? i <= 4 : i < roundIndex);
+      node.classList.toggle("done", finished ? i <= revealIndex : i < roundIndex);
     });
 
-    if (finished && roundIndex === 4) {
+    if (finished && roundIndex === revealIndex) {
       E.roundLabel.textContent = "Revelação";
     } else {
-      E.roundLabel.textContent = "Faixa " + (roundIndex + 1) + " de 5";
+      E.roundLabel.textContent = "Faixa " + (roundIndex + 1) + " de " + playable;
     }
 
     E.skipBtn.textContent = finished ? "PRÓXIMA FAIXA" : "PULAR";
-    E.skipBtn.disabled = !song || (finished && roundIndex >= 4);
+    E.skipBtn.disabled = !song || finished;
     E.openGuessBtn.disabled = !song || finished;
     E.rewindBtn.disabled = !song;
     E.forwardBtn.disabled = !song;
@@ -762,7 +823,7 @@
     finished = true;
     won = Boolean(success);
     if (!won) solvedRound = null;
-    roundIndex = 4;
+    roundIndex = revealRoundIndex();
 
     E.reveal.classList.remove("hidden");
     E.guessForm.classList.add("hidden");
@@ -791,7 +852,7 @@
     if (!song) return;
 
     var wasPlaying = Boolean(audio && !audio.paused && !audio.ended);
-    roundIndex = Math.max(0, Math.min(4, targetIndex));
+    roundIndex = Math.max(0, Math.min(revealRoundIndex(), targetIndex));
 
     if (message) E.message.textContent = message;
 
@@ -807,7 +868,7 @@
   }
 
   function advance(message) {
-    if (roundIndex >= 4) {
+    if (roundIndex >= playableRoundCount() - 1) {
       reveal(false, true);
       return;
     }
@@ -816,13 +877,7 @@
   }
 
   function nextOrSkip() {
-    if (!song) return;
-
-    if (finished) {
-      if (roundIndex < 4) switchRound(roundIndex + 1, "Próxima faixa.");
-      return;
-    }
-
+    if (!song || finished) return;
     advance("Rodada pulada.");
   }
 
@@ -881,7 +936,7 @@
   }
 
   function resultText() {
-    var marks = [0, 1, 2, 3, 4].map(function (i) {
+    var marks = Array.from({ length: playableRoundCount() }, function (_, i) {
       if (won && solvedRound && i === solvedRound - 1) return "🟩";
       if ((won && solvedRound && i < solvedRound - 1) || (!won && finished)) return "⬛";
       return "⬜";
@@ -947,6 +1002,7 @@
       if (E.viewsInfo) E.viewsInfo.textContent = formatYoutubeViews(song.youtubeViews);
       if (E.difficultyInfo) E.difficultyInfo.textContent = song.difficulty || "—";
 
+      ensureRoundNodes();
       load();
       renderAttempts();
 

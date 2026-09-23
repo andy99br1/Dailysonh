@@ -48,7 +48,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg fluidsynth fluid-soundfont-gm
           python -m pip install --upgrade pip
-          pip install "numpy<2" "scipy>=1.10" "librosa>=0.10,<0.12" "pretty_midi>=0.2.10" "demucs==4.0.1" "basic-pitch==0.4.0"
+          pip install "numpy<2" "scipy>=1.10" "librosa>=0.10,<0.12" "pretty_midi>=0.2.10" "demucs==4.0.1" "basic-pitch==0.4.0" "torchcodec"
           SF2="$(find /usr/share/sounds -type f \( -iname '*.sf2' -o -iname '*.sf3' \) | head -n 1)"
           test -n "$SF2"
           echo "SOUNDFONT_PATH=$SF2" >> "$GITHUB_ENV"

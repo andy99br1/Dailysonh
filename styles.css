@@ -15,6 +15,8 @@
   --skip-bg: #5f6d8c;
   --guess-bg: #1494d0;
   --shadow: rgba(77,56,31,.16);
+  --texture-dot: rgba(78, 58, 35, .055);
+  --texture-accent: rgba(233, 173, 110, .035);
 }
 
 body.dark {
@@ -34,6 +36,8 @@ body.dark {
   --skip-bg: #293b62;
   --guess-bg: #1189c5;
   --shadow: rgba(0,0,0,.22);
+  --texture-dot: rgba(255,255,255,.028);
+  --texture-accent: rgba(103,199,122,.025);
 }
 
 * { box-sizing: border-box; }
@@ -62,10 +66,11 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: .16;
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(86,67,43,.22) .65px, transparent .75px);
-  background-size: 8px 8px;
+    radial-gradient(circle at 1px 1px, var(--texture-dot) 1px, transparent 1.15px),
+    linear-gradient(135deg, var(--texture-accent), transparent 38%);
+  background-size: 18px 18px, 100% 100%;
+  background-attachment: fixed;
 }
 
 body.dark {
@@ -74,11 +79,6 @@ body.dark {
     var(--bg);
 }
 
-body.dark::before {
-  opacity: .09;
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(255,255,255,.28) .6px, transparent .75px);
-}
 
 button, input { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }

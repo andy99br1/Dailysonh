@@ -14,6 +14,7 @@ import librosa
 import numpy as np
 import soundfile as sf
 from scipy.ndimage import gaussian_filter1d, median_filter
+from scipy.signal import butter, sosfiltfilt
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -532,7 +533,7 @@ def encode_ogg(source, target):
     run([
         "ffmpeg", "-y", "-v", "error",
         "-i", source,
-        "-c:a", "libvorbis", "-q:a", "5",
+        "-c:a", "libvorbis", "-q:a", "8",
         target,
     ])
 
@@ -552,21 +553,86 @@ def read_stereo(path):
     return audio
 
 
-def build_mix(stems, flute_path, out_path):
-    parts = []
-    for name in ("drums", "bass", "guitar", "piano", "other"):
-        parts.append(read_stereo(stems[name]))
-    parts.append(read_stereo(flute_path))
+def _bandpass_stereo(audio, low_hz, high_hz, sr=TARGET_SR):
+    if len(audio) < 64:
+        return audio.copy()
+    nyquist = sr / 2.0
+    low = max(20.0, float(low_hz)) / nyquist
+    high = min(float(high_hz), nyquist - 100.0) / nyquist
+    sos = butter(2, [low, high], btype="bandpass", output="sos")
+    out = np.zeros_like(audio, dtype=np.float32)
+    for ch in range(audio.shape[1]):
+        out[:, ch] = sosfiltfilt(sos, audio[:, ch]).astype(np.float32)
+    return out
+
+
+def _normalize_peak(audio, peak_target=0.90):
+    peak = float(np.max(np.abs(audio))) if audio.size else 0.0
+    if peak > 1e-8:
+        audio = audio * min(2.0, peak_target / peak)
+    return np.clip(audio, -1.0, 1.0).astype(np.float32)
+
+
+def build_instruments_full(stems, out_path):
+    """
+    Recombina guitarra + piano + other do mesmo separador.
+    Separar cada instrumento tira parte do corpo; somar os três recupera
+    muito do acompanhamento original sem trazer voz, bateria ou baixo.
+    """
+    guitar = read_stereo(stems["guitar"])
+    piano = read_stereo(stems["piano"])
+    other = read_stereo(stems["other"])
+    n = min(len(guitar), len(piano), len(other))
+    mix = guitar[:n] + piano[:n] + other[:n]
+    mix = _normalize_peak(mix, 0.91)
+    sf.write(out_path, mix, TARGET_SR, subtype="PCM_16")
+
+
+def build_full_body_guitar(stems, out_path):
+    """
+    Mantém o stem de guitarra como base, mas devolve um pouco dos médios-graves
+    que o separador costuma jogar no stem 'other'. O reforço é filtrado e baixo
+    para não transformar a faixa de guitarra em um mix de tudo.
+    """
+    guitar = read_stereo(stems["guitar"])
+    other = read_stereo(stems["other"])
+    piano = read_stereo(stems["piano"])
+    n = min(len(guitar), len(other), len(piano))
+    guitar = guitar[:n]
+    other = other[:n]
+    piano = piano[:n]
+
+    low_mid_residual = _bandpass_stereo(other, 110.0, 1800.0)
+    harmonic_residual = _bandpass_stereo(other, 1800.0, 6500.0)
+    piano_body = _bandpass_stereo(piano, 160.0, 850.0)
+
+    enhanced = (
+        guitar
+        + 0.20 * low_mid_residual
+        + 0.055 * harmonic_residual
+        + 0.035 * piano_body
+    )
+
+    # Saturação bem leve para recuperar densidade percebida sem "estourar".
+    enhanced = np.tanh(enhanced * 1.10) / np.tanh(1.10)
+    enhanced = _normalize_peak(enhanced, 0.91)
+    sf.write(out_path, enhanced, TARGET_SR, subtype="PCM_16")
+
+
+def build_mix(stems, flute_path, instruments_path, out_path):
+    parts = [
+        read_stereo(stems["drums"]),
+        read_stereo(stems["bass"]),
+        read_stereo(instruments_path),
+        read_stereo(flute_path),
+    ]
 
     n = min(len(x) for x in parts)
     mix = np.zeros((n, 2), dtype=np.float32)
     for part in parts:
         mix += part[:n]
 
-    # Um pouco de headroom; o objetivo é teste, não masterização.
-    peak = float(np.max(np.abs(mix))) if mix.size else 0.0
-    if peak > 1e-8:
-        mix *= min(1.0, 0.91 / peak)
+    mix = _normalize_peak(mix, 0.91)
     sf.write(out_path, mix, TARGET_SR, subtype="PCM_16")
 
 
@@ -598,15 +664,22 @@ def main():
         flute_wav = work / "melody-flute.wav"
         flute_stats = synthesize_flute(stems["vocals"], flute_wav)
 
+        instruments_wav = work / "instruments-full.wav"
+        build_instruments_full(stems, instruments_wav)
+
+        guitar_full_wav = work / "guitar-full-body.wav"
+        build_full_body_guitar(stems, guitar_full_wav)
+
         mix_wav = work / "instrumental-with-flute.wav"
-        build_mix(stems, flute_wav, mix_wav)
+        build_mix(stems, flute_wav, instruments_wav, mix_wav)
 
         outputs = {
             "preview": mix_wav,
             "flute": flute_wav,
             "drums": stems["drums"],
             "bass": stems["bass"],
-            "guitar": stems["guitar"],
+            "instruments": instruments_wav,
+            "guitar": guitar_full_wav,
             "piano": stems["piano"],
             "other": stems["other"],
             "vocals": stems["vocals"],
@@ -618,7 +691,8 @@ def main():
             "flute": "Melodia em flauta",
             "drums": "Bateria",
             "bass": "Baixo",
-            "guitar": "Guitarra / violão",
+            "instruments": "Instrumentos completos",
+            "guitar": "Guitarra / violão (encorpada)",
             "piano": "Piano / teclas",
             "other": "Outros instrumentos",
             "vocals": "Voz isolada (comparação)",
@@ -646,6 +720,8 @@ def main():
             "selection": choice,
             "separationModel": "Hybrid: htdemucs_ft (drums/bass) + BS-Roformer-SW (vocals/instruments)",
             "voiceTransform": "stabilized-note flute (pYIN + note cleanup, no MIDI)",
+            "instrumentBody": "recombined accompaniment + filtered residual body restoration",
+            "webAudioEncoding": "Ogg Vorbis q8",
             "flute": flute_stats,
             "tracks": tracks,
         }

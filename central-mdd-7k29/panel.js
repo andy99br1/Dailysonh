@@ -17,9 +17,10 @@ var E={
  trafficChart:$("trafficChart"),todaySongTitle:$("todaySongTitle"),todayChallenge:$("todayChallenge"),todayWins:$("todayWins"),todayFails:$("todayFails"),todayRate:$("todayRate"),
  roundBars:$("roundBars"),commonGuesses:$("commonGuesses"),audioErrors:$("audioErrors"),abandonRate:$("abandonRate"),completionRate:$("completionRate"),pageViews:$("pageViews"),
  analyticsWarning:$("analyticsWarning"),analyticsStatusPanel:$("analyticsStatusPanel"),analyticsStatusTitle:$("analyticsStatusTitle"),analyticsStatusText:$("analyticsStatusText"),
- dashboardDate:$("dashboardDate"),selectedDateLabel:$("selectedDateLabel"),prevDateBtn:$("prevDateBtn"),nextDateBtn:$("nextDateBtn"),todayDateBtn:$("todayDateBtn"),trafficPeriodTitle:$("trafficPeriodTitle")
+ dashboardDate:$("dashboardDate"),selectedDateLabel:$("selectedDateLabel"),autoRefreshStatus:$("autoRefreshStatus"),prevDateBtn:$("prevDateBtn"),nextDateBtn:$("nextDateBtn"),todayDateBtn:$("todayDateBtn"),trafficPeriodTitle:$("trafficPeriodTitle")
 };
-var token="",catalog={songs:[]},catalogSha="",analyticsConfig=null,toastTimer=null,selectedDate="",previewSong=null,previewTrackIndex=0;
+var token="",catalog={songs:[]},catalogSha="",analyticsConfig=null,toastTimer=null,selectedDate="",previewSong=null,previewTrackIndex=0,dashboardRefreshTimer=null,dashboardRefreshBusy=false,lastDashboardRefreshAt=0;
+var DASHBOARD_REFRESH_MS=10000;
 var DEFAULT_ANALYTICS_CONFIG={
   endpoint:"https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-analytics",
   supabaseUrl:"https://kxoxlgiktwumooixedgu.supabase.co",
@@ -94,6 +95,7 @@ async function openPanel(){
  if(!catalogOk||!analyticsOk){
    toast("Painel aberto. Alguns dados demoraram para carregar.");
  }
+ startDashboardAutoRefresh();
 }
 async function connect(value){
  token=String(value||"").trim();
@@ -293,6 +295,43 @@ async function waitRun(after){var started=Date.now();while(Date.now()-started<90
 async function monitor(run){E.workflowLink.href=run.html_url;E.workflowLink.classList.remove("hidden");while(true){var l=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);if(l.status==="queued")setJob(68,"Na fila","Preparando o ambiente.");else if(l.status==="in_progress")setJob(84,"Processando áudio","Separando as camadas. Isso pode levar alguns minutos.");else if(l.status==="completed"){if(l.conclusion==="success"){setJob(100,"Música pronta","Processamento concluído.");await new Promise(function(r){setTimeout(r,2000)});await loadCatalog();E.songForm.reset();setDefaultDate();E.fileLabel.textContent="Escolher arquivo de áudio";toast("Música processada com sucesso.");switchView("catalog");return}setJob(100,"Falha no processamento","Abra a execução do GitHub para detalhes.");throw new Error("Workflow "+l.conclusion)}await new Promise(function(r){setTimeout(r,6500)})}}
 function formValues(){return{title:E.songTitle.value.trim(),artist:E.songArtist.value.trim(),date:E.songDateInput.value,releaseYear:E.releaseYearInput.value.trim(),youtubeViews:E.youtubeViewsInput.value.trim(),difficulty:E.difficultyInput.value,youtubeUrl:E.youtubeUrlInput.value.trim(),spotifyUrl:E.spotifyUrlInput.value.trim(),appleMusicUrl:E.appleMusicUrlInput.value.trim(),deezerUrl:E.deezerUrlInput.value.trim(),clipStart:E.clipStartInput.value.trim()}}
 function setDefaultDate(){E.songDateInput.value=brazilDate()}
+
+function dashboardIsVisible(){
+ var view=document.querySelector('[data-view-panel="dashboard"]');
+ return Boolean(view&&view.classList.contains("active")&&!document.body.classList.contains("auth-locked"));
+}
+function updateAutoRefreshStatus(state){
+ if(!E.autoRefreshStatus)return;
+ var dot=E.autoRefreshStatus.querySelector("i");
+ if(state==="loading"){
+   E.autoRefreshStatus.classList.add("loading");
+   E.autoRefreshStatus.classList.remove("error");
+   if(dot)dot.className="";
+   E.autoRefreshStatus.lastChild.nodeValue=" Atualizando…";
+   return;
+ }
+ if(state==="error"){
+   E.autoRefreshStatus.classList.remove("loading");
+   E.autoRefreshStatus.classList.add("error");
+   E.autoRefreshStatus.lastChild.nodeValue=" Falha na última atualização";
+   return;
+ }
+ E.autoRefreshStatus.classList.remove("loading","error");
+ var now=new Date();
+ var time=now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+ E.autoRefreshStatus.lastChild.nodeValue=" Atualizado "+time+" · automático 10s";
+}
+function startDashboardAutoRefresh(){
+ if(dashboardRefreshTimer)clearInterval(dashboardRefreshTimer);
+ dashboardRefreshTimer=setInterval(function(){
+   if(document.hidden||!dashboardIsVisible())return;
+   refreshDashboard();
+ },DASHBOARD_REFRESH_MS);
+}
+function stopDashboardAutoRefresh(){
+ if(dashboardRefreshTimer){clearInterval(dashboardRefreshTimer);dashboardRefreshTimer=null}
+}
+
 async function loadAnalyticsConfig(){
  analyticsConfig=Object.assign({},DEFAULT_ANALYTICS_CONFIG);
  try{
@@ -321,18 +360,23 @@ function updateAnalyticsStatus(){
  }
 }
 async function refreshDashboard(){
- if(!analyticsConfig)analyticsConfig=Object.assign({},DEFAULT_ANALYTICS_CONFIG);
- if(!selectedDate)selectedDate=brazilDate();
- updateDateFilterUi();
- renderSelectedChallenge();
-
- var endpoint=analyticsConfig&&analyticsConfig.endpoint;
- if(!endpoint){
-   E.analyticsWarning.classList.remove("hidden");
-   return;
- }
+ if(dashboardRefreshBusy)return;
+ dashboardRefreshBusy=true;
+ updateAutoRefreshStatus("loading");
 
  try{
+   if(!analyticsConfig)analyticsConfig=Object.assign({},DEFAULT_ANALYTICS_CONFIG);
+   if(!selectedDate)selectedDate=brazilDate();
+   updateDateFilterUi();
+   renderSelectedChallenge();
+
+   var endpoint=analyticsConfig&&analyticsConfig.endpoint;
+   if(!endpoint){
+     E.analyticsWarning.classList.remove("hidden");
+     updateAutoRefreshStatus("error");
+     return;
+   }
+
    var sep=endpoint.indexOf("?")>=0?"&":"?";
    var url=endpoint+sep+"mode=dashboard&range=7d&date="+encodeURIComponent(selectedDate)+"&_="+Date.now();
    var r=await fetch(url,{cache:"no-store"});
@@ -341,15 +385,21 @@ async function refreshDashboard(){
      try{body=await r.text()}catch(_){}
      throw new Error("analytics "+r.status+" "+body);
    }
+
    var data=await r.json();
    renderAnalytics(data);
    if(selectedDate!==brazilDate())E.metricOnline.textContent="—";
    E.analyticsWarning.classList.add("hidden");
+   lastDashboardRefreshAt=Date.now();
+   updateAutoRefreshStatus("ok");
  }catch(err){
    console.error("analytics edge",err);
    E.analyticsWarning.classList.remove("hidden");
    E.analyticsWarning.querySelector("strong").textContent="Não consegui carregar as estatísticas";
-   E.analyticsWarning.querySelector("span").textContent="Os dados continuam salvos no Supabase. Atualize o painel para tentar novamente.";
+   E.analyticsWarning.querySelector("span").textContent="Os dados continuam salvos no Supabase. O painel tentará novamente automaticamente.";
+   updateAutoRefreshStatus("error");
+ }finally{
+   dashboardRefreshBusy=false;
  }
 }
 function renderAnalytics(data){
@@ -376,6 +426,7 @@ E.themeDayBtn.addEventListener("click",function(){applyAdminTheme("day")});
 E.themeNightBtn.addEventListener("click",function(){applyAdminTheme("night")});
 E.connectForm.addEventListener("submit",async function(ev){ev.preventDefault();var btn=ev.submitter;if(btn)btn.disabled=true;try{await connect(E.tokenInput.value);E.tokenInput.value=""}catch(err){toast(err.status===401?"Token inválido ou expirado.":err.status===403?"O token não tem acesso suficiente ao Dailysonh.":"Não consegui conectar ao GitHub. A key salva não foi apagada.")}finally{if(btn)btn.disabled=false}});
 E.disconnectBtn.addEventListener("click",function(){
+ stopDashboardAutoRefresh();
  clearToken();
  document.body.classList.add("auth-locked");
  E.panel.classList.add("hidden");
@@ -403,6 +454,12 @@ function setDashboardDate(date){
  updateDateFilterUi();
  refreshDashboard();
 }
+document.addEventListener("visibilitychange",function(){
+ if(!document.hidden&&dashboardIsVisible())refreshDashboard();
+});
+window.addEventListener("focus",function(){
+ if(dashboardIsVisible()&&Date.now()-lastDashboardRefreshAt>3000)refreshDashboard();
+});
 E.dashboardDate.addEventListener("change",function(){setDashboardDate(E.dashboardDate.value)});
 E.prevDateBtn.addEventListener("click",function(){setDashboardDate(addDays(selectedDate||brazilDate(),-1))});
 E.nextDateBtn.addEventListener("click",function(){setDashboardDate(addDays(selectedDate||brazilDate(),1))});

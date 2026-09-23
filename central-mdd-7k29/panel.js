@@ -15,9 +15,10 @@ var E={
  metricPlayers:$("metricPlayers"),metricPlayersSub:$("metricPlayersSub"),metricOnline:$("metricOnline"),metricUnique:$("metricUnique"),metricDuration:$("metricDuration"),trafficTotal:$("trafficTotal"),
  trafficChart:$("trafficChart"),todaySongTitle:$("todaySongTitle"),todayChallenge:$("todayChallenge"),todayWins:$("todayWins"),todayFails:$("todayFails"),todayRate:$("todayRate"),
  roundBars:$("roundBars"),commonGuesses:$("commonGuesses"),audioErrors:$("audioErrors"),abandonRate:$("abandonRate"),completionRate:$("completionRate"),pageViews:$("pageViews"),
- analyticsWarning:$("analyticsWarning"),analyticsStatusPanel:$("analyticsStatusPanel"),analyticsStatusTitle:$("analyticsStatusTitle"),analyticsStatusText:$("analyticsStatusText")
+ analyticsWarning:$("analyticsWarning"),analyticsStatusPanel:$("analyticsStatusPanel"),analyticsStatusTitle:$("analyticsStatusTitle"),analyticsStatusText:$("analyticsStatusText"),
+ dashboardDate:$("dashboardDate"),selectedDateLabel:$("selectedDateLabel"),prevDateBtn:$("prevDateBtn"),nextDateBtn:$("nextDateBtn"),todayDateBtn:$("todayDateBtn"),trafficPeriodTitle:$("trafficPeriodTitle")
 };
-var token="",catalog={songs:[]},catalogSha="",analyticsConfig=null,toastTimer=null;
+var token="",catalog={songs:[]},catalogSha="",analyticsConfig=null,toastTimer=null,selectedDate="";
 function headers(extra){return Object.assign({"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"},extra||{})}
 async function api(path,options){
  var response=await fetch(API+path,Object.assign({headers:headers()},options||{}));
@@ -26,6 +27,8 @@ async function api(path,options){
 }
 function toast(message){E.toast.textContent=message;E.toast.classList.remove("hidden");clearTimeout(toastTimer);toastTimer=setTimeout(function(){E.toast.classList.add("hidden")},3000)}
 function brazilDate(){var p=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),v={};p.forEach(function(x){if(x.type!=="literal")v[x.type]=x.value});return v.year+"-"+v.month+"-"+v.day}
+function addDays(date,days){var p=String(date||"").split("-").map(Number);if(p.length!==3||!p[0])return brazilDate();var d=new Date(Date.UTC(p[0],p[1]-1,p[2]));d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
+function longDate(date){if(!date)return"—";var p=date.split("-").map(Number);return new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",weekday:"short",day:"2-digit",month:"short",year:"numeric"}).format(new Date(Date.UTC(p[0],p[1]-1,p[2]))).replace(/\./g,"")}
 function prettyDate(date){if(!date)return"—";var p=date.split("-").map(Number);return new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(Date.UTC(p[0],p[1]-1,p[2])))}
 function formatInt(v){var n=Number(v);return Number.isFinite(n)?n.toLocaleString("pt-BR"):"—"}
 function formatPercent(v){var n=Number(v);return Number.isFinite(n)?Math.round(n)+"%":"—"}
@@ -38,7 +41,7 @@ function clearToken(){sessionStorage.removeItem("musicadodia:admin-token");local
 async function validate(){var user=await api("/user");await api("/repos/"+OWNER+"/"+REPO);E.githubUser.textContent=user.login||"GitHub";E.connectionLabel.textContent="Conectado";return true}
 async function connect(value,remember){token=String(value||"").trim();if(!token)throw new Error("Token vazio");await validate();storeToken(token,remember);E.loginView.classList.add("hidden");E.panel.classList.remove("hidden");await Promise.all([loadCatalog(),loadAnalyticsConfig()]);await refreshDashboard()}
 async function getRepoFile(path){return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path)+"?ref="+encodeURIComponent(BRANCH))}
-async function loadCatalog(){var data=await getRepoFile("catalog.json");catalogSha=data.sha;var decoded=decodeURIComponent(escape(atob(String(data.content||"").replace(/\n/g,""))));catalog=JSON.parse(decoded);if(!Array.isArray(catalog.songs))catalog.songs=[];renderSongs();renderTodayFromCatalog()}
+async function loadCatalog(){var data=await getRepoFile("catalog.json");catalogSha=data.sha;var decoded=decodeURIComponent(escape(atob(String(data.content||"").replace(/\n/g,""))));catalog=JSON.parse(decoded);if(!Array.isArray(catalog.songs))catalog.songs=[];renderSongs();renderSelectedChallenge()}
 function renderSongs(){
  E.songsList.innerHTML="";var songs=catalog.songs.slice().sort(function(a,b){return String(b.date||"").localeCompare(String(a.date||""))});E.songsEmpty.classList.toggle("hidden",songs.length>0);
  songs.forEach(function(song){var idx=catalog.songs.indexOf(song),row=document.createElement("div");row.className="song-row";
@@ -47,11 +50,24 @@ function renderSongs(){
  var actions=document.createElement("div");actions.className="song-actions";var edit=document.createElement("button");edit.className="mini-btn";edit.type="button";edit.textContent="Editar";edit.onclick=function(){openEdit(idx)};var open=document.createElement("a");open.className="mini-btn";open.textContent="Abrir";open.href="/";open.target="_blank";open.rel="noopener";actions.append(edit,open);row.append(d,main,actions);E.songsList.appendChild(row)
  })
 }
-function todaySong(){var today=brazilDate(),eligible=catalog.songs.filter(function(s){return String(s.date||"")<=today});return eligible.length?eligible[eligible.length-1]:null}
-function renderTodayFromCatalog(){
- var song=todaySong();if(!song){E.todaySongTitle.textContent="Nenhum desafio";E.todayChallenge.textContent="#—";return}
+function songForDate(date){var exact=catalog.songs.find(function(s){return String(s.date||"")===String(date||"")});return exact||null}
+function renderSelectedChallenge(){
+ var song=songForDate(selectedDate||brazilDate());
+ if(!song){E.todaySongTitle.textContent="Nenhum desafio nesta data";E.todayChallenge.textContent="#—";return}
  var idx=catalog.songs.indexOf(song)+1;E.todaySongTitle.textContent=(song.artist?song.artist+" · ":"")+(song.title||"Sem título");E.todayChallenge.textContent="#"+idx;
  var stats=song.communityStats;if(stats)renderGameStats(stats)
+}
+function updateDateFilterUi(){
+ var today=brazilDate();
+ if(!selectedDate)selectedDate=today;
+ E.dashboardDate.max=today;
+ E.dashboardDate.value=selectedDate;
+ E.selectedDateLabel.textContent=selectedDate===today?"Hoje · "+prettyDate(selectedDate):longDate(selectedDate);
+ E.nextDateBtn.disabled=selectedDate>=today;
+ E.metricPlayersSub.textContent=selectedDate===today?"Hoje":"Em "+prettyDate(selectedDate);
+ E.metricUniqueSub.textContent=selectedDate===today?"Hoje":"Em "+prettyDate(selectedDate);
+ E.metricOnlineSub.textContent=selectedDate===today?"Últimos 90 segundos":"Disponível apenas para hoje";
+ E.trafficPeriodTitle.textContent="7 dias até "+prettyDate(selectedDate);
 }
 function renderGameStats(stats){
  var rounds=Array.isArray(stats.rounds)?stats.rounds.slice(0,5).map(Number):[1,2,3,4,5].map(function(i){return Number(stats[i]!==undefined?stats[i]:stats["round"+i])||0});
@@ -73,8 +89,19 @@ function updateAnalyticsStatus(){
  var url=analyticsConfig&&(analyticsConfig.dashboardEndpoint||analyticsConfig.endpoint);if(url){E.analyticsStatusPanel.querySelector("i").className="status-green";E.analyticsStatusTitle.textContent="Conectado";E.analyticsStatusText.textContent="Endpoint de estatísticas configurado.";E.analyticsWarning.classList.add("hidden")}else{E.analyticsStatusPanel.querySelector("i").className="status-red";E.analyticsStatusTitle.textContent="Não conectado";E.analyticsStatusText.textContent="Nenhum endpoint configurado.";E.analyticsWarning.classList.remove("hidden")}
 }
 async function refreshDashboard(){
- renderTodayFromCatalog();var endpoint=analyticsConfig&&analyticsConfig.dashboardEndpoint;if(!endpoint)return;
- try{var sep=endpoint.indexOf("?")>=0?"&":"?",r=await fetch(endpoint+sep+"range=7d&date="+encodeURIComponent(brazilDate()),{cache:"no-store"});if(!r.ok)throw new Error("analytics");var data=await r.json();renderAnalytics(data);E.analyticsWarning.classList.add("hidden")}catch(_){E.analyticsWarning.classList.remove("hidden")}
+ if(!selectedDate)selectedDate=brazilDate();
+ updateDateFilterUi();
+ renderSelectedChallenge();
+ var endpoint=analyticsConfig&&analyticsConfig.dashboardEndpoint;if(!endpoint)return;
+ try{
+   var sep=endpoint.indexOf("?")>=0?"&":"?";
+   var r=await fetch(endpoint+sep+"range=7d&date="+encodeURIComponent(selectedDate),{cache:"no-store"});
+   if(!r.ok)throw new Error("analytics");
+   var data=await r.json();
+   renderAnalytics(data);
+   if(selectedDate!==brazilDate()){E.metricOnline.textContent="—"} 
+   E.analyticsWarning.classList.add("hidden")
+ }catch(_){E.analyticsWarning.classList.remove("hidden")}
 }
 function renderAnalytics(data){
  var today=data.today||data.summary||data||{};
@@ -102,7 +129,20 @@ E.audioFile.addEventListener("change",function(){var f=E.audioFile.files&&E.audi
 ["dragenter","dragover"].forEach(function(n){E.uploadZone.addEventListener(n,function(ev){ev.preventDefault();E.uploadZone.classList.add("drag")})});["dragleave","drop"].forEach(function(n){E.uploadZone.addEventListener(n,function(){E.uploadZone.classList.remove("drag")})});
 E.songForm.addEventListener("submit",async function(ev){ev.preventDefault();var file=E.audioFile.files&&E.audioFile.files[0];if(!file){toast("Escolha o arquivo de áudio.");return}if(file.size>MAX_FILE_MB*1024*1024){toast("O áudio passa de "+MAX_FILE_MB+" MB.");return}var v=formValues();if(!v.date){toast("Escolha a data.");return}E.publishBtn.disabled=true;E.workflowLink.classList.add("hidden");try{var path="incoming/"+Date.now()+"-"+sanitizeFilename(file.name);setJob(15,"Enviando áudio","Preparando arquivo.");await uploadAudio(file,path);setJob(55,"Upload concluído","Iniciando processamento.");var t=Date.now();await dispatch(path,v);setJob(62,"Processamento solicitado","Localizando execução.");var run=await waitRun(t);if(!run){setJob(66,"Processamento iniciado","Atualize o catálogo em alguns minutos.");toast("Processamento enviado.");return}await monitor(run)}catch(err){console.error(err);setJob(100,"Não foi possível concluir",err.status===403?"O token precisa de Contents e Actions em leitura e escrita.":"Confira a conexão ou a execução no GitHub.");toast("Ocorreu um erro no envio.")}finally{E.publishBtn.disabled=false}});
 E.refreshSongsBtn.addEventListener("click",async function(){try{await loadCatalog();toast("Catálogo atualizado.")}catch(_){toast("Não consegui atualizar.")}});
-E.editForm.addEventListener("submit",async function(ev){ev.preventDefault();var i=Number(E.editIndex.value),s=catalog.songs[i];if(!s)return;E.saveEditBtn.disabled=true;s.title=E.editTitle.value.trim();s.artist=E.editArtist.value.trim();s.releaseYear=E.editReleaseYear.value.trim();s.youtubeViews=E.editYoutubeViews.value.trim();s.difficulty=E.editDifficulty.value;s.youtubeUrl=E.editYoutubeUrl.value.trim();s.spotifyUrl=E.editSpotifyUrl.value.trim();s.appleMusicUrl=E.editAppleMusicUrl.value.trim();s.deezerUrl=E.editDeezerUrl.value.trim();try{await saveCatalog();renderSongs();renderTodayFromCatalog();E.editDialog.close();toast("Alterações salvas.")}catch(err){console.error(err);toast("Não consegui salvar.")}finally{E.saveEditBtn.disabled=false}});
-async function boot(){setDefaultDate();var st=storedToken();if(!st)return;try{await connect(st,Boolean(localStorage.getItem("musicadodia:admin-token")))}catch(_){clearToken();E.loginView.classList.remove("hidden");E.panel.classList.add("hidden");E.connectionLabel.textContent="Desconectado"}}
+E.editForm.addEventListener("submit",async function(ev){ev.preventDefault();var i=Number(E.editIndex.value),s=catalog.songs[i];if(!s)return;E.saveEditBtn.disabled=true;s.title=E.editTitle.value.trim();s.artist=E.editArtist.value.trim();s.releaseYear=E.editReleaseYear.value.trim();s.youtubeViews=E.editYoutubeViews.value.trim();s.difficulty=E.editDifficulty.value;s.youtubeUrl=E.editYoutubeUrl.value.trim();s.spotifyUrl=E.editSpotifyUrl.value.trim();s.appleMusicUrl=E.editAppleMusicUrl.value.trim();s.deezerUrl=E.editDeezerUrl.value.trim();try{await saveCatalog();renderSongs();renderSelectedChallenge();E.editDialog.close();toast("Alterações salvas.")}catch(err){console.error(err);toast("Não consegui salvar.")}finally{E.saveEditBtn.disabled=false}});
+function setDashboardDate(date){
+ var today=brazilDate();
+ if(!date)date=today;
+ if(date>today)date=today;
+ selectedDate=date;
+ updateDateFilterUi();
+ refreshDashboard();
+}
+E.dashboardDate.addEventListener("change",function(){setDashboardDate(E.dashboardDate.value)});
+E.prevDateBtn.addEventListener("click",function(){setDashboardDate(addDays(selectedDate||brazilDate(),-1))});
+E.nextDateBtn.addEventListener("click",function(){setDashboardDate(addDays(selectedDate||brazilDate(),1))});
+E.todayDateBtn.addEventListener("click",function(){setDashboardDate(brazilDate())});
+
+async function boot(){setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();var st=storedToken();if(!st)return;try{await connect(st,Boolean(localStorage.getItem("musicadodia:admin-token")))}catch(_){clearToken();E.loginView.classList.remove("hidden");E.panel.classList.add("hidden");E.connectionLabel.textContent="Desconectado"}}
 boot();
 })();

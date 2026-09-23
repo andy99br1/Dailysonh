@@ -197,8 +197,14 @@
 
     var artist = String(song.artist || "").trim();
     if (artist) {
-      var escaped = artist.replace(/[.*+?^$\{\}()|[\]\\]/g, "\\  function songVersion() {");
-      title = title.replace(new RegExp("\\s*[-–—]\\s*" + escaped + "\\s*$", "i"), "").trim();
+      [" - ", " – ", " — "].some(function (separator) {
+        var suffix = separator + artist;
+        if (title.toLowerCase().slice(-suffix.length) === suffix.toLowerCase()) {
+          title = title.slice(0, -suffix.length).trim();
+          return true;
+        }
+        return false;
+      });
     }
 
     return title || String(song.title || "");
@@ -694,8 +700,8 @@
 
   function resultText() {
     var marks = [0, 1, 2, 3, 4].map(function (i) {
-      if (finished && i <= roundIndex) return "🟩";
-      if (i < roundIndex) return "⬛";
+      if (won && solvedRound && i === solvedRound - 1) return "🟩";
+      if ((won && solvedRound && i < solvedRound - 1) || (!won && finished)) return "⬛";
       return "⬜";
     }).join("");
 

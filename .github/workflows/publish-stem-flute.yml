@@ -76,6 +76,8 @@ jobs:
               version = 2 if existing else 1
 
           dest = root / "songs" / date
+          if dest.exists():
+              shutil.rmtree(dest)
           dest.mkdir(parents=True, exist_ok=True)
           for n in range(1, 6):
               shutil.copy2(

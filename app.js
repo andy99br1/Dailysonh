@@ -235,10 +235,10 @@
     if (E.deezerLink) E.deezerLink.href = song.deezerUrl || platformSearchUrl("deezer");
   }
 
-  function renderCommunityStats() {
+  function renderCommunityStats(statsOverride) {
     if (!E.communitySummary || !E.communityBars) return;
 
-    var stats = song && song.communityStats;
+    var stats = statsOverride || (song && song.communityStats);
     var counts = [];
 
     if (stats && Array.isArray(stats.rounds)) {
@@ -295,6 +295,50 @@
     });
 
     E.communityBars.classList.remove("hidden");
+  }
+
+
+  async function refreshCommunityStats() {
+    renderCommunityStats();
+
+    if (!song || !song.statsEndpoint) return;
+
+    try {
+      var separator = song.statsEndpoint.indexOf("?") >= 0 ? "&" : "?";
+      var response = await fetch(
+        song.statsEndpoint + separator + "date=" + encodeURIComponent(song.date),
+        { cache: "no-store" }
+      );
+
+      if (!response.ok) return;
+      var stats = await response.json();
+      renderCommunityStats(stats);
+    } catch (_) {}
+  }
+
+  async function submitCommunityResult() {
+    if (!song || !song.statsEndpoint || !finished) return;
+
+    var submissionKey =
+      "musicadodia:community:" + song.date + ":v" + songVersion();
+
+    if (localStorage.getItem(submissionKey)) return;
+
+    try {
+      var response = await fetch(song.statsEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: song.date,
+          result: won && solvedRound ? solvedRound : "failed"
+        })
+      });
+
+      if (!response.ok) return;
+
+      localStorage.setItem(submissionKey, "1");
+      await refreshCommunityStats();
+    } catch (_) {}
   }
 
   function brasiliaClockParts() {
@@ -586,11 +630,11 @@
 
     E.reveal.classList.remove("hidden");
     E.guessForm.classList.add("hidden");
-    E.revealTitle.textContent = song.title;
+    E.revealTitle.textContent = cleanedSongTitle();
     E.revealArtist.textContent = song.artist;
 
     renderPlatformLinks();
-    renderCommunityStats();
+    refreshCommunityStats();
     startNextChallengeTimer();
 
     E.guessInput.disabled = true;
@@ -601,6 +645,7 @@
     renderRounds();
     prepareAudio();
     save();
+    submitCommunityResult();
 
     if (autoplay) await playCurrent();
   }

@@ -55,7 +55,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=20260922-12">
+  <link rel="stylesheet" href="styles.css?v=20260923-2">
 </head>
 <body>
   <main class="shell">
@@ -182,23 +182,28 @@
 
       <section class="reveal hidden" id="reveal">
         <p class="reveal-kicker">A música era</p>
-        <h2 id="revealTitle"></h2>
-        <p id="revealArtist"></p>
+        <div class="reveal-song">
+          <img class="reveal-cover hidden" id="revealCover" alt="" loading="lazy" referrerpolicy="no-referrer">
+          <div class="reveal-song-copy">
+            <h2 id="revealTitle"></h2>
+            <p id="revealArtist"></p>
+          </div>
+        </div>
 
         <div class="platform-section">
           <span class="platform-label">Ouça nas plataformas</span>
           <div class="platform-links">
             <a class="platform-link platform-youtube" id="youtubeLink" target="_blank" rel="noopener">
-              <span class="platform-dot"></span><span>YouTube</span>
+              <svg class="platform-logo" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.4" y="5.4" width="19.2" height="13.2" rx="4.1" fill="currentColor"/><path d="M10 9.1 15.8 12 10 14.9Z" fill="var(--surface-2)"/></svg><span>YouTube</span>
             </a>
             <a class="platform-link platform-spotify" id="spotifyLink" target="_blank" rel="noopener">
-              <span class="platform-dot"></span><span>Spotify</span>
+              <svg class="platform-logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="currentColor"/><path d="M7.4 9.1c3.4-1 7.2-.7 10 .8M8 12.1c2.8-.7 6-.5 8.4.7M8.8 15c2.2-.5 4.6-.3 6.5.5" fill="none" stroke="var(--surface-2)" stroke-width="1.55" stroke-linecap="round"/></svg><span>Spotify</span>
             </a>
             <a class="platform-link platform-apple" id="appleMusicLink" target="_blank" rel="noopener">
-              <span class="platform-dot"></span><span>Apple Music</span>
+              <svg class="platform-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.8 4.4v10.3a3.4 3.4 0 1 1-1.6-2.9V7.3l-6.4 1.2v7.4a3.4 3.4 0 1 1-1.6-2.9V6.4Z" fill="currentColor"/></svg><span>Apple Music</span>
             </a>
             <a class="platform-link platform-deezer" id="deezerLink" target="_blank" rel="noopener">
-              <span class="platform-dot"></span><span>Deezer</span>
+              <svg class="platform-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 14.6h4.2V18H3zm0-4.4h4.2v3.2H3zm4.8 2.2H12V18H7.8zm0-6.6H12v5.4H7.8zm4.8 3.2h4.2v9h-4.2zm4.8 2.2h3.6V18h-3.6z" fill="currentColor"/></svg><span>Deezer</span>
             </a>
           </div>
         </div>
@@ -230,6 +235,6 @@
     </footer>
   </main>
 
-  <script src="app.js?v=20260923-1"></script>
+  <script src="app.js?v=20260923-2"></script>
 </body>
 </html>

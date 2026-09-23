@@ -35,10 +35,12 @@ function formatPercent(v){var n=Number(v);return Number.isFinite(n)?Math.round(n
 function formatDuration(v){var n=Number(v);if(!Number.isFinite(n))return"—";var m=Math.floor(n/60),s=Math.round(n%60);return m?m+"m "+String(s).padStart(2,"0")+"s":s+"s"}
 function sanitizeFilename(name){var dot=name.lastIndexOf("."),ext=dot>=0?name.slice(dot).toLowerCase():"",stem=dot>=0?name.slice(0,dot):name;stem=stem.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]+/g,"-").replace(/-+/g,"-").replace(/^[-.]+|[-.]+$/g,"").slice(0,90);return(stem||"audio")+ext}
 async function fileToBase64(file){var bytes=new Uint8Array(await file.arrayBuffer()),binary="",chunk=0x8000;for(var i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));return btoa(binary)}
-function storedToken(){return localStorage.getItem("musicadodia:admin-token")||sessionStorage.getItem("musicadodia:admin-token")||""}
-function tokenWasValidated(){return localStorage.getItem("musicadodia:admin-validated")==="1"}
-function storeToken(value){localStorage.setItem("musicadodia:admin-token",value);sessionStorage.setItem("musicadodia:admin-token",value);localStorage.setItem("musicadodia:admin-validated","1")}
-function clearToken(){sessionStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-validated");token=""}
+function getCookie(name){var parts=document.cookie.split("; ");for(var i=0;i<parts.length;i++){var p=parts[i].split("=");if(p.shift()===name)return decodeURIComponent(p.join("="))}return""}
+function setTokenCookie(value){document.cookie="mdd_admin_token="+encodeURIComponent(value)+"; Max-Age=2592000; Path=/central-mdd-7k29/; SameSite=Strict; Secure"}
+function clearTokenCookie(){document.cookie="mdd_admin_token=; Max-Age=0; Path=/central-mdd-7k29/; SameSite=Strict; Secure"}
+function storedToken(){return localStorage.getItem("musicadodia:admin-token")||sessionStorage.getItem("musicadodia:admin-token")||getCookie("mdd_admin_token")||""}
+function storeToken(value){localStorage.setItem("musicadodia:admin-token",value);sessionStorage.setItem("musicadodia:admin-token",value);setTokenCookie(value)}
+function clearToken(){sessionStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-token");clearTokenCookie();token=""}
 async function validate(){var repoInfo=await api("/repos/"+OWNER+"/"+REPO);if(!repoInfo||String(repoInfo.full_name||"").toLowerCase()!==(OWNER+"/"+REPO).toLowerCase())throw new Error("Repositório não autorizado");E.githubUser.textContent=OWNER;E.connectionLabel.textContent="Conectado";return true}
 async function openPanel(){
  document.body.classList.remove("auth-locked");
@@ -117,34 +119,34 @@ async function refreshDashboard(){
  updateDateFilterUi();
  renderSelectedChallenge();
 
- var primary=analyticsConfig&&analyticsConfig.dashboardEndpoint;
- var fallback=analyticsConfig&&analyticsConfig.endpoint
-   ? analyticsConfig.endpoint+(analyticsConfig.endpoint.indexOf("?")>=0?"&":"?")+"mode=dashboard"
-   : "";
- var endpoints=[primary,fallback].filter(function(v,i,a){return v&&a.indexOf(v)===i});
- if(!endpoints.length)return;
-
- var lastError=null;
- for(var i=0;i<endpoints.length;i++){
-   try{
-     var endpoint=endpoints[i];
-     var sep=endpoint.indexOf("?")>=0?"&":"?";
-     var r=await fetch(endpoint+sep+"range=7d&date="+encodeURIComponent(selectedDate)+"&_="+Date.now(),{cache:"no-store"});
-     if(!r.ok)throw new Error("analytics "+r.status);
-     var data=await r.json();
-     renderAnalytics(data);
-     if(selectedDate!==brazilDate())E.metricOnline.textContent="—";
-     E.analyticsWarning.classList.add("hidden");
-     return;
-   }catch(err){
-     lastError=err;
-     console.error("analytics endpoint",endpoints[i],err);
-   }
+ var base=analyticsConfig&&analyticsConfig.supabaseUrl;
+ var key=analyticsConfig&&analyticsConfig.supabasePublishableKey;
+ if(!base||!key){
+   E.analyticsWarning.classList.remove("hidden");
+   return;
  }
- E.analyticsWarning.classList.remove("hidden");
- E.analyticsWarning.querySelector("strong").textContent="Não consegui carregar as estatísticas";
- E.analyticsWarning.querySelector("span").textContent="Os dados continuam salvos no Supabase. O painel tentará novamente ao atualizar.";
- if(lastError)throw lastError;
+
+ try{
+   var r=await fetch(base+"/rest/v1/rpc/musicadodia_dashboard",{
+     method:"POST",
+     headers:{
+       "Content-Type":"application/json",
+       "apikey":key
+     },
+     body:JSON.stringify({p_date:selectedDate,p_days:7}),
+     cache:"no-store"
+   });
+   if(!r.ok)throw new Error("analytics "+r.status);
+   var data=await r.json();
+   renderAnalytics(data);
+   if(selectedDate!==brazilDate())E.metricOnline.textContent="—";
+   E.analyticsWarning.classList.add("hidden");
+ }catch(err){
+   console.error("analytics rpc",err);
+   E.analyticsWarning.classList.remove("hidden");
+   E.analyticsWarning.querySelector("strong").textContent="Não consegui carregar as estatísticas";
+   E.analyticsWarning.querySelector("span").textContent="Os dados continuam salvos no Supabase. Tente atualizar o painel.";
+ }
 }
 function renderAnalytics(data){
  var today=data.today||data.summary||data||{};
@@ -192,29 +194,14 @@ async function boot(){
  if(!st)return;
 
  token=st;
+ await openPanel();
 
- if(tokenWasValidated()){
-   await openPanel();
-   validate().catch(function(err){
-     console.warn("Validação em segundo plano falhou",err);
-     if(err&&err.status===401){
-       E.connectionLabel.textContent="Key expirada";
-       toast("A key salva expirou. Gere uma nova quando precisar alterar músicas.");
-     }
-   });
-   return;
- }
-
- E.tokenInput.value=st;
- try{
-   await connect(st);
- }catch(err){
-   document.body.classList.add("auth-locked");
-   E.loginView.classList.remove("hidden");
-   E.panel.classList.add("hidden");
-   E.connectionLabel.textContent="Desconectado";
-   toast(err.status===401?"A key salva parece inválida ou expirada.":"Não consegui validar a key agora. Ela continua salva.");
- }
+ validate().catch(function(err){
+   console.warn("Validação em segundo plano falhou",err);
+   if(err&&err.status===401){
+     E.connectionLabel.textContent="Key expirada";
+   }
+ });
 }
 boot();
 })();

@@ -669,12 +669,35 @@ button:disabled {
   box-shadow: 0 10px 30px var(--shadow);
 }
 
+.guess-form-top {
+  display: grid;
+  grid-template-columns: 34px 1fr 34px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .guess-form label {
+  grid-column: 2;
   display: block;
   text-align: center;
-  margin-bottom: 8px;
+  margin: 0;
   font-size: 13px;
   font-weight: 900;
+}
+
+.guess-close {
+  grid-column: 3;
+  width: 34px;
+  height: 34px;
+  justify-self: end;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 23px;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .guess-row {
@@ -708,6 +731,33 @@ button:disabled {
   color: #fff;
   font-weight: 900;
   cursor: pointer;
+}
+
+.guess-form-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.guess-form-actions button {
+  min-height: 42px;
+  border-radius: 11px;
+  padding: 0 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.guess-cancel {
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.guess-skip {
+  border: 1px solid rgba(255,255,255,.5);
+  background: var(--skip-bg);
+  color: #fff;
 }
 
 .attempts {
@@ -1266,5 +1316,20 @@ body[data-theme="noite"] .platform-apple .platform-logo{color:#f3f3f5}
   .result-status {
     margin-bottom: 5px;
     font-size: 22px;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .guess-form {
+    padding: 11px;
+  }
+
+  .guess-form-top {
+    margin-bottom: 7px;
+  }
+
+  .guess-form-actions {
+    margin-top: 8px;
   }
 }

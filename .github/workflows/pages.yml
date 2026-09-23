@@ -19,7 +19,7 @@ on:
       - ".github/workflows/pages.yml"
   workflow_dispatch:
   workflow_run:
-    workflows: ["Process uploaded audio"]
+    workflows: ["Process uploaded audio", "Separation lab"]
     types: [completed]
 
 permissions:

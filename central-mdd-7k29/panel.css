@@ -162,3 +162,49 @@ input:focus,select:focus{border-color:rgba(109,133,255,.75);box-shadow:0 0 0 3px
   .fields.two,.fields.three{grid-template-columns:1fr}.song-row{grid-template-columns:1fr auto}.song-date{grid-column:1/-1}.login-card{margin-top:5vh;padding:20px}
 }
 @media(max-width:470px){.metrics-grid{grid-template-columns:1fr 1fr}.metric-card{min-height:102px}.metric-card strong{font-size:21px}.song-actions{flex-direction:column}.today-stats{grid-template-columns:1fr}.round-bars{height:85px}}
+
+.date-filter{
+  min-height:64px;
+  margin-bottom:12px;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:linear-gradient(145deg,rgba(18,27,63,.92),rgba(16,25,54,.92));
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px
+}
+.date-filter-copy{display:grid;gap:1px}
+.date-filter-copy .eyebrow{margin:0}
+.date-filter-copy strong{font-size:13px;letter-spacing:-.01em}
+.date-filter-controls{display:flex;align-items:center;gap:6px}
+.date-input-wrap{display:block}
+.date-input-wrap input{
+  width:142px;
+  height:36px;
+  color-scheme:dark;
+  padding:0 9px;
+  font-size:9px;
+  font-weight:800;
+  cursor:pointer
+}
+.date-nav-btn,.today-btn{
+  height:36px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:rgba(255,255,255,.04);
+  color:#dfe6ff;
+  cursor:pointer;
+  font-weight:900
+}
+.date-nav-btn{width:36px;padding:0;font-size:19px;line-height:1}
+.today-btn{padding:0 11px;font-size:8px}
+.date-nav-btn:hover,.today-btn:hover{background:rgba(109,133,255,.12);border-color:rgba(109,133,255,.35)}
+.date-nav-btn:disabled{opacity:.35;cursor:not-allowed}
+@media(max-width:600px){
+  .date-filter{align-items:flex-start;flex-direction:column;gap:8px;padding:10px}
+  .date-filter-controls{width:100%;display:grid;grid-template-columns:34px minmax(0,1fr) 34px auto}
+  .date-input-wrap input{width:100%;height:34px}
+  .date-nav-btn,.today-btn{height:34px}
+}

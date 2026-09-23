@@ -15,7 +15,7 @@ var E={
  midiPublishTitle:$("midiPublishTitle"),midiPublishArtist:$("midiPublishArtist"),midiPublishDate:$("midiPublishDate"),midiPublishYear:$("midiPublishYear"),midiPublishDifficulty:$("midiPublishDifficulty"),midiPublishYoutubeViews:$("midiPublishYoutubeViews"),midiPublishYoutubeUrl:$("midiPublishYoutubeUrl"),midiPublishCoverUrl:$("midiPublishCoverUrl"),midiPublishSpotifyUrl:$("midiPublishSpotifyUrl"),midiPublishAppleMusicUrl:$("midiPublishAppleMusicUrl"),midiPublishDeezerUrl:$("midiPublishDeezerUrl"),midiPublishBtn:$("midiPublishBtn"),midiPublishStatus:$("midiPublishStatus"),
  refreshSongsBtn:$("refreshSongsBtn"),songsList:$("songsList"),songsEmpty:$("songsEmpty"),editDialog:$("editDialog"),editForm:$("editForm"),editHeading:$("editHeading"),
  editIndex:$("editIndex"),editTitle:$("editTitle"),editArtist:$("editArtist"),editReleaseYear:$("editReleaseYear"),editYoutubeViews:$("editYoutubeViews"),editDifficulty:$("editDifficulty"),
- editYoutubeUrl:$("editYoutubeUrl"),editSpotifyUrl:$("editSpotifyUrl"),editAppleMusicUrl:$("editAppleMusicUrl"),editDeezerUrl:$("editDeezerUrl"),saveEditBtn:$("saveEditBtn"),toast:$("toast"),
+ editYoutubeUrl:$("editYoutubeUrl"),editSpotifyUrl:$("editSpotifyUrl"),editAppleMusicUrl:$("editAppleMusicUrl"),editDeezerUrl:$("editDeezerUrl"),editCoverUrl:$("editCoverUrl"),saveEditBtn:$("saveEditBtn"),toast:$("toast"),
  previewDialog:$("previewDialog"),previewCloseBtn:$("previewCloseBtn"),previewTitle:$("previewTitle"),previewMeta:$("previewMeta"),previewTrackList:$("previewTrackList"),previewAudio:$("previewAudio"),previewNumber:$("previewNumber"),previewTrackName:$("previewTrackName"),previewStatus:$("previewStatus"),
  metricPlayers:$("metricPlayers"),metricPlayersSub:$("metricPlayersSub"),metricOnline:$("metricOnline"),metricOnlineSub:$("metricOnlineSub"),metricUnique:$("metricUnique"),metricUniqueSub:$("metricUniqueSub"),metricDuration:$("metricDuration"),metricDurationSub:$("metricDurationSub"),trafficTotal:$("trafficTotal"),
  trafficChart:$("trafficChart"),todaySongTitle:$("todaySongTitle"),todayChallenge:$("todayChallenge"),todayWins:$("todayWins"),todayFails:$("todayFails"),todayRate:$("todayRate"),
@@ -157,7 +157,13 @@ function renderGameStats(stats){
  E.roundBars.innerHTML="";var max=Math.max.apply(Math,rounds.concat([failed,1]));rounds.concat([failed]).forEach(function(v,i){var wrap=document.createElement("div");wrap.className="round-bar";var bar=document.createElement("i");bar.style.height=Math.max(4,Math.round((v/max)*90))+"%";var label=document.createElement("small");label.textContent=i<5?String(i+1):"×";wrap.append(bar,label);E.roundBars.appendChild(wrap)})
 }
 
-function previewLabels(){return["Bateria","Baixo","Instrumentos","Melodia","Revelação"]}
+function previewLabels(song){
+ var total=song&&Array.isArray(song.rounds)&&song.rounds.length?song.rounds.length:5;
+ var custom=song&&Array.isArray(song.roundLabels)?song.roundLabels.slice(0,total):[];
+ var defaults=total>=6?["Bateria","Baixo","Instrumentos 1","Instrumentos 2","Melodia","Revelação"]:["Bateria","Baixo","Instrumentos","Melodia","Revelação"];
+ while(custom.length<total)custom.push(defaults[custom.length]||("Faixa "+(custom.length+1)));
+ return custom.map(function(label,i){return String(label||defaults[i]||("Faixa "+(i+1)))})
+}
 function previewSource(song,index){
  if(!song||!Array.isArray(song.rounds)||!song.rounds[index])return"";
  var src=String(song.rounds[index]);
@@ -165,8 +171,8 @@ function previewSource(song,index){
 }
 function selectPreviewTrack(index,autoplay){
  if(!previewSong)return;
- var labels=previewLabels();
- index=Math.max(0,Math.min(4,Number(index)||0));
+ var labels=previewLabels(previewSong);
+ index=Math.max(0,Math.min(Math.max(0,labels.length-1),Number(index)||0));
  previewTrackIndex=index;
  E.previewTrackList.querySelectorAll(".preview-track-btn").forEach(function(btn,i){btn.classList.toggle("active",i===index)});
  E.previewNumber.textContent=String(index+1);
@@ -189,7 +195,7 @@ function openPreview(index){
  E.previewTitle.textContent=(song.artist?song.artist+" · ":"")+(song.title||"Sem título");
  E.previewMeta.textContent=prettyDate(song.date)+(String(song.date||"")>brazilDate()?" · Agendada":" · Publicada");
  E.previewTrackList.innerHTML="";
- var labels=previewLabels();
+ var labels=previewLabels(song);
  labels.forEach(function(label,i){
    var btn=document.createElement("button");
    btn.type="button";
@@ -283,7 +289,7 @@ async function deleteSong(index,button){
  }
 }
 
-function openEdit(index){var s=catalog.songs[index];if(!s)return;E.editIndex.value=String(index);E.editHeading.textContent=s.title||"Música";E.editTitle.value=s.title||"";E.editArtist.value=s.artist||"";E.editReleaseYear.value=s.releaseYear||"";E.editYoutubeViews.value=s.youtubeViews||"";E.editDifficulty.value=s.difficulty||"";E.editYoutubeUrl.value=s.youtubeUrl||"";E.editSpotifyUrl.value=s.spotifyUrl||"";E.editAppleMusicUrl.value=s.appleMusicUrl||"";E.editDeezerUrl.value=s.deezerUrl||"";E.editDialog.showModal()}
+function openEdit(index){var s=catalog.songs[index];if(!s)return;E.editIndex.value=String(index);E.editHeading.textContent=s.title||"Música";E.editTitle.value=s.title||"";E.editArtist.value=s.artist||"";E.editReleaseYear.value=s.releaseYear||"";E.editYoutubeViews.value=s.youtubeViews||"";E.editDifficulty.value=s.difficulty||"";E.editYoutubeUrl.value=s.youtubeUrl||"";E.editSpotifyUrl.value=s.spotifyUrl||"";E.editAppleMusicUrl.value=s.appleMusicUrl||"";E.editDeezerUrl.value=s.deezerUrl||"";E.editCoverUrl.value=s.coverUrl||"";E.editDialog.showModal()}
 async function saveCatalog(){
  var current=await getRepoFile("catalog.json");
  catalogSha=current.sha;
@@ -729,7 +735,7 @@ E.audioFile.addEventListener("change",function(){var f=E.audioFile.files&&E.audi
 ["dragenter","dragover"].forEach(function(n){E.uploadZone.addEventListener(n,function(ev){ev.preventDefault();E.uploadZone.classList.add("drag")})});["dragleave","drop"].forEach(function(n){E.uploadZone.addEventListener(n,function(){E.uploadZone.classList.remove("drag")})});
 E.songForm.addEventListener("submit",async function(ev){ev.preventDefault();var file=E.audioFile.files&&E.audioFile.files[0];if(!file){toast("Escolha o arquivo de áudio.");return}if(file.size>MAX_FILE_MB*1024*1024){toast("O áudio passa de "+MAX_FILE_MB+" MB.");return}var v=formValues();if(!v.date){toast("Escolha a data.");return}E.publishBtn.disabled=true;E.workflowLink.classList.add("hidden");try{var path="incoming/"+Date.now()+"-"+sanitizeFilename(file.name);setJob(15,"Enviando áudio","Preparando arquivo.");await uploadAudio(file,path);setJob(55,"Upload concluído","Iniciando processamento.");var t=Date.now();await dispatch(path,v);setJob(62,"Processamento solicitado","Localizando execução.");var run=await waitRun(t);if(!run){setJob(66,"Processamento iniciado","Atualize o catálogo em alguns minutos.");toast("Processamento enviado.");return}await monitor(run)}catch(err){console.error(err);setJob(100,"Não foi possível concluir",err.status===403?"O token precisa de Contents e Actions em leitura e escrita.":"Confira a conexão ou a execução no GitHub.");toast("Ocorreu um erro no envio.")}finally{E.publishBtn.disabled=false}});
 E.refreshSongsBtn.addEventListener("click",async function(){try{await loadCatalog();toast("Catálogo atualizado.")}catch(_){toast("Não consegui atualizar.")}});
-E.editForm.addEventListener("submit",async function(ev){ev.preventDefault();var i=Number(E.editIndex.value),s=catalog.songs[i];if(!s)return;E.saveEditBtn.disabled=true;s.title=E.editTitle.value.trim();s.artist=E.editArtist.value.trim();s.releaseYear=E.editReleaseYear.value.trim();s.youtubeViews=E.editYoutubeViews.value.trim();s.difficulty=E.editDifficulty.value;s.youtubeUrl=E.editYoutubeUrl.value.trim();s.spotifyUrl=E.editSpotifyUrl.value.trim();s.appleMusicUrl=E.editAppleMusicUrl.value.trim();s.deezerUrl=E.editDeezerUrl.value.trim();try{await saveCatalog();renderSongs();renderSelectedChallenge();E.editDialog.close();toast("Alterações salvas.")}catch(err){console.error(err);toast("Não consegui salvar.")}finally{E.saveEditBtn.disabled=false}});
+E.editForm.addEventListener("submit",async function(ev){ev.preventDefault();var i=Number(E.editIndex.value),s=catalog.songs[i];if(!s)return;E.saveEditBtn.disabled=true;s.title=E.editTitle.value.trim();s.artist=E.editArtist.value.trim();s.releaseYear=E.editReleaseYear.value.trim();s.youtubeViews=E.editYoutubeViews.value.trim();s.difficulty=E.editDifficulty.value;s.youtubeUrl=E.editYoutubeUrl.value.trim();s.spotifyUrl=E.editSpotifyUrl.value.trim();s.appleMusicUrl=E.editAppleMusicUrl.value.trim();s.deezerUrl=E.editDeezerUrl.value.trim();s.coverUrl=E.editCoverUrl.value.trim();try{await saveCatalog();renderSongs();renderSelectedChallenge();E.editDialog.close();toast("Alterações salvas.")}catch(err){console.error(err);toast("Não consegui salvar.")}finally{E.saveEditBtn.disabled=false}});
 function setDashboardDate(date){
  var today=brazilDate();
  if(!date)date=today;

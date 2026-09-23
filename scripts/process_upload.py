@@ -519,7 +519,7 @@ def build_rounds(clip, stems, karaoke, target):
         melody.unlink()
 
 
-def update_catalog(day, title, artist, start, source_name, release_year="", youtube_views="", difficulty="", youtube_url=""):
+def update_catalog(day, title, artist, start, source_name, release_year="", youtube_views="", difficulty="", youtube_url="", spotify_url="", apple_music_url="", deezer_url=""):
     if CATALOG_PATH.exists():
         catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
     else:
@@ -541,6 +541,9 @@ def update_catalog(day, title, artist, start, source_name, release_year="", yout
     views_value = youtube_views.strip() or str(previous.get("youtubeViews", "")).strip()
     difficulty_value = difficulty.strip() or str(previous.get("difficulty", "")).strip()
     youtube_url_value = youtube_url.strip() or str(previous.get("youtubeUrl", "")).strip()
+    spotify_url_value = spotify_url.strip() or str(previous.get("spotifyUrl", "")).strip()
+    apple_music_url_value = apple_music_url.strip() or str(previous.get("appleMusicUrl", "")).strip()
+    deezer_url_value = deezer_url.strip() or str(previous.get("deezerUrl", "")).strip()
 
     entry = {
         "date": day,
@@ -554,6 +557,9 @@ def update_catalog(day, title, artist, start, source_name, release_year="", yout
         "youtubeViews": views_value,
         "difficulty": difficulty_value,
         "youtubeUrl": youtube_url_value,
+        "spotifyUrl": spotify_url_value,
+        "appleMusicUrl": apple_music_url_value,
+        "deezerUrl": deezer_url_value,
         "safeRevealRound": 4,
         "rounds": [f"songs/{day}/round-{i}.ogg" for i in range(1, 6)],
     }
@@ -579,6 +585,9 @@ def main():
     parser.add_argument("--youtube-views", default="")
     parser.add_argument("--difficulty", default="")
     parser.add_argument("--youtube-url", default="")
+    parser.add_argument("--spotify-url", default="")
+    parser.add_argument("--apple-music-url", default="")
+    parser.add_argument("--deezer-url", default="")
     args = parser.parse_args()
 
     source = Path(args.file).resolve()
@@ -615,6 +624,9 @@ def main():
         args.youtube_views,
         args.difficulty,
         args.youtube_url,
+        args.spotify_url,
+        args.apple_music_url,
+        args.deezer_url,
     )
     print(json.dumps(entry, ensure_ascii=False, indent=2))
 

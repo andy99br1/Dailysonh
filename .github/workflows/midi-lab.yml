@@ -63,14 +63,23 @@ jobs:
             FILE="$SOURCE_PATH"
             REMOVE_FILE="$SOURCE_PATH"
           else
-            COMMIT="$(git log -n 1 --format='%H' -- "$SOURCE_PATH")"
+            COMMIT=""
+            while IFS= read -r CANDIDATE; do
+              [ -z "$CANDIDATE" ] && continue
+              if git cat-file -e "$CANDIDATE:$SOURCE_PATH" 2>/dev/null; then
+                COMMIT="$CANDIDATE"
+                break
+              fi
+            done < <(git log --format='%H' -- "$SOURCE_PATH")
+
             if [ -z "$COMMIT" ]; then
-              echo "Não encontrei o MIDI no histórico: $SOURCE_PATH"
+              echo "Não encontrei uma versão utilizável do MIDI no histórico: $SOURCE_PATH"
               exit 1
             fi
+
             FILE="$RUNNER_TEMP/$(basename "$SOURCE_PATH")"
             git show "$COMMIT:$SOURCE_PATH" > "$FILE"
-            echo "MIDI recuperado do histórico."
+            echo "MIDI recuperado do histórico: $COMMIT"
           fi
 
           echo "file=$FILE" >> "$GITHUB_OUTPUT"

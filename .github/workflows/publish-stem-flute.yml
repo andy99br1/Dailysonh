@@ -24,13 +24,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Validate Stem + Flute result
         run: |
           set -euo pipefail
           test -f .stem-flute-lab/publish.json
           test -f stem-flute-lab/manifest.json
-          for N in 1 2 3 4 5; do
-            test -f "stem-flute-lab/game-round-$N.ogg"
+          for FILE in drums bass instruments guitar piano other flute original; do
+            test -f "stem-flute-lab/$FILE.ogg"
           done
 
       - name: Publish official challenge
@@ -38,11 +43,13 @@ jobs:
           python - <<'PY'
           import json
           import shutil
+          import subprocess
           from pathlib import Path
 
           root = Path(".")
+          lab = root / "stem-flute-lab"
           request = json.loads((root / ".stem-flute-lab/publish.json").read_text(encoding="utf-8"))
-          manifest = json.loads((root / "stem-flute-lab/manifest.json").read_text(encoding="utf-8"))
+          manifest = json.loads((lab / "manifest.json").read_text(encoding="utf-8"))
 
           title = str(request.get("title", "")).strip()
           artist = str(request.get("artist", "")).strip()
@@ -60,6 +67,54 @@ jobs:
                   "O resultado do laboratório mudou depois do pedido de publicação. "
                   "Atualize a página e confirme novamente."
               )
+
+          layer_files = {
+              "drums": lab / "drums.ogg",
+              "bass": lab / "bass.ogg",
+              "instruments": lab / "instruments.ogg",
+              "guitar": lab / "guitar.ogg",
+              "piano": lab / "piano.ogg",
+              "other": lab / "other.ogg",
+              "flute": lab / "flute.ogg",
+          }
+          layer_labels = {
+              "drums": "Bateria",
+              "bass": "Baixo",
+              "instruments": "Instrumentos completos",
+              "guitar": "Guitarra / violão",
+              "piano": "Piano / teclas",
+              "other": "Outros instrumentos",
+              "flute": "Melodia / flauta",
+          }
+
+          requested_layers = request.get("selectedLayers")
+          if not isinstance(requested_layers, list):
+              requested_layers = ["drums", "bass", "instruments", "flute"]
+
+          selected_layers = []
+          for item in requested_layers:
+              item = str(item).strip()
+              if item in layer_files and item not in selected_layers:
+                  selected_layers.append(item)
+
+          if not selected_layers:
+              raise SystemExit("Selecione pelo menos uma camada.")
+          if len(selected_layers) > 6:
+              raise SystemExit("Máximo de 6 camadas antes da revelação.")
+          if "instruments" in selected_layers and any(
+              item in selected_layers for item in ("guitar", "piano", "other")
+          ):
+              raise SystemExit(
+                  "Use Instrumentos completos OU guitarra/piano/outros separados, não os dois modos juntos."
+              )
+
+          for layer in selected_layers:
+              if not layer_files[layer].exists():
+                  raise SystemExit(f"Camada ausente: {layer}")
+
+          reveal = lab / "original.ogg"
+          if not reveal.exists():
+              raise SystemExit("Trecho original para revelação não encontrado.")
 
           catalog_path = root / "catalog.json"
           catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
@@ -79,11 +134,49 @@ jobs:
           if dest.exists():
               shutil.rmtree(dest)
           dest.mkdir(parents=True, exist_ok=True)
-          for n in range(1, 6):
-              shutil.copy2(
-                  root / "stem-flute-lab" / f"game-round-{n}.ogg",
-                  dest / f"round-{n}.ogg",
-              )
+
+          def render_mix(inputs, output):
+              inputs = [Path(item) for item in inputs]
+              cmd = ["ffmpeg", "-y", "-v", "error"]
+              for item in inputs:
+                  cmd += ["-i", str(item)]
+
+              if len(inputs) == 1:
+                  cmd += [
+                      "-map", "0:a:0",
+                      "-c:a", "libvorbis", "-q:a", "8",
+                      str(output),
+                  ]
+              else:
+                  chains = []
+                  refs = []
+                  for index in range(len(inputs)):
+                      tag = f"a{index}"
+                      chains.append(f"[{index}:a]aresample=44100,volume=1.0[{tag}]")
+                      refs.append(f"[{tag}]")
+                  chains.append(
+                      "".join(refs)
+                      + f"amix=inputs={len(inputs)}:duration=longest:normalize=0,"
+                      + "alimiter=limit=0.92[out]"
+                  )
+                  cmd += [
+                      "-filter_complex", ";".join(chains),
+                      "-map", "[out]",
+                      "-c:a", "libvorbis", "-q:a", "8",
+                      str(output),
+                  ]
+              subprocess.run(cmd, check=True)
+
+          cumulative = []
+          for index, layer in enumerate(selected_layers, start=1):
+              cumulative.append(layer_files[layer])
+              render_mix(cumulative, dest / f"round-{index}.ogg")
+
+          reveal_index = len(selected_layers) + 1
+          shutil.copy2(reveal, dest / f"round-{reveal_index}.ogg")
+
+          round_labels = [layer_labels[item] for item in selected_layers] + ["Revelação"]
+          total_rounds = len(selected_layers) + 1
 
           entry = {
               "date": date,
@@ -93,15 +186,10 @@ jobs:
               "source": "stem-flute",
               "sourceName": manifest.get("sourceName", ""),
               "version": version,
-              "safeRevealRound": 4,
-              "roundLabels": [
-                  "Bateria",
-                  "Baixo",
-                  "Instrumentos",
-                  "Melodia",
-                  "Revelação",
-              ],
-              "rounds": [f"songs/{date}/round-{n}.ogg" for n in range(1, 6)],
+              "challengeRounds": len(selected_layers),
+              "safeRevealRound": len(selected_layers),
+              "roundLabels": round_labels,
+              "rounds": [f"songs/{date}/round-{n}.ogg" for n in range(1, total_rounds + 1)],
               "releaseYear": str(request.get("releaseYear", "")).strip(),
               "youtubeViews": str(request.get("youtubeViews", "")).strip(),
               "difficulty": str(request.get("difficulty", "")).strip(),
@@ -113,6 +201,7 @@ jobs:
               "stemFluteCreatedAt": actual_created_at,
               "stemFluteSeparationModel": manifest.get("separationModel", ""),
               "stemFluteVoiceTransform": manifest.get("voiceTransform", ""),
+              "stemFluteLayers": selected_layers,
           }
 
           if existing:

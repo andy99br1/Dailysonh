@@ -14,11 +14,12 @@ function $(id){return document.getElementById(id)}
 var E={
   labAuth:$("labAuth"),labPanel:$("labPanel"),connectionLabel:$("connectionLabel"),
   themeDayBtn:$("themeDayBtn"),themeNightBtn:$("themeNightBtn"),adminThemeColor:$("adminThemeColor"),
-  labForm:$("labForm"),labAudioFile:$("labAudioFile"),labUploadZone:$("labUploadZone"),labFileLabel:$("labFileLabel"),labRunBtn:$("labRunBtn"),
+  labForm:$("labForm"),labAudioFile:$("labAudioFile"),labUploadZone:$("labUploadZone"),labFileLabel:$("labFileLabel"),labClipStartInput:$("labClipStartInput"),labRunBtn:$("labRunBtn"),
   labJobBox:$("labJobBox"),labJobTitle:$("labJobTitle"),labJobPercent:$("labJobPercent"),labJobProgress:$("labJobProgress"),labJobMessage:$("labJobMessage"),labWorkflowLink:$("labWorkflowLink"),
   labResultsCard:$("labResultsCard"),labResultTitle:$("labResultTitle"),labResultMeta:$("labResultMeta"),labRefreshBtn:$("labRefreshBtn"),
   labClipStart:$("labClipStart"),labModel:$("labModel"),labVoiced:$("labVoiced"),stemTrackList:$("stemTrackList"),labAudio:$("labAudio"),labNowLabel:$("labNowLabel"),labAudioStatus:$("labAudioStatus"),
   gamePreviewSection:$("gamePreviewSection"),gameRoundList:$("gameRoundList"),gameAudio:$("gameAudio"),gameNowLabel:$("gameNowLabel"),gameRoundLabel:$("gameRoundLabel"),
+  stemPublishBox:$("stemPublishBox"),stemPublishTitle:$("stemPublishTitle"),stemPublishArtist:$("stemPublishArtist"),stemPublishDate:$("stemPublishDate"),stemPublishYear:$("stemPublishYear"),stemPublishDifficulty:$("stemPublishDifficulty"),stemPublishYoutubeViews:$("stemPublishYoutubeViews"),stemPublishYoutubeUrl:$("stemPublishYoutubeUrl"),stemPublishCoverUrl:$("stemPublishCoverUrl"),stemPublishSpotifyUrl:$("stemPublishSpotifyUrl"),stemPublishAppleMusicUrl:$("stemPublishAppleMusicUrl"),stemPublishDeezerUrl:$("stemPublishDeezerUrl"),stemPublishBtn:$("stemPublishBtn"),stemPublishStatus:$("stemPublishStatus"),
   menuBtn:$("menuBtn"),toast:$("toast")
 };
 
@@ -70,6 +71,11 @@ function applyTheme(theme){
   if(E.themeDayBtn)E.themeDayBtn.classList.toggle("active",theme==="day");
   if(E.themeNightBtn)E.themeNightBtn.classList.toggle("active",theme==="night");
   if(E.adminThemeColor)E.adminThemeColor.setAttribute("content",theme==="day"?"#f3f6fb":"#0b1230");
+}
+function brazilDate(){
+  var parts=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),out={};
+  parts.forEach(function(item){if(item.type!=="literal")out[item.type]=item.value});
+  return out.year+"-"+out.month+"-"+out.day;
 }
 function sanitizeFilename(name){
   var dot=name.lastIndexOf("."),ext=dot>=0?name.slice(dot).toLowerCase():"",stem=dot>=0?name.slice(0,dot):name;
@@ -133,11 +139,40 @@ async function putRepoText(path,obj,message){
     body:JSON.stringify(body)
   });
 }
-async function requestLab(path){
-  return putRepoText(".stem-flute-lab/request.json",{
+async function requestLab(path,clipStart){
+  var payload={
     sourcePath:path,
     nonce:String(Date.now())
-  },"Run isolated Stem + Flute Lab");
+  };
+  if(clipStart!==""&&clipStart!==null&&clipStart!==undefined){
+    var value=Number(clipStart);
+    if(Number.isFinite(value)&&value>=0)payload.clipStart=value;
+  }
+  return putRepoText(".stem-flute-lab/request.json",payload,"Run isolated Stem + Flute Lab");
+}
+
+async function getRepoJson(path){
+  var data=await api("/contents/"+encodeURI(path)+"?ref="+encodeURIComponent(BRANCH));
+  var binary=atob(String(data.content||"").replace(/\n/g,""));
+  var bytes=new Uint8Array(binary.length);
+  for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+async function waitOfficialPublish(date,createdAt){
+  var started=Date.now();
+  while(Date.now()-started<600000){
+    try{
+      var catalog=await getRepoJson("catalog.json");
+      var songs=Array.isArray(catalog.songs)?catalog.songs:[];
+      var song=songs.find(function(item){return String(item.date||"")===String(date||"")});
+      if(song&&song.source==="stem-flute"&&String(song.stemFluteCreatedAt||"")===String(createdAt||"")){
+        return song;
+      }
+    }catch(_){}
+    await new Promise(function(resolve){setTimeout(resolve,4000)});
+  }
+  return null;
 }
 async function waitRun(after){
   var started=Date.now();
@@ -291,11 +326,16 @@ function renderResult(data){
   E.labResultsCard.classList.remove("hidden");
   E.labResultTitle.textContent=data.sourceName||"Último teste";
   var start=Number(data.clipStart||0);
-  E.labResultMeta.textContent="Trecho escolhido automaticamente: "+start.toFixed(1)+"s–"+(start+Number(data.clipSeconds||18)).toFixed(1)+"s · voz transformada por pitch contínuo, sem MIDI.";
+  var selectionMode=data.selection&&data.selection.mode==="manual"?"manualmente":"automaticamente";
+  E.labResultMeta.textContent="Trecho escolhido "+selectionMode+": "+start.toFixed(1)+"s–"+(start+Number(data.clipSeconds||18)).toFixed(1)+"s · voz transformada em flauta estabilizada, sem MIDI.";
   E.labClipStart.textContent=start.toFixed(1)+"s";
   E.labModel.textContent=data.separationModel||"htdemucs_6s";
   E.labVoiced.textContent=data.flute&&data.flute.voicedPercent!==undefined?Number(data.flute.voicedPercent).toFixed(1)+"%":"—";
   renderGamePreview(data.gameRounds);
+  if(E.stemPublishBox){
+    E.stemPublishBox.classList.toggle("hidden",!Array.isArray(data.gameRounds)||data.gameRounds.length!==5);
+    if(E.stemPublishStatus)E.stemPublishStatus.textContent="O processamento de teste continua separado até você publicar.";
+  }
 
   E.stemTrackList.innerHTML="";
   data.tracks.forEach(function(track,index){
@@ -323,6 +363,7 @@ async function loadLatest(showToast){
 }
 async function init(){
   applyTheme(localStorage.getItem("musicadodia:admin-theme")==="day"?"day":"night");
+  if(E.stemPublishDate&&!E.stemPublishDate.value)E.stemPublishDate.value=brazilDate();
   token=storedToken();
   if(!token){
     E.connectionLabel.textContent="Desconectado";
@@ -370,8 +411,9 @@ E.labForm.addEventListener("submit",async function(ev){
     setJob(8,"Enviando música","Salvando o arquivo no ambiente de teste.");
     await uploadAudio(file,path);
     setJob(24,"Upload concluído","Criando o pedido do laboratório.");
-    await requestLab(path);
-    setJob(38,"Teste iniciado","O GitHub está escolhendo os 18s, separando os stems e criando a flauta. Pode levar alguns minutos.");
+    var requestedStart=E.labClipStartInput?E.labClipStartInput.value:"";
+    await requestLab(path,requestedStart);
+    setJob(38,"Teste iniciado",requestedStart!==""?"Processando os 18s a partir de "+Number(requestedStart).toFixed(1)+"s. Pode levar alguns minutos.":"O GitHub está escolhendo os 18s, separando os stems e criando a flauta. Pode levar alguns minutos.");
     var result=await waitPublishedResult(path);
     if(result){
       setJob(100,"Teste pronto","Ouça o mix sem voz + flauta e compare as faixas abaixo.");
@@ -387,6 +429,72 @@ E.labForm.addEventListener("submit",async function(ev){
     toast("O teste encontrou um erro.");
   }finally{
     E.labRunBtn.disabled=false;
+  }
+});
+
+
+if(E.stemPublishBtn)E.stemPublishBtn.addEventListener("click",async function(){
+  if(!latestManifest||!Array.isArray(latestManifest.gameRounds)||latestManifest.gameRounds.length!==5){
+    toast("Gere primeiro um resultado completo com 5 faixas.");
+    return;
+  }
+
+  var title=String(E.stemPublishTitle.value||"").trim();
+  var artist=String(E.stemPublishArtist.value||"").trim();
+  var date=String(E.stemPublishDate.value||"").trim();
+
+  if(!title||!artist||!date){
+    toast("Preencha título, artista e data.");
+    return;
+  }
+
+  try{
+    var currentCatalog=await getRepoJson("catalog.json");
+    var occupied=(currentCatalog.songs||[]).find(function(item){return String(item.date||"")===date});
+    if(occupied){
+      var ok=window.confirm(
+        'Já existe "'+(occupied.title||"uma música")+'" em '+date+'.\n\nPublicar este resultado vai substituir o desafio dessa data. Continuar?'
+      );
+      if(!ok)return;
+    }
+  }catch(_){}
+
+  E.stemPublishBtn.disabled=true;
+  E.stemPublishStatus.textContent="Enviando pedido de publicação...";
+
+  var payload={
+    title:title,
+    artist:artist,
+    date:date,
+    releaseYear:String(E.stemPublishYear.value||"").trim(),
+    difficulty:String(E.stemPublishDifficulty.value||"").trim(),
+    youtubeViews:String(E.stemPublishYoutubeViews.value||"").trim(),
+    youtubeUrl:String(E.stemPublishYoutubeUrl.value||"").trim(),
+    coverUrl:String(E.stemPublishCoverUrl.value||"").trim(),
+    spotifyUrl:String(E.stemPublishSpotifyUrl.value||"").trim(),
+    appleMusicUrl:String(E.stemPublishAppleMusicUrl.value||"").trim(),
+    deezerUrl:String(E.stemPublishDeezerUrl.value||"").trim(),
+    expectedCreatedAt:String(latestManifest.createdAt||""),
+    nonce:String(Date.now())
+  };
+
+  try{
+    await putRepoText(".stem-flute-lab/publish.json",payload,"Publish Stem + Flute song");
+    E.stemPublishStatus.textContent="Publicando as 5 faixas no catálogo oficial...";
+    var published=await waitOfficialPublish(date,payload.expectedCreatedAt);
+    if(published){
+      E.stemPublishStatus.textContent="Publicado no catálogo oficial. O site será atualizado automaticamente.";
+      toast("Música publicada no jogo oficial.");
+    }else{
+      E.stemPublishStatus.textContent="Pedido enviado. A publicação ainda está terminando no GitHub.";
+      toast("Publicação iniciada.");
+    }
+  }catch(err){
+    console.error("stem flute publish",err);
+    E.stemPublishStatus.textContent=err&&err.status===403?"O token precisa de Contents em leitura e escrita.":"Não foi possível publicar. Confira o GitHub e tente novamente.";
+    toast("Falha ao publicar.");
+  }finally{
+    E.stemPublishBtn.disabled=false;
   }
 });
 

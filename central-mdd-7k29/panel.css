@@ -456,3 +456,27 @@ body[data-admin-theme="day"] .mini-btn.delete-btn{
   from{opacity:.35;transform:scale(.8)}
   to{opacity:1;transform:scale(1.15)}
 }
+
+.lab-intro{margin:-3px 0 14px}
+.lab-results-card{margin-top:12px}
+.lab-result-meta{margin:4px 0 0;color:var(--muted);font-size:8px}
+.lab-results-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.lab-method-card{min-width:0;padding:13px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.02)}
+.lab-method-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-height:88px}
+.lab-method-head h3{margin:0;font-size:13px}
+.lab-method-head p{margin:5px 0 0;color:var(--muted);font-size:7.5px;line-height:1.45}
+.lab-primary-badge{flex:0 0 auto;padding:5px 7px;border-radius:999px;background:rgba(35,199,217,.10);color:#7edfe8;font-size:7px;font-weight:900}
+.lab-round-buttons{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:8px 0}
+.lab-round-btn{min-width:0;min-height:48px;padding:5px 2px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.025);color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.lab-round-btn b{font-size:8px;color:#9dacff}
+.lab-round-btn span{font-size:6px;font-weight:800;text-align:center;line-height:1.1}
+.lab-round-btn:hover{border-color:rgba(109,133,255,.35);background:rgba(109,133,255,.07)}
+.lab-round-btn.active{border-color:rgba(109,133,255,.6);background:rgba(109,133,255,.15);color:#fff}
+.lab-round-btn.active b{color:#fff}
+.lab-audio{width:100%;height:38px;margin-top:3px}
+body[data-admin-theme="day"] .lab-method-card{background:rgba(38,55,92,.025)}
+body[data-admin-theme="day"] .lab-round-btn{background:rgba(38,55,92,.025);color:#64728a}
+body[data-admin-theme="day"] .lab-round-btn.active{background:rgba(93,113,226,.13);color:#263656}
+body[data-admin-theme="day"] .lab-primary-badge{color:#277e8a;background:rgba(35,160,175,.09)}
+@media(max-width:1100px){.lab-results-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.lab-method-head{min-height:0;margin-bottom:10px}.lab-round-buttons{grid-template-columns:repeat(5,minmax(48px,1fr));overflow-x:auto;padding-bottom:3px}.lab-method-card{padding:10px}}

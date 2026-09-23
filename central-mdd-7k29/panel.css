@@ -415,3 +415,19 @@ body[data-admin-theme="day"] .preview-help{background:rgba(54,180,110,.05)}
   .theme-switch{height:36px}
   .theme-switch button{height:28px}
 }
+
+.mini-btn.delete-btn{
+  border-color:rgba(255,107,123,.22);
+  background:rgba(255,107,123,.07);
+  color:#ff9ca8
+}
+.mini-btn.delete-btn:hover{
+  border-color:rgba(255,107,123,.45);
+  background:rgba(255,107,123,.13);
+  color:#ffc0c7
+}
+body[data-admin-theme="day"] .mini-btn.delete-btn{
+  border-color:rgba(194,56,72,.20);
+  background:rgba(194,56,72,.06);
+  color:#b84352
+}

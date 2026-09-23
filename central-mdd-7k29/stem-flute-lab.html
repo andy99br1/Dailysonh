@@ -8,7 +8,7 @@
   <title>Stem + Flauta · Central MDD</title>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
   <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=16">
-  <link rel="stylesheet" href="/central-mdd-7k29/stem-flute-lab.css?v=4">
+  <link rel="stylesheet" href="/central-mdd-7k29/stem-flute-lab.css?v=5">
 </head>
 <body data-admin-theme="night">
   <div class="app-shell">
@@ -52,16 +52,16 @@
       </section>
 
       <div id="labPanel" class="hidden">
-        <p class="lab-shell-note"><strong>Ambiente totalmente separado.</strong> Este teste não publica música, não altera o Laboratório MIDI e não muda nenhuma faixa já usada no jogo. Ele só grava os próprios resultados em <code>stem-flute-lab/</code>.</p>
+        <p class="lab-shell-note"><strong>Método Stem + Flauta.</strong> O processamento continua isolado enquanto você testa. Nada entra no jogo até você aprovar o resultado e clicar em <strong>Publicar no jogo oficial</strong>.</p>
 
         <div class="lab-grid">
           <article class="dash-card lab-card">
             <div class="card-title-row">
               <div>
-                <span class="eyebrow">TESTE ÁUDIO → STEMS → FLAUTA</span>
+                <span class="eyebrow">MÉTODO ÁUDIO → STEMS → FLAUTA</span>
                 <h2>Enviar música completa</h2>
               </div>
-              <span class="lab-safe-chip">ISOLADO</span>
+              <span class="lab-safe-chip">TESTE ANTES DE PUBLICAR</span>
             </div>
 
             <p class="muted">Envie apenas o MP3. O GitHub escolhe automaticamente um trecho de 18 segundos. Bateria e baixo ficam no Demucs FT; voz, guitarra/violão, piano/teclas e outros usam BS-RoFormer-SW. Depois a voz vira uma flauta estabilizada, sem copiar o vibrato quadro a quadro e sem usar MIDI.</p>
@@ -72,6 +72,11 @@
                 <div class="upload-symbol">♪</div>
                 <strong id="labFileLabel">Escolher MP3 ou áudio</strong>
                 <span>MP3, WAV, M4A, FLAC, OGG ou AAC · até 45 MB</span>
+              </div>
+              <div class="fields one lab-clip-field">
+                <label>Início do trecho (s)
+                  <input id="labClipStartInput" type="number" min="0" step="0.1" placeholder="Automático">
+                </label>
               </div>
               <button class="btn primary wide" id="labRunBtn" type="submit">Processar teste de 18s</button>
             </form>
@@ -139,12 +144,62 @@
               <audio id="gameAudio" controls preload="metadata"></audio>
             </div>
           </section>
+
+          <section class="stem-publish-box hidden" id="stemPublishBox">
+            <div class="stem-publish-head">
+              <div>
+                <span class="eyebrow">APROVOU O RESULTADO?</span>
+                <h2>Publicar no jogo oficial</h2>
+                <p>Publica exatamente as 5 faixas da simulação acima para a data escolhida. Se já existir uma música nessa data, ela será substituída por uma nova versão.</p>
+              </div>
+              <span class="official-chip">OFICIAL</span>
+            </div>
+
+            <div class="fields two">
+              <label>Título<input id="stemPublishTitle" type="text" placeholder="Ex.: Infiel"></label>
+              <label>Artista<input id="stemPublishArtist" type="text" placeholder="Ex.: Marília Mendonça"></label>
+            </div>
+
+            <div class="fields three">
+              <label>Data do desafio<input id="stemPublishDate" type="date"></label>
+              <label>Ano da música<input id="stemPublishYear" type="number" min="1900" max="2100" placeholder="Opcional"></label>
+              <label>Dificuldade
+                <select id="stemPublishDifficulty">
+                  <option value="">Não informar</option>
+                  <option>Fácil</option>
+                  <option>Médio</option>
+                  <option>Difícil</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="fields two">
+              <label>Views no YouTube<input id="stemPublishYoutubeViews" type="text" inputmode="numeric" placeholder="Ex.: 125000000 ou 125M"></label>
+              <label>URL da capa<input id="stemPublishCoverUrl" type="url" placeholder="https://..."></label>
+            </div>
+
+            <details class="advanced stem-publish-links">
+              <summary>Links das plataformas</summary>
+              <div class="fields one inner">
+                <label>YouTube<input id="stemPublishYoutubeUrl" type="url" placeholder="https://youtube.com/..."></label>
+                <label>Spotify<input id="stemPublishSpotifyUrl" type="url" placeholder="https://open.spotify.com/..."></label>
+                <label>Apple Music<input id="stemPublishAppleMusicUrl" type="url" placeholder="https://music.apple.com/..."></label>
+                <label>Deezer<input id="stemPublishDeezerUrl" type="url" placeholder="https://deezer.com/..."></label>
+              </div>
+            </details>
+
+            <div class="stem-publish-actions">
+              <button class="btn primary" id="stemPublishBtn" type="button">Publicar no jogo oficial</button>
+              <span class="muted" id="stemPublishStatus">O processamento de teste continua separado até você publicar.</span>
+            </div>
+          </section>
+
         </article>
       </div>
     </main>
   </div>
 
   <div class="toast hidden" id="toast"></div>
-  <script src="/central-mdd-7k29/stem-flute-lab.js?v=6"></script>
+  <script src="/central-mdd-7k29/stem-flute-lab.js?v=7"></script>
 </body>
 </html>

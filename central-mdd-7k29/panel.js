@@ -114,9 +114,14 @@ async function connect(value){
 }
 async function getRepoFile(path){return api("/contents/"+encodeURI(path)+"?ref="+encodeURIComponent(BRANCH))}
 async function loadCatalog(){
- var r=await fetch("/catalog.json?_="+Date.now(),{cache:"no-store"});
- if(!r.ok)throw new Error("catalog "+r.status);
- catalog=await r.json();
+ try{
+   var repoFile=await getRepoFile("catalog.json");
+   catalog=decodeRepoContent(repoFile);
+ }catch(err){
+   var r=await fetch("/catalog.json?_="+Date.now(),{cache:"no-store"});
+   if(!r.ok)throw new Error("catalog "+r.status);
+   catalog=await r.json();
+ }
  if(!Array.isArray(catalog.songs))catalog.songs=[];
  renderSongs();
  renderSelectedChallenge();

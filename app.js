@@ -27,6 +27,7 @@
     attempts: el("attempts"),
     message: el("message"),
     reveal: el("reveal"),
+    revealCover: el("revealCover"),
     revealTitle: el("revealTitle"),
     revealArtist: el("revealArtist"),
     youtubeLink: el("youtubeLink"),
@@ -356,6 +357,25 @@
       return "https://music.apple.com/br/search?term=" + encoded;
     }
     return "https://www.deezer.com/search/" + encoded;
+  }
+
+  function renderRevealCover() {
+    if (!E.revealCover || !song) return;
+
+    var src = String(song.coverUrl || "").trim();
+    if (!src) {
+      E.revealCover.removeAttribute("src");
+      E.revealCover.classList.add("hidden");
+      return;
+    }
+
+    E.revealCover.classList.remove("hidden");
+    E.revealCover.alt = "Capa de " + cleanedSongTitle();
+    E.revealCover.onerror = function () {
+      E.revealCover.classList.add("hidden");
+      E.revealCover.removeAttribute("src");
+    };
+    E.revealCover.src = src;
   }
 
   function renderPlatformLinks() {
@@ -830,6 +850,7 @@
     E.revealTitle.textContent = cleanedSongTitle();
     E.revealArtist.textContent = song.artist;
 
+    renderRevealCover();
     renderPlatformLinks();
     refreshCommunityStats();
     startNextChallengeTimer();

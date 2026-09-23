@@ -12,7 +12,7 @@ var E={
  refreshSongsBtn:$("refreshSongsBtn"),songsList:$("songsList"),songsEmpty:$("songsEmpty"),editDialog:$("editDialog"),editForm:$("editForm"),editHeading:$("editHeading"),
  editIndex:$("editIndex"),editTitle:$("editTitle"),editArtist:$("editArtist"),editReleaseYear:$("editReleaseYear"),editYoutubeViews:$("editYoutubeViews"),editDifficulty:$("editDifficulty"),
  editYoutubeUrl:$("editYoutubeUrl"),editSpotifyUrl:$("editSpotifyUrl"),editAppleMusicUrl:$("editAppleMusicUrl"),editDeezerUrl:$("editDeezerUrl"),saveEditBtn:$("saveEditBtn"),toast:$("toast"),
- metricPlayers:$("metricPlayers"),metricPlayersSub:$("metricPlayersSub"),metricOnline:$("metricOnline"),metricUnique:$("metricUnique"),metricDuration:$("metricDuration"),trafficTotal:$("trafficTotal"),
+ metricPlayers:$("metricPlayers"),metricPlayersSub:$("metricPlayersSub"),metricOnline:$("metricOnline"),metricOnlineSub:$("metricOnlineSub"),metricUnique:$("metricUnique"),metricUniqueSub:$("metricUniqueSub"),metricDuration:$("metricDuration"),metricDurationSub:$("metricDurationSub"),trafficTotal:$("trafficTotal"),
  trafficChart:$("trafficChart"),todaySongTitle:$("todaySongTitle"),todayChallenge:$("todayChallenge"),todayWins:$("todayWins"),todayFails:$("todayFails"),todayRate:$("todayRate"),
  roundBars:$("roundBars"),commonGuesses:$("commonGuesses"),audioErrors:$("audioErrors"),abandonRate:$("abandonRate"),completionRate:$("completionRate"),pageViews:$("pageViews"),
  analyticsWarning:$("analyticsWarning"),analyticsStatusPanel:$("analyticsStatusPanel"),analyticsStatusTitle:$("analyticsStatusTitle"),analyticsStatusText:$("analyticsStatusText"),
@@ -126,7 +126,7 @@ function updateDateFilterUi(){
 function renderGameStats(stats){
  var rounds=Array.isArray(stats.rounds)?stats.rounds.slice(0,5).map(Number):[1,2,3,4,5].map(function(i){return Number(stats[i]!==undefined?stats[i]:stats["round"+i])||0});
  while(rounds.length<5)rounds.push(0);var failed=Number(stats.failed||stats.losses||0)||0,wins=rounds.reduce(function(a,b){return a+(Number(b)||0)},0),total=wins+failed;
- E.todayWins.textContent=formatInt(wins);E.todayFails.textContent=formatInt(failed);E.todayRate.textContent=total?Math.round(wins/total*100)+"%":"—";if(total)E.metricPlayers.textContent=formatInt(total);
+ E.todayWins.textContent=formatInt(wins);E.todayFails.textContent=formatInt(failed);E.todayRate.textContent=total?Math.round(wins/total*100)+"%":"—";
  E.roundBars.innerHTML="";var max=Math.max.apply(Math,rounds.concat([failed,1]));rounds.concat([failed]).forEach(function(v,i){var wrap=document.createElement("div");wrap.className="round-bar";var bar=document.createElement("i");bar.style.height=Math.max(4,Math.round((v/max)*90))+"%";var label=document.createElement("small");label.textContent=i<5?String(i+1):"×";wrap.append(bar,label);E.roundBars.appendChild(wrap)})
 }
 function openEdit(index){var s=catalog.songs[index];if(!s)return;E.editIndex.value=String(index);E.editHeading.textContent=s.title||"Música";E.editTitle.value=s.title||"";E.editArtist.value=s.artist||"";E.editReleaseYear.value=s.releaseYear||"";E.editYoutubeViews.value=s.youtubeViews||"";E.editDifficulty.value=s.difficulty||"";E.editYoutubeUrl.value=s.youtubeUrl||"";E.editSpotifyUrl.value=s.spotifyUrl||"";E.editAppleMusicUrl.value=s.appleMusicUrl||"";E.editDeezerUrl.value=s.deezerUrl||"";E.editDialog.showModal()}

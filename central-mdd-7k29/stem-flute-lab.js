@@ -10,6 +10,7 @@ var token="";
 var toastTimer=null;
 var latestManifest=null;
 var selectedLayerIds=[];
+var layerCustomLabels={};
 var customPreviewAudios=[];
 var LAYER_OPTIONS=[
   {id:"drums",label:"Bateria",detail:"Base rítmica",defaultOn:true},
@@ -303,6 +304,15 @@ function selectedLayers(){
   return LAYER_OPTIONS.filter(function(item){return selectedLayerIds.indexOf(item.id)>=0});
 }
 
+function layerDisplayLabel(item){
+  var custom=String(layerCustomLabels[item.id]||"").trim();
+  return custom||item.label;
+}
+
+function selectedLayerLabels(){
+  return selectedLayers().map(function(item){return layerDisplayLabel(item)});
+}
+
 function updateLayerSelection(id,checked){
   if(checked){
     if(selectedLayerIds.indexOf(id)<0)selectedLayerIds.push(id);
@@ -353,8 +363,8 @@ function playCustomRound(layerIndex,button){
   if(!audios.length)return;
   customPreviewAudios=audios;
   if(button)button.classList.add("active");
-  if(E.customPreviewTitle)E.customPreviewTitle.textContent="Faixa "+(layerIndex+1)+" · + "+chosen[layerIndex].label;
-  if(E.customPreviewStatus)E.customPreviewStatus.textContent=layers.map(function(item){return item.label}).join(" + ");
+  if(E.customPreviewTitle)E.customPreviewTitle.textContent="Faixa "+(layerIndex+1)+" · + "+layerDisplayLabel(chosen[layerIndex]);
+  if(E.customPreviewStatus)E.customPreviewStatus.textContent=layers.map(function(item){return layerDisplayLabel(item)}).join(" + ");
   if(E.customStopBtn)E.customStopBtn.classList.remove("hidden");
 
   var start=function(){
@@ -374,56 +384,21 @@ function playCustomRound(layerIndex,button){
   })).then(start);
 }
 
-function renderLayerBuilder(resetSelection){
-  if(!E.roundBuilder||!E.roundLayerList||!latestManifest)return;
-  E.roundBuilder.classList.remove("hidden");
-
-  if(resetSelection){
-    selectedLayerIds=LAYER_OPTIONS.filter(function(item){return item.defaultOn}).map(function(item){return item.id});
-  }
-
-  var chosen=selectedLayers();
-  if(E.roundBuilderCount){
-    E.roundBuilderCount.textContent=(chosen.length+1)+" faixas · "+chosen.length+" tentativa"+(chosen.length===1?"":"s");
-  }
-
-  E.roundLayerList.innerHTML="";
-  LAYER_OPTIONS.forEach(function(item,index){
-    var track=trackById(item.id);
-    if(!track)return;
-
-    var row=document.createElement("label");
-    row.className="round-layer-item";
-
-    var input=document.createElement("input");
-    input.type="checkbox";
-    input.checked=selectedLayerIds.indexOf(item.id)>=0;
-    input.addEventListener("change",function(){updateLayerSelection(item.id,input.checked)});
-
-    var order=document.createElement("b");
-    var currentIndex=selectedLayerIds.indexOf(item.id);
-    order.textContent=currentIndex>=0?String(currentIndex+1):"—";
-
-    var copy=document.createElement("span");
-    var strong=document.createElement("strong");strong.textContent=item.label;
-    var small=document.createElement("small");small.textContent=item.detail;
-    copy.append(strong,small);
-
-    row.append(input,order,copy);
-    E.roundLayerList.appendChild(row);
-  });
-
+function renderCustomRoundList(){
+  if(!E.customRoundList)return;
   stopCustomPreview();
+  var chosen=selectedLayers();
   E.customRoundList.innerHTML="";
+
   chosen.forEach(function(layer,index){
     var button=document.createElement("button");
     button.type="button";
     button.className="custom-round-btn";
     var num=document.createElement("b");num.textContent=String(index+1);
     var text=document.createElement("span");
-    var strong=document.createElement("strong");strong.textContent="Faixa "+(index+1)+" · + "+layer.label;
+    var strong=document.createElement("strong");strong.textContent="Faixa "+(index+1)+" · + "+layerDisplayLabel(layer);
     var small=document.createElement("small");
-    small.textContent=chosen.slice(0,index+1).map(function(item){return item.label}).join(" + ");
+    small.textContent=chosen.slice(0,index+1).map(function(item){return layerDisplayLabel(item)}).join(" + ");
     text.append(strong,small);
     button.append(num,text);
     button.addEventListener("click",function(){playCustomRound(index,button)});
@@ -441,11 +416,71 @@ function renderLayerBuilder(resetSelection){
   revealBtn.append(revealNum,revealText);
   revealBtn.addEventListener("click",function(){playCustomRound(chosen.length,revealBtn)});
   E.customRoundList.appendChild(revealBtn);
+}
+
+function renderLayerBuilder(resetSelection){
+  if(!E.roundBuilder||!E.roundLayerList||!latestManifest)return;
+  E.roundBuilder.classList.remove("hidden");
+
+  if(resetSelection){
+    selectedLayerIds=LAYER_OPTIONS.filter(function(item){return item.defaultOn}).map(function(item){return item.id});
+    layerCustomLabels={};
+  }
+
+  var chosen=selectedLayers();
+  if(E.roundBuilderCount){
+    E.roundBuilderCount.textContent=(chosen.length+1)+" faixas · "+chosen.length+" tentativa"+(chosen.length===1?"":"s");
+  }
+
+  E.roundLayerList.innerHTML="";
+  LAYER_OPTIONS.forEach(function(item){
+    var track=trackById(item.id);
+    if(!track)return;
+
+    var row=document.createElement("div");
+    row.className="round-layer-item";
+
+    var input=document.createElement("input");
+    input.type="checkbox";
+    input.className="round-layer-check";
+    input.checked=selectedLayerIds.indexOf(item.id)>=0;
+    input.setAttribute("aria-label","Usar "+item.label);
+    input.addEventListener("change",function(){updateLayerSelection(item.id,input.checked)});
+
+    var order=document.createElement("b");
+    var currentIndex=selectedLayerIds.indexOf(item.id);
+    order.textContent=currentIndex>=0?String(currentIndex+1):"—";
+
+    var copy=document.createElement("span");
+    var strong=document.createElement("strong");strong.textContent=item.label;
+    var small=document.createElement("small");small.textContent=item.detail;
+    copy.append(strong,small);
+
+    var nameWrap=document.createElement("label");
+    nameWrap.className="round-layer-name";
+    var nameCaption=document.createElement("small");nameCaption.textContent="Nome na prévia / jogo";
+    var nameInput=document.createElement("input");
+    nameInput.type="text";
+    nameInput.maxLength=42;
+    nameInput.value=layerCustomLabels[item.id]||item.label;
+    nameInput.placeholder=item.label;
+    nameInput.disabled=!input.checked;
+    nameInput.addEventListener("click",function(ev){ev.stopPropagation()});
+    nameInput.addEventListener("input",function(){
+      layerCustomLabels[item.id]=String(nameInput.value||"").slice(0,42);
+      renderCustomRoundList();
+    });
+    nameWrap.append(nameCaption,nameInput);
+
+    row.append(input,order,copy,nameWrap);
+    E.roundLayerList.appendChild(row);
+  });
+
+  renderCustomRoundList();
 
   if(E.stemPublishBtn)E.stemPublishBtn.disabled=chosen.length<1;
   if(E.stemPublishStatus&&chosen.length<1)E.stemPublishStatus.textContent="Selecione pelo menos uma camada antes de publicar.";
 }
-
 function selectGameRound(round,button){
   if(!round||!E.gameAudio)return;
   E.gameRoundList.querySelectorAll(".game-preview-round").forEach(function(node){node.classList.remove("active")});
@@ -659,13 +694,13 @@ if(E.stemPublishBtn)E.stemPublishBtn.addEventListener("click",async function(){
     deezerUrl:String(E.stemPublishDeezerUrl.value||"").trim(),
     expectedCreatedAt:String(latestManifest.createdAt||""),
     selectedLayers:chosenLayers.map(function(item){return item.id}),
-    selectedLayerLabels:chosenLayers.map(function(item){return item.label}),
+    selectedLayerLabels:chosenLayers.map(function(item){return layerDisplayLabel(item)}),
     nonce:String(Date.now())
   };
 
   try{
     await putRepoText(".stem-flute-lab/publish.json",payload,"Publish Stem + Flute song");
-    E.stemPublishStatus.textContent="Publicando as 5 faixas no catálogo oficial...";
+    E.stemPublishStatus.textContent="Publicando "+(chosenLayers.length+1)+" faixas no catálogo oficial...";
     var published=await waitOfficialPublish(date,payload.expectedCreatedAt);
     if(published){
       E.stemPublishStatus.textContent="Publicado no catálogo oficial. O site será atualizado automaticamente.";

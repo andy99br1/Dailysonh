@@ -62,6 +62,13 @@
   var analyticsStartedAt = Date.now();
   var analyticsSessionId = "";
   var analyticsVisitorId = "";
+  var adminPreviewDate = "";
+  var adminPreviewMode = false;
+  try {
+    var previewParams = new URLSearchParams(window.location.search);
+    adminPreviewDate = String(previewParams.get("previewDate") || "").trim();
+    adminPreviewMode = previewParams.get("adminPreview") === "1" && /^\d{4}-\d{2}-\d{2}$/.test(adminPreviewDate);
+  } catch (_) {}
 
 
   function randomId(prefix) {
@@ -110,6 +117,10 @@
   }
 
   async function loadAnalyticsConfig() {
+    if (adminPreviewMode) {
+      analyticsConfig = null;
+      return;
+    }
     getAnalyticsIds();
 
     try {
@@ -154,6 +165,7 @@
   }
 
   function trackEvent(type, data, keepalive) {
+    if (adminPreviewMode) return;
     if (!analyticsConfig || !analyticsConfig.endpoint) return;
 
     try {
@@ -489,6 +501,7 @@
   }
 
   async function submitCommunityResult() {
+    if (adminPreviewMode) return;
     if (!song || !song.statsEndpoint || !finished) return;
 
     var submissionKey =
@@ -577,7 +590,9 @@
   }
 
   function key() {
-    return song ? "musicadodia:game:" + song.date + ":v" + songVersion() : "";
+    if (!song) return "";
+    if (adminPreviewMode) return "musicadodia:admin-preview:" + song.date + ":v" + songVersion();
+    return "musicadodia:game:" + song.date + ":v" + songVersion();
   }
 
   function oldVersionKey() {
@@ -589,7 +604,7 @@
   }
 
   function save() {
-    if (!song) return;
+    if (!song || adminPreviewMode) return;
     localStorage.setItem(key(), JSON.stringify({
       roundIndex: roundIndex,
       guesses: guesses,
@@ -600,6 +615,7 @@
   }
 
   function load() {
+    if (adminPreviewMode) return;
     try {
       var raw = localStorage.getItem(key());
       var migratedLegacy = false;
@@ -969,11 +985,13 @@
     if (!song) return;
 
     stopAudio();
-    localStorage.removeItem(key());
-    localStorage.removeItem(oldVersionKey());
+    if (!adminPreviewMode) {
+      localStorage.removeItem(key());
+      localStorage.removeItem(oldVersionKey());
 
-    if (songVersion() === 1) {
-      localStorage.removeItem(oldLegacyKey());
+      if (songVersion() === 1) {
+        localStorage.removeItem(oldLegacyKey());
+      }
     }
 
     roundIndex = 0;
@@ -1040,17 +1058,29 @@
 
       var data = await response.json();
       var songs = Array.isArray(data.songs) ? data.songs : [];
-      var today = brazilDate();
-      var eligible = songs.filter(function (item) { return item.date <= today; });
 
-      if (!eligible.length) {
-        E.songDate.textContent = "Nenhuma música publicada ainda";
-        E.roundLabel.textContent = "Aguardando";
-        E.message.textContent = "Adicione a primeira música pelo GitHub Actions.";
-        return;
+      if (adminPreviewMode) {
+        song = songs.find(function (item) { return String(item.date || "") === adminPreviewDate; }) || null;
+        if (!song) {
+          E.songDate.textContent = "Música não encontrada";
+          E.roundLabel.textContent = "Prévia";
+          E.message.textContent = "Essa data ainda não está disponível no site publicado.";
+          return;
+        }
+      } else {
+        var today = brazilDate();
+        var eligible = songs.filter(function (item) { return item.date <= today; });
+
+        if (!eligible.length) {
+          E.songDate.textContent = "Nenhuma música publicada ainda";
+          E.roundLabel.textContent = "Aguardando";
+          E.message.textContent = "Adicione a primeira música pelo GitHub Actions.";
+          return;
+        }
+
+        song = eligible[eligible.length - 1];
       }
 
-      song = eligible[eligible.length - 1];
       catalogIndex = songs.findIndex(function (item) { return item.date === song.date; });
 
       trackEvent("game_loaded", {

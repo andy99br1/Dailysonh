@@ -10,7 +10,9 @@
     difficultyInfo: el("difficultyInfo"),
     roundLabel: el("roundLabel"),
     themeToggle: el("themeToggle"),
+    themeMenu: el("themeMenu"),
     themeColor: el("themeColor"),
+    themeOptions: Array.prototype.slice.call(document.querySelectorAll("[data-theme-choice]")),
     playBtn: el("playBtn"),
     rewindBtn: el("rewindBtn"),
     forwardBtn: el("forwardBtn"),
@@ -121,30 +123,58 @@
     return min + ":" + sec;
   }
 
-  function applyTheme(theme) {
-    var dark = theme === "dark";
-    document.body.classList.toggle("dark", dark);
+  var allowedThemes = ["creme", "azul", "verde", "rosa", "lilas", "noite"];
 
-    if (E.themeToggle) {
-      E.themeToggle.textContent = dark ? "☀" : "☾";
-      E.themeToggle.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo noturno");
-      E.themeToggle.title = dark ? "Modo claro" : "Modo noturno";
-    }
+  function applyTheme(theme) {
+    if (allowedThemes.indexOf(theme) < 0) theme = "creme";
+
+    document.body.classList.remove("dark");
+    document.body.setAttribute("data-theme", theme);
+
+    E.themeOptions.forEach(function (button) {
+      button.classList.toggle("active", button.getAttribute("data-theme-choice") === theme);
+    });
 
     if (E.themeColor) {
-      E.themeColor.setAttribute("content", dark ? "#061536" : "#f6efe3");
+      var colors = {
+        creme: "#f5efe4",
+        azul: "#eef5fb",
+        verde: "#eef4ec",
+        rosa: "#fbf0f2",
+        lilas: "#f3effa",
+        noite: "#071632"
+      };
+      E.themeColor.setAttribute("content", colors[theme] || colors.creme);
     }
   }
 
   function loadTheme() {
     var saved = localStorage.getItem("musicadodia:theme") || localStorage.getItem("dailysonh:theme");
-    applyTheme(saved === "dark" ? "dark" : "light");
+
+    if (saved === "dark") saved = "noite";
+    if (saved === "light") saved = "creme";
+    if (allowedThemes.indexOf(saved) < 0) saved = "creme";
+
+    applyTheme(saved);
   }
 
-  function toggleTheme() {
-    var next = document.body.classList.contains("dark") ? "light" : "dark";
-    localStorage.setItem("musicadodia:theme", next);
-    applyTheme(next);
+  function closeThemeMenu() {
+    if (!E.themeMenu || !E.themeToggle) return;
+    E.themeMenu.classList.add("hidden");
+    E.themeToggle.setAttribute("aria-expanded", "false");
+  }
+
+  function toggleThemeMenu() {
+    if (!E.themeMenu || !E.themeToggle) return;
+    var opening = E.themeMenu.classList.contains("hidden");
+    E.themeMenu.classList.toggle("hidden");
+    E.themeToggle.setAttribute("aria-expanded", opening ? "true" : "false");
+  }
+
+  function chooseTheme(theme) {
+    localStorage.setItem("musicadodia:theme", theme);
+    applyTheme(theme);
+    closeThemeMenu();
   }
 
   function songVersion() {
@@ -579,7 +609,26 @@
   E.forwardBtn.addEventListener("click", function () { seekBy(5); });
   E.skipBtn.addEventListener("click", nextOrSkip);
   E.openGuessBtn.addEventListener("click", toggleGuessForm);
-  E.themeToggle.addEventListener("click", toggleTheme);
+  E.themeToggle.addEventListener("click", function (event) {
+    event.stopPropagation();
+    toggleThemeMenu();
+  });
+
+  E.themeOptions.forEach(function (button) {
+    button.addEventListener("click", function () {
+      chooseTheme(button.getAttribute("data-theme-choice"));
+    });
+  });
+
+  document.addEventListener("click", function (event) {
+    if (!E.themeMenu || E.themeMenu.classList.contains("hidden")) return;
+    if (event.target.closest && event.target.closest(".theme-picker")) return;
+    closeThemeMenu();
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closeThemeMenu();
+  });
 
   E.seekBar.addEventListener("input", function () {
     if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;

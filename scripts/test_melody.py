@@ -82,8 +82,8 @@ def continuous_pitch_crepe(vocal_path):
             65.0,
             1000.0,
             "full",
-            1024,
-            "cpu",
+            batch_size=1024,
+            device="cpu",
             return_periodicity=True,
         )
 

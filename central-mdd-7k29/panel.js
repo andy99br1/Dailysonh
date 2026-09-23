@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var OWNER="andy99br1",REPO="Dailysonh",BRANCH="main",API="https://api.github.com",WORKFLOW="process-upload.yml",LAB_WORKFLOW="test-separation.yml",MAX_FILE_MB=45;
+var OWNER="andy99br1",REPO="Dailysonh",BRANCH="main",API="https://api.github.com",WORKFLOW="process-upload.yml",LAB_WORKFLOW="test-separation.yml",MELODY_WORKFLOW="test-melody.yml",MAX_FILE_MB=45;
 function $(id){return document.getElementById(id)}
 var E={
  loginView:$("loginView"),panel:$("panel"),connectForm:$("connectForm"),tokenInput:$("tokenInput"),disconnectBtn:$("disconnectBtn"),
@@ -12,6 +12,8 @@ var E={
  labForm:$("labForm"),labUploadZone:$("labUploadZone"),labAudioFile:$("labAudioFile"),labFileLabel:$("labFileLabel"),labTitle:$("labTitle"),labArtist:$("labArtist"),labClipStart:$("labClipStart"),labRunBtn:$("labRunBtn"),
  labJobBox:$("labJobBox"),labJobTitle:$("labJobTitle"),labJobPercent:$("labJobPercent"),labJobProgress:$("labJobProgress"),labJobMessage:$("labJobMessage"),labWorkflowLink:$("labWorkflowLink"),
  labResultsCard:$("labResultsCard"),labResultTitle:$("labResultTitle"),labResultMeta:$("labResultMeta"),labResults:$("labResults"),labRefreshBtn:$("labRefreshBtn"),
+ melodyRunBtn:$("melodyRunBtn"),melodyJobBox:$("melodyJobBox"),melodyJobTitle:$("melodyJobTitle"),melodyJobPercent:$("melodyJobPercent"),melodyJobProgress:$("melodyJobProgress"),melodyJobMessage:$("melodyJobMessage"),melodyWorkflowLink:$("melodyWorkflowLink"),
+ melodyResultsCard:$("melodyResultsCard"),melodyResultTitle:$("melodyResultTitle"),melodyResultMeta:$("melodyResultMeta"),melodyResults:$("melodyResults"),melodyRefreshBtn:$("melodyRefreshBtn"),
  refreshSongsBtn:$("refreshSongsBtn"),songsList:$("songsList"),songsEmpty:$("songsEmpty"),editDialog:$("editDialog"),editForm:$("editForm"),editHeading:$("editHeading"),
  editIndex:$("editIndex"),editTitle:$("editTitle"),editArtist:$("editArtist"),editReleaseYear:$("editReleaseYear"),editYoutubeViews:$("editYoutubeViews"),editDifficulty:$("editDifficulty"),
  editYoutubeUrl:$("editYoutubeUrl"),editSpotifyUrl:$("editSpotifyUrl"),editAppleMusicUrl:$("editAppleMusicUrl"),editDeezerUrl:$("editDeezerUrl"),saveEditBtn:$("saveEditBtn"),toast:$("toast"),
@@ -22,7 +24,7 @@ var E={
  analyticsWarning:$("analyticsWarning"),analyticsStatusPanel:$("analyticsStatusPanel"),analyticsStatusTitle:$("analyticsStatusTitle"),analyticsStatusText:$("analyticsStatusText"),
  dashboardDate:$("dashboardDate"),selectedDateLabel:$("selectedDateLabel"),autoRefreshStatus:$("autoRefreshStatus"),prevDateBtn:$("prevDateBtn"),nextDateBtn:$("nextDateBtn"),todayDateBtn:$("todayDateBtn"),trafficPeriodTitle:$("trafficPeriodTitle")
 };
-var token="",catalog={songs:[]},catalogSha="",analyticsConfig=null,toastTimer=null,selectedDate="",previewSong=null,previewTrackIndex=0,dashboardRefreshTimer=null,dashboardRefreshBusy=false,lastDashboardRefreshAt=0;
+var token="",catalog={songs:[]},catalogSha="",analyticsConfig=null,toastTimer=null,selectedDate="",previewSong=null,previewTrackIndex=0,dashboardRefreshTimer=null,dashboardRefreshBusy=false,lastDashboardRefreshAt=0,latestLabManifest=null;
 var DASHBOARD_REFRESH_MS=10000;
 var DEFAULT_ANALYTICS_CONFIG={
   endpoint:"https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-analytics",
@@ -100,6 +102,7 @@ async function openPanel(){
  }
  startDashboardAutoRefresh();
  loadLatestLabResult(true);
+ loadLatestMelodyResult(true);
 }
 async function connect(value){
  token=String(value||"").trim();
@@ -321,6 +324,7 @@ function stopOtherLabAudio(current){
 }
 function renderLabResult(data){
  if(!data||!Array.isArray(data.methods))return;
+ latestLabManifest=data;
  E.labResultsCard.classList.remove("hidden");
  E.labResultTitle.textContent=(data.artist?data.artist+" · ":"")+(data.title||"Teste de separação");
  var start=Number(data.clipStart||0),seconds=Number(data.clipSeconds||18);
@@ -408,6 +412,129 @@ async function monitorLab(run,startedAt){
      setLabJob(100,"Falha no teste","Abra a execução do GitHub para ver em qual método ocorreu o erro.");throw new Error("Lab workflow "+latest.conclusion);
    }
    await new Promise(function(resolve){setTimeout(resolve,6500)});
+ }
+}
+
+
+function setMelodyJob(percent,title,message){
+ E.melodyJobBox.classList.remove("hidden");
+ E.melodyJobPercent.textContent=percent+"%";
+ E.melodyJobProgress.style.width=percent+"%";
+ E.melodyJobTitle.textContent=title;
+ E.melodyJobMessage.textContent=message||"";
+}
+async function dispatchMelody(){
+ var data=latestLabManifest||{};
+ return api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+MELODY_WORKFLOW+"/dispatches",{
+   method:"POST",
+   headers:headers({"Content-Type":"application/json"}),
+   body:JSON.stringify({
+     ref:BRANCH,
+     inputs:{
+       audio_path:"",
+       title:data.title||"",
+       artist:data.artist||"",
+       clip_start:data.clipStart===undefined||data.clipStart===null?"":String(data.clipStart)
+     }
+   })
+ });
+}
+function stopOtherMelodyAudio(current){
+ if(!E.melodyResults)return;
+ E.melodyResults.querySelectorAll("audio").forEach(function(audio){if(audio!==current)audio.pause()});
+}
+function renderMelodyResult(data){
+ if(!data||!Array.isArray(data.methods))return;
+ E.melodyResultsCard.classList.remove("hidden");
+ E.melodyResultTitle.textContent=(data.artist?data.artist+" · ":"")+(data.title||"Teste de melodia");
+ var start=Number(data.clipStart||0),seconds=Number(data.clipSeconds||18);
+ E.melodyResultMeta.textContent="Trecho "+start.toFixed(1)+"s–"+(start+seconds).toFixed(1)+"s";
+ E.melodyResults.innerHTML="";
+
+ data.methods.forEach(function(method){
+   var card=document.createElement("section");card.className="melody-method-card";
+   var head=document.createElement("div");head.className="melody-method-head";
+   var eyebrow=document.createElement("span");eyebrow.className="eyebrow";eyebrow.textContent="MELODIA";
+   var title=document.createElement("h3");title.textContent=method.name||method.id||"Método";
+   var desc=document.createElement("p");desc.textContent=method.description||"";
+   head.append(eyebrow,title,desc);
+
+   var buttons=document.createElement("div");buttons.className="melody-buttons";
+   var audio=document.createElement("audio");audio.controls=true;audio.preload="none";audio.className="lab-audio";
+   audio.addEventListener("play",function(){stopOtherMelodyAudio(audio)});
+
+   [
+     {label:"Melodia sozinha",src:method.solo},
+     {label:"No jogo",src:method.mixed}
+   ].forEach(function(item){
+     var btn=document.createElement("button");btn.type="button";btn.className="melody-audio-btn";btn.textContent=item.label;
+     btn.addEventListener("click",function(){
+       stopOtherMelodyAudio(audio);
+       buttons.querySelectorAll(".melody-audio-btn").forEach(function(x){x.classList.remove("active")});
+       btn.classList.add("active");
+       audio.src="/"+String(item.src||"").replace(/^\/+/, "")+"?v="+encodeURIComponent(data.createdAt||Date.now());
+       audio.load();
+       var p=audio.play();if(p&&typeof p.catch==="function")p.catch(function(){});
+     });
+     buttons.appendChild(btn);
+   });
+
+   card.append(head,buttons,audio);
+   E.melodyResults.appendChild(card);
+ });
+}
+async function loadLatestMelodyResult(silent){
+ try{
+   var r=await fetch("/separation-tests/melody/manifest.json?_="+Date.now(),{cache:"no-store"});
+   if(!r.ok)throw new Error("melody manifest "+r.status);
+   var data=await r.json();
+   renderMelodyResult(data);
+   if(!silent)toast("Teste de melodia atualizado.");
+   return data;
+ }catch(err){
+   if(!silent)toast("Ainda não há teste de melodia pronto.");
+   return null;
+ }
+}
+async function waitForMelodyResult(after){
+ var started=Date.now();
+ while(Date.now()-started<150000){
+   try{
+     var r=await fetch("/separation-tests/melody/manifest.json?_="+Date.now(),{cache:"no-store"});
+     if(r.ok){
+       var data=await r.json(),created=Date.parse(data.createdAt||"");
+       if(!Number.isFinite(created)||created>=after-5000){renderMelodyResult(data);return data}
+     }
+   }catch(_){}
+   await new Promise(function(resolve){setTimeout(resolve,3500)});
+ }
+ return null;
+}
+async function monitorMelody(run,startedAt){
+ E.melodyWorkflowLink.href=run.html_url;
+ E.melodyWorkflowLink.classList.remove("hidden");
+ while(true){
+   var latest=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);
+   if(latest.status==="queued"){
+     setMelodyJob(55,"Na fila","Preparando o teste de melodia.");
+   }else if(latest.status==="in_progress"){
+     setMelodyJob(78,"Analisando expressão","Extraindo voz e rastreando pitch contínuo, vibrato, slides e dinâmica.");
+   }else if(latest.status==="completed"){
+     if(latest.conclusion==="success"){
+       setMelodyJob(94,"Áudios gerados","Publicando as três melodias no painel...");
+       var result=await waitForMelodyResult(startedAt);
+       if(result){
+         setMelodyJob(100,"Teste pronto","Compare Melodia sozinha e No jogo nas três versões.");
+         toast("Teste de melodia pronto.");
+         return;
+       }
+       setMelodyJob(100,"Processamento concluído","Use Recarregar quando o deploy terminar.");
+       return;
+     }
+     setMelodyJob(100,"Falha no teste","Abra a execução do GitHub para ver a etapa que falhou.");
+     throw new Error("Melody workflow "+latest.conclusion);
+   }
+   await new Promise(function(resolve){setTimeout(resolve,5500)});
  }
 }
 
@@ -535,7 +662,7 @@ function renderTraffic(days){
 var titles={"dashboard":["PAINEL","Visão geral"],"new-song":["CONTEÚDO","Nova música"],"catalog":["BIBLIOTECA","Catálogo"],"lab":["ÁUDIO","Laboratório"],"settings":["SISTEMA","Configurações"]};
 function switchView(name){
  document.querySelectorAll(".nav-item").forEach(function(b){b.classList.toggle("active",b.dataset.view===name)});document.querySelectorAll("[data-view-panel]").forEach(function(v){v.classList.toggle("active",v.dataset.viewPanel===name)});
- var t=titles[name]||titles.dashboard;E.sectionEyebrow.textContent=t[0];E.sectionTitle.textContent=t[1];document.querySelector(".sidebar").classList.remove("open");if(name==="dashboard")refreshDashboard();if(name==="lab")loadLatestLabResult(true)
+ var t=titles[name]||titles.dashboard;E.sectionEyebrow.textContent=t[0];E.sectionTitle.textContent=t[1];document.querySelector(".sidebar").classList.remove("open");if(name==="dashboard")refreshDashboard();if(name==="lab"){loadLatestLabResult(true);loadLatestMelodyResult(true)}
 }
 document.querySelectorAll(".nav-item").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.view)})});
 document.querySelectorAll("[data-view-jump]").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.viewJump)})});
@@ -563,6 +690,29 @@ E.labAudioFile.addEventListener("change",function(){var f=E.labAudioFile.files&&
 ["dragenter","dragover"].forEach(function(n){E.labUploadZone.addEventListener(n,function(ev){ev.preventDefault();E.labUploadZone.classList.add("drag")})});
 ["dragleave","drop"].forEach(function(n){E.labUploadZone.addEventListener(n,function(){E.labUploadZone.classList.remove("drag")})});
 E.labRefreshBtn.addEventListener("click",function(){loadLatestLabResult(false)});
+E.melodyRefreshBtn.addEventListener("click",function(){loadLatestMelodyResult(false)});
+E.melodyRunBtn.addEventListener("click",async function(){
+ E.melodyRunBtn.disabled=true;
+ E.melodyWorkflowLink.classList.add("hidden");
+ try{
+   if(!latestLabManifest)await loadLatestLabResult(true);
+   if(!latestLabManifest){toast("Faça primeiro um teste de separação com uma música.");return}
+   setMelodyJob(20,"Preparando teste","Reutilizando a última música e o mesmo trecho de 18 segundos.");
+   var startedAt=Date.now();
+   await dispatchMelody();
+   setMelodyJob(45,"Teste solicitado","Localizando a execução no GitHub.");
+   var run=await waitWorkflowRun(MELODY_WORKFLOW,startedAt);
+   if(!run){setMelodyJob(50,"Processamento iniciado","A execução foi enviada. Recarregue o resultado em alguns minutos.");return}
+   await monitorMelody(run,startedAt);
+ }catch(err){
+   console.error("melody lab",err);
+   setMelodyJob(100,"Não foi possível concluir",err&&err.status===403?"A key precisa de Actions em leitura e escrita.":"Confira a execução no GitHub.");
+   toast("O teste de melodia encontrou um erro.");
+ }finally{
+   E.melodyRunBtn.disabled=false;
+ }
+});
+
 E.labForm.addEventListener("submit",async function(ev){
  ev.preventDefault();
  var file=E.labAudioFile.files&&E.labAudioFile.files[0];

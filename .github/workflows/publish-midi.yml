@@ -31,6 +31,10 @@ on:
         description: "Link do YouTube (opcional)"
         required: false
         type: string
+      cover_url:
+        description: "URL da capa da música (opcional)"
+        required: false
+        type: string
       spotify_url:
         description: "Link do Spotify (opcional)"
         required: false
@@ -83,6 +87,7 @@ jobs:
           DIFFICULTY: ${{ inputs.difficulty }}
           YOUTUBE_VIEWS: ${{ inputs.youtube_views }}
           YOUTUBE_URL: ${{ inputs.youtube_url }}
+          COVER_URL: ${{ inputs.cover_url }}
           SPOTIFY_URL: ${{ inputs.spotify_url }}
           APPLE_MUSIC_URL: ${{ inputs.apple_music_url }}
           DEEZER_URL: ${{ inputs.deezer_url }}
@@ -152,6 +157,7 @@ jobs:
               "youtubeViews": os.environ.get("YOUTUBE_VIEWS", "").strip(),
               "difficulty": os.environ.get("DIFFICULTY", "").strip(),
               "youtubeUrl": os.environ.get("YOUTUBE_URL", "").strip(),
+              "coverUrl": os.environ.get("COVER_URL", "").strip(),
               "spotifyUrl": os.environ.get("SPOTIFY_URL", "").strip(),
               "appleMusicUrl": os.environ.get("APPLE_MUSIC_URL", "").strip(),
               "deezerUrl": os.environ.get("DEEZER_URL", "").strip(),

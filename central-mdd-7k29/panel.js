@@ -36,8 +36,8 @@ function formatDuration(v){var n=Number(v);if(!Number.isFinite(n))return"—";va
 function sanitizeFilename(name){var dot=name.lastIndexOf("."),ext=dot>=0?name.slice(dot).toLowerCase():"",stem=dot>=0?name.slice(0,dot):name;stem=stem.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]+/g,"-").replace(/-+/g,"-").replace(/^[-.]+|[-.]+$/g,"").slice(0,90);return(stem||"audio")+ext}
 async function fileToBase64(file){var bytes=new Uint8Array(await file.arrayBuffer()),binary="",chunk=0x8000;for(var i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));return btoa(binary)}
 function getCookie(name){var parts=document.cookie.split("; ");for(var i=0;i<parts.length;i++){var p=parts[i].split("=");if(p.shift()===name)return decodeURIComponent(p.join("="))}return""}
-function setTokenCookie(value){document.cookie="mdd_admin_token="+encodeURIComponent(value)+"; Max-Age=2592000; Path=/central-mdd-7k29/; SameSite=Strict; Secure"}
-function clearTokenCookie(){document.cookie="mdd_admin_token=; Max-Age=0; Path=/central-mdd-7k29/; SameSite=Strict; Secure"}
+function setTokenCookie(value){var c="mdd_admin_token="+encodeURIComponent(value)+"; Max-Age=2592000; Path=/central-mdd-7k29/; SameSite=Strict; Secure";if(location.hostname==="musicadodia.com"||location.hostname.endsWith(".musicadodia.com"))c+="; Domain=.musicadodia.com";document.cookie=c}
+function clearTokenCookie(){var c="mdd_admin_token=; Max-Age=0; Path=/central-mdd-7k29/; SameSite=Strict; Secure";if(location.hostname==="musicadodia.com"||location.hostname.endsWith(".musicadodia.com"))c+="; Domain=.musicadodia.com";document.cookie=c}
 function storedToken(){return localStorage.getItem("musicadodia:admin-token")||sessionStorage.getItem("musicadodia:admin-token")||getCookie("mdd_admin_token")||""}
 function storeToken(value){localStorage.setItem("musicadodia:admin-token",value);sessionStorage.setItem("musicadodia:admin-token",value);setTokenCookie(value)}
 function clearToken(){sessionStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-token");clearTokenCookie();token=""}
@@ -127,7 +127,7 @@ async function refreshDashboard(){
  }
 
  try{
-   var r=await fetch(base+"/rest/v1/rpc/musicadodia_dashboard",{
+   var r=await fetch(base+"/rest/v1/rpc/musicadodia_dashboard_stats",{
      method:"POST",
      headers:{
        "Content-Type":"application/json",
@@ -168,7 +168,7 @@ function switchView(name){
 document.querySelectorAll(".nav-item").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.view)})});
 document.querySelectorAll("[data-view-jump]").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.viewJump)})});
 E.menuBtn.addEventListener("click",function(){document.querySelector(".sidebar").classList.toggle("open")});
-E.connectForm.addEventListener("submit",async function(ev){ev.preventDefault();var btn=ev.submitter;if(btn)btn.disabled=true;try{await connect(E.tokenInput.value);E.tokenInput.value=""}catch(err){if(err.status===401)clearToken();toast(err.status===401?"Token inválido ou expirado.":err.status===403?"O token não tem acesso suficiente ao Dailysonh.":"Não consegui conectar ao GitHub. A key não foi apagada; tente novamente.")}finally{if(btn)btn.disabled=false}});
+E.connectForm.addEventListener("submit",async function(ev){ev.preventDefault();var btn=ev.submitter;if(btn)btn.disabled=true;try{await connect(E.tokenInput.value);E.tokenInput.value=""}catch(err){toast(err.status===401?"Token inválido ou expirado.":err.status===403?"O token não tem acesso suficiente ao Dailysonh.":"Não consegui conectar ao GitHub. A key salva não foi apagada.")}finally{if(btn)btn.disabled=false}});
 E.disconnectBtn.addEventListener("click",function(){clearToken();location.reload()});
 E.audioFile.addEventListener("change",function(){var f=E.audioFile.files&&E.audioFile.files[0];E.fileLabel.textContent=f?f.name:"Escolher arquivo de áudio"});
 ["dragenter","dragover"].forEach(function(n){E.uploadZone.addEventListener(n,function(ev){ev.preventDefault();E.uploadZone.classList.add("drag")})});["dragleave","drop"].forEach(function(n){E.uploadZone.addEventListener(n,function(){E.uploadZone.classList.remove("drag")})});

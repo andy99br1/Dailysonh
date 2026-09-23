@@ -67,6 +67,29 @@ jobs:
           pip install -r requirements.txt
           pip install "torchcrepe>=0.0.23,<0.1"
 
+      - name: Smoke test CREPE
+        run: |
+          python - <<'PY'
+          import torch
+          import torchcrepe
+
+          # Valida a assinatura/API do rastreador antes dos ~6 min do Roformer.
+          audio = torch.zeros(1, 16000)
+          pitch, periodicity = torchcrepe.predict(
+              audio,
+              16000,
+              160,
+              65.0,
+              1000.0,
+              "tiny",
+              batch_size=128,
+              device="cpu",
+              return_periodicity=True,
+          )
+          assert pitch.shape == periodicity.shape
+          print("CREPE smoke test OK:", tuple(pitch.shape))
+          PY
+
       - name: Install isolated BS-Roformer environment
         shell: bash
         run: |

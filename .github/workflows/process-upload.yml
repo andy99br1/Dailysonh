@@ -243,4 +243,10 @@ jobs:
             exit 0
           fi
           git commit -m "Process uploaded song ${SONG_DATE:-today}"
-          git push
+
+          # O processamento pode levar vários minutos. Nesse intervalo o painel
+          # ou outro commit pode avançar a branch main. Atualiza a base antes
+          # do push para evitar rejeição non-fast-forward.
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main

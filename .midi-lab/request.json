@@ -2,5 +2,6 @@
   "sourcePath": "midi-incoming/1790139450121-Capital_InicialNao_Olhe_Pra_Tras_2.mid",
   "melodyStyle": "flute",
   "clipStart": "",
-  "nonce": "1790139451599"
+  "nonce": "1790139569324",
+  "retryReason": "Retry after fixing workflow input escaping"
 }

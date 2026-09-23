@@ -50,6 +50,7 @@ jobs:
           SOURCE_PATH="$(python -c 'import json; print(json.load(open(".midi-lab/request.json")).get("sourcePath",""))')"
           STYLE="$(python -c 'import json; print(json.load(open(".midi-lab/request.json")).get("melodyStyle","bandle"))')"
           CLIP_START="$(python -c 'import json; print(json.load(open(".midi-lab/request.json")).get("clipStart",""))')"
+          REVEAL_SOURCE_PATH="$(python -c 'import json; print(json.load(open(".midi-lab/request.json")).get("revealSourcePath",""))')"
 
           if [ -z "$SOURCE_PATH" ]; then
             echo "Pedido sem sourcePath."
@@ -82,11 +83,39 @@ jobs:
             echo "MIDI recuperado do histórico: $COMMIT"
           fi
 
+          REVEAL_FILE=""
+          REMOVE_REVEAL_FILE=""
+
+          if [ -n "$REVEAL_SOURCE_PATH" ]; then
+            if [ -f "$REVEAL_SOURCE_PATH" ]; then
+              REVEAL_FILE="$REVEAL_SOURCE_PATH"
+              REMOVE_REVEAL_FILE="$REVEAL_SOURCE_PATH"
+            else
+              REVEAL_COMMIT=""
+              while IFS= read -r CANDIDATE; do
+                [ -z "$CANDIDATE" ] && continue
+                if git cat-file -e "$CANDIDATE:$REVEAL_SOURCE_PATH" 2>/dev/null; then
+                  REVEAL_COMMIT="$CANDIDATE"
+                  break
+                fi
+              done < <(git log --format='%H' -- "$REVEAL_SOURCE_PATH")
+
+              if [ -n "$REVEAL_COMMIT" ]; then
+                REVEAL_FILE="$RUNNER_TEMP/$(basename "$REVEAL_SOURCE_PATH")"
+                git show "$REVEAL_COMMIT:$REVEAL_SOURCE_PATH" > "$REVEAL_FILE"
+                echo "Áudio original recuperado do histórico: $REVEAL_COMMIT"
+              fi
+            fi
+          fi
+
           echo "file=$FILE" >> "$GITHUB_OUTPUT"
           echo "source_path=$SOURCE_PATH" >> "$GITHUB_OUTPUT"
           echo "style=$STYLE" >> "$GITHUB_OUTPUT"
           echo "clip_start=$CLIP_START" >> "$GITHUB_OUTPUT"
           echo "remove_file=$REMOVE_FILE" >> "$GITHUB_OUTPUT"
+          echo "reveal_file=$REVEAL_FILE" >> "$GITHUB_OUTPUT"
+          echo "reveal_source_path=$REVEAL_SOURCE_PATH" >> "$GITHUB_OUTPUT"
+          echo "remove_reveal_file=$REMOVE_REVEAL_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Analyze and render 18-second MIDI challenge
         env:
@@ -94,16 +123,21 @@ jobs:
           SOURCE_PATH: ${{ steps.midi.outputs.source_path }}
           MELODY_STYLE: ${{ steps.midi.outputs.style }}
           CLIP_START: ${{ steps.midi.outputs.clip_start }}
+          REVEAL_AUDIO: ${{ steps.midi.outputs.reveal_file }}
+          REVEAL_SOURCE_PATH: ${{ steps.midi.outputs.reveal_source_path }}
         run: |
           python scripts/midi_lab.py \
             --file "$MIDI_FILE" \
             --source-path "$SOURCE_PATH" \
             --melody-style "$MELODY_STYLE" \
-            --clip-start "$CLIP_START"
+            --clip-start "$CLIP_START" \
+            --reveal-audio "$REVEAL_AUDIO" \
+            --reveal-source-path "$REVEAL_SOURCE_PATH"
 
       - name: Publish laboratory result
         env:
           REMOVE_FILE: ${{ steps.midi.outputs.remove_file }}
+          REMOVE_REVEAL_FILE: ${{ steps.midi.outputs.remove_reveal_file }}
         run: |
           set -euo pipefail
           git config user.name "dailysonh-bot"
@@ -112,6 +146,9 @@ jobs:
           git add midi-lab/
           if [ -n "$REMOVE_FILE" ] && [ -f "$REMOVE_FILE" ]; then
             git rm --ignore-unmatch "$REMOVE_FILE"
+          fi
+          if [ -n "$REMOVE_REVEAL_FILE" ] && [ -f "$REMOVE_REVEAL_FILE" ]; then
+            git rm --ignore-unmatch "$REMOVE_REVEAL_FILE"
           fi
 
           if git diff --cached --quiet; then

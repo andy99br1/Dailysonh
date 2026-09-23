@@ -133,3 +133,66 @@ body[data-admin-theme="day"] .stem-publish-box{
   .stem-publish-actions{align-items:stretch}
   .stem-publish-actions .btn{width:100%}
 }
+
+
+.round-builder{
+  margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:14px;
+  background:rgba(255,255,255,.018)
+}
+.round-builder-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:14px
+}
+.round-builder-head h2{margin:0;font-size:17px}
+.round-builder-head p{margin:5px 0 0;max-width:720px;color:var(--muted);font-size:8.3px;line-height:1.55}
+.round-builder-head>strong{
+  flex:0 0 auto;padding:7px 10px;border-radius:999px;background:rgba(109,133,255,.10);
+  color:#cfd8ff;font-size:8px
+}
+.round-builder-note{
+  margin-top:11px;padding:10px 11px;border:1px solid rgba(35,199,217,.18);border-radius:10px;
+  background:rgba(35,199,217,.045);color:var(--muted);font-size:7.6px;line-height:1.5
+}
+.round-builder-note strong{color:#80e5ee}
+.round-layer-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:11px}
+.round-layer-item{
+  min-height:54px;padding:9px 10px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.02);
+  display:grid;grid-template-columns:auto 25px minmax(0,1fr);gap:9px;align-items:center;cursor:pointer
+}
+.round-layer-item:hover{border-color:rgba(35,199,217,.35)}
+.round-layer-item input{width:15px;height:15px;accent-color:#23c7d9}
+.round-layer-item>b{
+  width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(109,133,255,.12);font-size:8px
+}
+.round-layer-item>span{display:grid;gap:2px;min-width:0}
+.round-layer-item strong{font-size:8.5px}
+.round-layer-item small{color:var(--muted);font-size:7px}
+.round-custom-preview{
+  margin-top:12px;padding:11px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.07)
+}
+.round-custom-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.round-custom-head>div{display:grid;gap:2px}
+.round-custom-head strong{font-size:10px}
+.custom-round-list{display:grid;gap:6px;margin-top:9px}
+.custom-round-btn{
+  min-height:46px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02);
+  color:inherit;display:flex;gap:9px;align-items:center;text-align:left;cursor:pointer
+}
+.custom-round-btn>b{
+  width:25px;height:25px;flex:0 0 25px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(35,199,217,.09);font-size:8px
+}
+.custom-round-btn>span{display:grid;gap:2px;min-width:0}
+.custom-round-btn strong{font-size:8.5px}
+.custom-round-btn small{color:var(--muted);font-size:6.9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.custom-round-btn:hover,.custom-round-btn.active{border-color:rgba(35,199,217,.48);background:rgba(35,199,217,.07)}
+.custom-round-btn.reveal{border-style:dashed}
+body[data-admin-theme="day"] .round-builder,
+body[data-admin-theme="day"] .round-layer-item,
+body[data-admin-theme="day"] .custom-round-btn{background:rgba(38,55,92,.025)}
+@media(max-width:700px){
+  .round-layer-list{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .round-builder-head{flex-direction:column}
+}

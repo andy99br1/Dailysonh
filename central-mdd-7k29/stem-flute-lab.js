@@ -378,7 +378,7 @@ function renderLayerBuilder(resetSelection){
   if(!E.roundBuilder||!E.roundLayerList||!latestManifest)return;
   E.roundBuilder.classList.remove("hidden");
 
-  if(resetSelection||!selectedLayerIds.length){
+  if(resetSelection){
     selectedLayerIds=LAYER_OPTIONS.filter(function(item){return item.defaultOn}).map(function(item){return item.id});
   }
 

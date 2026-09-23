@@ -405,15 +405,17 @@
     if (!E.communitySummary || !E.communityBars) return;
 
     var stats = statsOverride || (song && song.communityStats);
+    var roundCount = playableRoundCount();
     var counts = [];
 
     if (stats && Array.isArray(stats.rounds)) {
-      counts = stats.rounds.slice(0, 5).map(function (value) {
+      counts = stats.rounds.slice(0, roundCount).map(function (value) {
         var numeric = Number(value);
         return Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : 0;
       });
+      while (counts.length < roundCount) counts.push(0);
     } else if (stats) {
-      for (var i = 1; i <= 5; i += 1) {
+      for (var i = 1; i <= roundCount; i += 1) {
         var numeric = Number(stats[i] !== undefined ? stats[i] : stats["round" + i]);
         counts.push(Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : 0);
       }
@@ -453,7 +455,7 @@
       bar.style.height = Math.max(12, Math.round((value / maxValue) * 100)) + "%";
 
       var label = document.createElement("small");
-      label.textContent = index < 5 ? String(index + 1) : "×";
+      label.textContent = index < roundCount ? String(index + 1) : "×";
 
       item.appendChild(bar);
       item.appendChild(label);

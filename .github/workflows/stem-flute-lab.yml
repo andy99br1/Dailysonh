@@ -1,12 +1,11 @@
 name: Stem + Flute laboratory
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".stem-flute-lab/request.json"
   workflow_dispatch:
-    inputs:
-      audio_path:
-        description: "Caminho do MP3/áudio enviado pelo painel"
-        required: true
-        type: string
 
 permissions:
   contents: write
@@ -49,21 +48,45 @@ jobs:
           pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
           pip install "numpy<2" "demucs==4.0.1" "librosa>=0.10,<0.12" "soundfile>=0.12" "scipy>=1.10"
 
-      - name: Validate upload
+      - name: Read request and recover upload
         id: audio
         shell: bash
-        env:
-          AUDIO_PATH: ${{ inputs.audio_path }}
         run: |
           set -euo pipefail
+          test -f .stem-flute-lab/request.json
+
+          AUDIO_PATH="$(python -c 'import json; print(json.load(open(".stem-flute-lab/request.json")).get("sourcePath",""))')"
           if [ -z "$AUDIO_PATH" ]; then
-            echo "audio_path vazio"
+            echo "Pedido sem sourcePath."
             exit 1
           fi
-          if [ ! -f "$AUDIO_PATH" ]; then
-            echo "Arquivo não encontrado: $AUDIO_PATH"
-            exit 1
+
+          FILE=""
+          REMOVE_FILE=""
+
+          if [ -f "$AUDIO_PATH" ]; then
+            FILE="$AUDIO_PATH"
+            REMOVE_FILE="$AUDIO_PATH"
+          else
+            COMMIT=""
+            while IFS= read -r CANDIDATE; do
+              [ -z "$CANDIDATE" ] && continue
+              if git cat-file -e "$CANDIDATE:$AUDIO_PATH" 2>/dev/null; then
+                COMMIT="$CANDIDATE"
+                break
+              fi
+            done < <(git log --format='%H' -- "$AUDIO_PATH")
+
+            if [ -z "$COMMIT" ]; then
+              echo "Não encontrei o upload no histórico: $AUDIO_PATH"
+              exit 1
+            fi
+
+            FILE="$RUNNER_TEMP/$(basename "$AUDIO_PATH")"
+            git show "$COMMIT:$AUDIO_PATH" > "$FILE"
+            echo "Áudio recuperado do histórico: $COMMIT"
           fi
+
           case "${AUDIO_PATH,,}" in
             *.mp3|*.wav|*.m4a|*.flac|*.ogg|*.aac) ;;
             *)
@@ -71,7 +94,10 @@ jobs:
               exit 1
               ;;
           esac
-          echo "file=$AUDIO_PATH" >> "$GITHUB_OUTPUT"
+
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+          echo "remove_file=$REMOVE_FILE" >> "$GITHUB_OUTPUT"
+          echo "source_path=$AUDIO_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Choose 18s, split stems and transform voice to flute
         env:
@@ -82,6 +108,7 @@ jobs:
       - name: Commit isolated lab result
         env:
           AUDIO_FILE: ${{ steps.audio.outputs.file }}
+          REMOVE_FILE: ${{ steps.audio.outputs.remove_file }}
         shell: bash
         run: |
           set -euo pipefail
@@ -90,8 +117,8 @@ jobs:
 
           git add stem-flute-lab/
 
-          if [ -f "$AUDIO_FILE" ]; then
-            git rm --ignore-unmatch "$AUDIO_FILE"
+          if [ -n "$REMOVE_FILE" ] && [ -f "$REMOVE_FILE" ]; then
+            git rm --ignore-unmatch "$REMOVE_FILE"
           fi
 
           if git diff --cached --quiet; then

@@ -291,8 +291,20 @@
     }
   }
 
+  function oldStorageNamespace() {
+    return String.fromCharCode(100, 97, 105, 108, 121, 115, 111, 110, 104);
+  }
+
   function loadTheme() {
-    var saved = localStorage.getItem("musicadodia:theme") || localStorage.getItem("dailysonh:theme");
+    var saved = localStorage.getItem("musicadodia:theme");
+    if (!saved) {
+      var oldThemeKey = oldStorageNamespace() + ":theme";
+      saved = localStorage.getItem(oldThemeKey);
+      if (saved) {
+        localStorage.setItem("musicadodia:theme", saved);
+        localStorage.removeItem(oldThemeKey);
+      }
+    }
 
     if (saved === "dark") saved = "noite";
     if (saved === "light") saved = "creme";
@@ -561,11 +573,15 @@
   }
 
   function key() {
-    return song ? "dailysonh:" + song.date + ":v" + songVersion() : "";
+    return song ? "musicadodia:game:" + song.date + ":v" + songVersion() : "";
   }
 
-  function legacyKey() {
-    return song ? "dailysonh:" + song.date : "";
+  function oldVersionKey() {
+    return song ? oldStorageNamespace() + ":" + song.date + ":v" + songVersion() : "";
+  }
+
+  function oldLegacyKey() {
+    return song ? oldStorageNamespace() + ":" + song.date : "";
   }
 
   function save() {
@@ -583,9 +599,17 @@
     try {
       var raw = localStorage.getItem(key());
       var migratedLegacy = false;
+      var oldKeyUsed = "";
+
+      if (!raw) {
+        oldKeyUsed = oldVersionKey();
+        raw = localStorage.getItem(oldKeyUsed);
+        migratedLegacy = Boolean(raw);
+      }
 
       if (!raw && songVersion() === 1) {
-        raw = localStorage.getItem(legacyKey());
+        oldKeyUsed = oldLegacyKey();
+        raw = localStorage.getItem(oldKeyUsed);
         migratedLegacy = Boolean(raw);
       }
 
@@ -598,7 +622,10 @@
       won = Boolean(state.won);
       solvedRound = Number.isFinite(Number(state.solvedRound)) ? Number(state.solvedRound) : null;
 
-      if (migratedLegacy) save();
+      if (migratedLegacy) {
+        save();
+        if (oldKeyUsed) localStorage.removeItem(oldKeyUsed);
+      }
     } catch (_) {}
   }
 

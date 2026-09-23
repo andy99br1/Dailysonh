@@ -6,6 +6,11 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#0b1230">
   <title>Central MDD · Música do Dia</title>
+  <script>
+    if (location.hostname === "www.musicadodia.com") {
+      location.replace("https://musicadodia.com" + location.pathname + location.search + location.hash);
+    }
+  </script>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
   <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=4">
 </head>
@@ -289,6 +294,32 @@
   </dialog>
 
   <div class="toast hidden" id="toast"></div>
-  <script src="/central-mdd-7k29/panel.js?v=8"></script>
+  <script>
+    (function () {
+      try {
+        function cookie(name) {
+          var parts = document.cookie ? document.cookie.split("; ") : [];
+          for (var i = 0; i < parts.length; i++) {
+            var pair = parts[i].split("=");
+            if (pair.shift() === name) return decodeURIComponent(pair.join("="));
+          }
+          return "";
+        }
+        var saved =
+          localStorage.getItem("musicadodia:admin-token") ||
+          sessionStorage.getItem("musicadodia:admin-token") ||
+          cookie("mdd_admin_token");
+        if (!saved) return;
+        document.body.classList.remove("auth-locked");
+        var login = document.getElementById("loginView");
+        var panel = document.getElementById("panel");
+        var label = document.getElementById("connectionLabel");
+        if (login) login.classList.add("hidden");
+        if (panel) panel.classList.remove("hidden");
+        if (label) label.textContent = "Conectado";
+      } catch (_) {}
+    })();
+  </script>
+  <script src="/central-mdd-7k29/panel.js?v=9"></script>
 </body>
 </html>

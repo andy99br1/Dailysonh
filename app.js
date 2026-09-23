@@ -30,6 +30,13 @@
     revealTitle: el("revealTitle"),
     revealArtist: el("revealArtist"),
     youtubeLink: el("youtubeLink"),
+    spotifyLink: el("spotifyLink"),
+    appleMusicLink: el("appleMusicLink"),
+    deezerLink: el("deezerLink"),
+    communityCard: el("communityCard"),
+    communitySummary: el("communitySummary"),
+    communityBars: el("communityBars"),
+    nextChallengeTimer: el("nextChallengeTimer"),
     shareBtn: el("shareBtn"),
     restartBtn: el("restartBtn"),
     visualizer: el("visualizer"),
@@ -42,7 +49,10 @@
   var guesses = [];
   var finished = false;
   var won = false;
+  var solvedRound = null;
   var catalogIndex = -1;
+  var countdownInterval = null;
+  var countdownDate = "";
 
   function brazilDate() {
     var parts = new Intl.DateTimeFormat("en", {
@@ -177,6 +187,168 @@
     closeThemeMenu();
   }
 
+
+  function cleanedSongTitle() {
+    if (!song) return "";
+    var title = String(song.title || "")
+      .replace(/\(youtube\)/ig, "")
+      .replace(/\b\(?(19\d{2}|20\d{2})\)?\b/g, "")
+      .trim();
+
+    var artist = String(song.artist || "").trim();
+    if (artist) {
+      var escaped = artist.replace(/[.*+?^$\{\}()|[\]\\]/g, "\\  function songVersion() {");
+      title = title.replace(new RegExp("\\s*[-–—]\\s*" + escaped + "\\s*$", "i"), "").trim();
+    }
+
+    return title || String(song.title || "");
+  }
+
+  function platformSearchUrl(platform) {
+    var query = [song && song.artist, cleanedSongTitle()].filter(Boolean).join(" ").trim();
+    var encoded = encodeURIComponent(query);
+
+    if (platform === "youtube") {
+      return "https://www.youtube.com/results?search_query=" + encoded;
+    }
+    if (platform === "spotify") {
+      return "https://open.spotify.com/search/" + encoded;
+    }
+    if (platform === "apple") {
+      return "https://music.apple.com/br/search?term=" + encoded;
+    }
+    return "https://www.deezer.com/search/" + encoded;
+  }
+
+  function renderPlatformLinks() {
+    if (!song) return;
+
+    if (E.youtubeLink) E.youtubeLink.href = song.youtubeUrl || platformSearchUrl("youtube");
+    if (E.spotifyLink) E.spotifyLink.href = song.spotifyUrl || platformSearchUrl("spotify");
+    if (E.appleMusicLink) E.appleMusicLink.href = song.appleMusicUrl || platformSearchUrl("apple");
+    if (E.deezerLink) E.deezerLink.href = song.deezerUrl || platformSearchUrl("deezer");
+  }
+
+  function renderCommunityStats() {
+    if (!E.communitySummary || !E.communityBars) return;
+
+    var stats = song && song.communityStats;
+    var counts = [];
+
+    if (stats && Array.isArray(stats.rounds)) {
+      counts = stats.rounds.slice(0, 5).map(function (value) {
+        var numeric = Number(value);
+        return Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : 0;
+      });
+    } else if (stats) {
+      for (var i = 1; i <= 5; i += 1) {
+        var numeric = Number(stats[i] !== undefined ? stats[i] : stats["round" + i]);
+        counts.push(Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : 0);
+      }
+    }
+
+    var failed = stats ? Number(stats.failed || stats.losses || 0) : 0;
+    failed = Number.isFinite(failed) && failed > 0 ? Math.floor(failed) : 0;
+
+    var winners = counts.reduce(function (sum, value) { return sum + value; }, 0);
+    var total = winners + failed;
+
+    E.communityBars.innerHTML = "";
+
+    if (!stats || total < 2) {
+      E.communitySummary.textContent = "Ainda sem resultados suficientes";
+      E.communityBars.classList.add("hidden");
+      return;
+    }
+
+    var maxIndex = 0;
+    counts.forEach(function (value, index) {
+      if (value > counts[maxIndex]) maxIndex = index;
+    });
+
+    if (failed > counts[maxIndex]) {
+      E.communitySummary.textContent = "A maioria não acertou hoje";
+    } else {
+      E.communitySummary.textContent = "A maioria acertou na faixa " + (maxIndex + 1);
+    }
+
+    var maxValue = Math.max.apply(Math, counts.concat([failed, 1]));
+    counts.concat([failed]).forEach(function (value, index) {
+      var item = document.createElement("span");
+      item.className = "community-bar-item";
+
+      var bar = document.createElement("i");
+      bar.style.height = Math.max(12, Math.round((value / maxValue) * 100)) + "%";
+
+      var label = document.createElement("small");
+      label.textContent = index < 5 ? String(index + 1) : "×";
+
+      item.appendChild(bar);
+      item.appendChild(label);
+      E.communityBars.appendChild(item);
+    });
+
+    E.communityBars.classList.remove("hidden");
+  }
+
+  function brasiliaClockParts() {
+    var parts = new Intl.DateTimeFormat("en", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23"
+    }).formatToParts(new Date());
+
+    var values = {};
+    parts.forEach(function (part) {
+      if (part.type !== "literal") values[part.type] = part.value;
+    });
+    return values;
+  }
+
+  function updateNextChallengeTimer() {
+    if (!E.nextChallengeTimer) return;
+
+    var parts = brasiliaClockParts();
+    var currentDate = parts.year + "-" + parts.month + "-" + parts.day;
+
+    if (countdownDate && currentDate !== countdownDate) {
+      countdownDate = currentDate;
+      location.reload();
+      return;
+    }
+
+    countdownDate = currentDate;
+
+    var secondsToday =
+      Number(parts.hour) * 3600 +
+      Number(parts.minute) * 60 +
+      Number(parts.second);
+
+    var remaining = Math.max(0, 86400 - secondsToday);
+    if (remaining === 86400) remaining = 0;
+
+    var hours = Math.floor(remaining / 3600);
+    var minutes = Math.floor((remaining % 3600) / 60);
+    var seconds = remaining % 60;
+
+    E.nextChallengeTimer.textContent =
+      String(hours).padStart(2, "0") + ":" +
+      String(minutes).padStart(2, "0") + ":" +
+      String(seconds).padStart(2, "0");
+  }
+
+  function startNextChallengeTimer() {
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownDate = "";
+    updateNextChallengeTimer();
+    countdownInterval = setInterval(updateNextChallengeTimer, 1000);
+  }
+
   function songVersion() {
     var value = Number(song && song.version);
     return Number.isFinite(value) && value >= 1 ? Math.floor(value) : 1;
@@ -196,7 +368,8 @@
       roundIndex: roundIndex,
       guesses: guesses,
       finished: finished,
-      won: won
+      won: won,
+      solvedRound: solvedRound
     }));
   }
 
@@ -217,6 +390,7 @@
       guesses = Array.isArray(state.guesses) ? state.guesses.slice(0, 5) : [];
       finished = Boolean(state.finished);
       won = Boolean(state.won);
+      solvedRound = Number.isFinite(Number(state.solvedRound)) ? Number(state.solvedRound) : null;
 
       if (migratedLegacy) save();
     } catch (_) {}
@@ -401,6 +575,7 @@
   async function reveal(success, autoplay) {
     finished = true;
     won = Boolean(success);
+    if (!won) solvedRound = null;
     roundIndex = 4;
 
     E.reveal.classList.remove("hidden");
@@ -408,12 +583,9 @@
     E.revealTitle.textContent = song.title;
     E.revealArtist.textContent = song.artist;
 
-    if (song.youtubeUrl) {
-      E.youtubeLink.href = song.youtubeUrl;
-      E.youtubeLink.classList.remove("hidden");
-    } else {
-      E.youtubeLink.classList.add("hidden");
-    }
+    renderPlatformLinks();
+    renderCommunityStats();
+    startNextChallengeTimer();
 
     E.guessInput.disabled = true;
     E.guessBtn.disabled = true;
@@ -504,6 +676,7 @@
     guesses = [];
     finished = false;
     won = false;
+    solvedRound = null;
 
     E.reveal.classList.add("hidden");
     E.guessForm.classList.add("hidden");
@@ -649,6 +822,7 @@
     E.guessInput.value = "";
 
     if (isCorrect(guess, song.title)) {
+      solvedRound = roundIndex + 1;
       reveal(true, true);
       return;
     }

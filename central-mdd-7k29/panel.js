@@ -312,7 +312,11 @@ function midiRoundLabelStorageKey(data){
  return "musicadodia:midi-round-labels:"+(data&&data.sourcePath||data&&data.sourceName||"latest")
 }
 function getMidiRoundLabels(data){
- var fallback=(data&&Array.isArray(data.rounds)?data.rounds:[]).map(function(round){return String(round.label||("Faixa "+round.number))});
+ var fallback=(data&&Array.isArray(data.rounds)?data.rounds:[]).map(function(round,index){
+   if(index===5||String(round.label||"").toLowerCase().indexOf("revela")>=0)return "Revelação";
+   var added=Array.isArray(round.added)?round.added.filter(Boolean):[];
+   return added.length?added.join(" + "):String(round.label||("Faixa "+round.number))
+ });
  try{
    var saved=JSON.parse(localStorage.getItem(midiRoundLabelStorageKey(data))||"null");
    if(Array.isArray(saved))return fallback.map(function(label,i){return String(saved[i]||label)})

@@ -67,6 +67,7 @@ jobs:
           test -f .stem-flute-lab/request.json
 
           AUDIO_PATH="$(python -c 'import json; print(json.load(open(".stem-flute-lab/request.json")).get("sourcePath",""))')"
+          CLIP_START="$(python -c 'import json; v=json.load(open(".stem-flute-lab/request.json")).get("clipStart"); print("" if v is None else v)')"
           if [ -z "$AUDIO_PATH" ]; then
             echo "Pedido sem sourcePath."
             exit 1
@@ -109,13 +110,19 @@ jobs:
           echo "file=$FILE" >> "$GITHUB_OUTPUT"
           echo "remove_file=$REMOVE_FILE" >> "$GITHUB_OUTPUT"
           echo "source_path=$AUDIO_PATH" >> "$GITHUB_OUTPUT"
+          echo "clip_start=$CLIP_START" >> "$GITHUB_OUTPUT"
 
       - name: Choose 18s, split stems and transform voice to flute
         env:
           AUDIO_FILE: ${{ steps.audio.outputs.file }}
           SOURCE_PATH: ${{ steps.audio.outputs.source_path }}
+          CLIP_START: ${{ steps.audio.outputs.clip_start }}
         run: |
-          python scripts/stem_flute_lab.py --file "$AUDIO_FILE" --source-path "$SOURCE_PATH"
+          if [ -n "$CLIP_START" ]; then
+            python scripts/stem_flute_lab.py --file "$AUDIO_FILE" --source-path "$SOURCE_PATH" --start "$CLIP_START"
+          else
+            python scripts/stem_flute_lab.py --file "$AUDIO_FILE" --source-path "$SOURCE_PATH"
+          fi
 
       - name: Commit isolated lab result
         env:

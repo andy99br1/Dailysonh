@@ -12,7 +12,7 @@
     }
   </script>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=9">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=12">
 </head>
 <body class="auth-locked">
   <div class="app-shell">
@@ -26,6 +26,7 @@
         <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
         <button class="nav-item" data-view="new-song"><span class="nav-icon">＋</span><span>Nova música</span></button>
         <button class="nav-item" data-view="catalog"><span class="nav-icon">♫</span><span>Catálogo</span></button>
+        <button class="nav-item" data-view="midi-lab"><span class="nav-icon">♬</span><span>Laboratório MIDI</span></button>
         <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span>Configurações</span></button>
       </nav>
 
@@ -241,6 +242,74 @@
           </article>
         </section>
 
+
+        <section class="view" data-view-panel="midi-lab">
+          <div class="midi-lab-grid">
+            <article class="dash-card form-card">
+              <div class="card-title-row">
+                <div><span class="eyebrow">NOVO MÉTODO</span><h2>Laboratório MIDI</h2></div>
+                <span class="challenge-chip">5 etapas + revelação</span>
+              </div>
+              <p class="muted midi-intro">Envie um MIDI. O sistema encontra automaticamente o melhor trecho de 18 segundos, identifica bateria, baixo, instrumentos principais e melodia, e monta as seis faixas cumulativas.</p>
+              <form id="midiForm">
+                <div class="upload-zone midi-upload-zone" id="midiUploadZone">
+                  <input id="midiFile" type="file" accept=".mid,.midi,audio/midi,audio/x-midi">
+                  <div class="upload-symbol">♬</div>
+                  <strong id="midiFileLabel">Escolher arquivo MIDI</strong>
+                  <span>MID ou MIDI · análise automática</span>
+                </div>
+                <div class="fields two midi-fields">
+                  <label>Timbre da melodia
+                    <select id="midiMelodyStyle">
+                      <option value="bandle">Lead suave (Bandle)</option>
+                      <option value="flute">Flauta / synth suave</option>
+                      <option value="epiano">Piano elétrico</option>
+                      <option value="bells">Sinos / keys</option>
+                      <option value="bright">Lead brilhante</option>
+                    </select>
+                  </label>
+                  <label>Início do trecho (s)<input id="midiClipStart" type="number" min="0" step="0.1" placeholder="Automático"></label>
+                </div>
+                <div class="midi-actions">
+                  <button class="btn primary" id="midiRunBtn" type="submit">Analisar e gerar 18s</button>
+                  <button class="btn secondary hidden" id="midiRerenderBtn" type="button">Aplicar novo timbre</button>
+                </div>
+              </form>
+              <div class="job-box hidden" id="midiJobBox">
+                <div class="job-line"><strong id="midiJobTitle">Preparando...</strong><span id="midiJobPercent">0%</span></div>
+                <div class="progress-track"><span id="midiJobProgress"></span></div>
+                <p id="midiJobMessage"></p>
+                <a class="hidden" id="midiWorkflowLink" target="_blank" rel="noopener">Ver execução no GitHub</a>
+              </div>
+            </article>
+
+            <aside class="dash-card process-card">
+              <span class="eyebrow">AUTOMÁTICO</span><h2>Como ele escolhe</h2>
+              <div class="process-flow">
+                <div><i>1</i><p><strong>Trecho</strong><span>Procura 18s com bateria, baixo, arranjo e melodia ativos.</span></p></div>
+                <div><i>2</i><p><strong>Funções</strong><span>Reconhece bateria, baixo e a melhor candidata a voz/melodia.</span></p></div>
+                <div><i>3</i><p><strong>Instrumentos</strong><span>Escolhe os acompanhamentos que mais acrescentam ao desafio.</span></p></div>
+                <div><i>4</i><p><strong>Render</strong><span>Gera somente os 18s escolhidos, sem separar áudio por IA.</span></p></div>
+              </div>
+            </aside>
+          </div>
+
+          <article class="dash-card midi-results-card hidden" id="midiResultsCard">
+            <div class="card-title-row">
+              <div><span class="eyebrow">RESULTADO</span><h2 id="midiResultTitle">Último MIDI</h2><p class="lab-result-meta" id="midiResultMeta"></p></div>
+              <button class="btn secondary small" id="midiRefreshBtn" type="button">Recarregar</button>
+            </div>
+            <div class="midi-role-grid" id="midiRoles"></div>
+            <div class="midi-rounds" id="midiRounds"></div>
+            <div class="midi-player-card">
+              <div class="preview-now"><span class="preview-number" id="midiNowNumber">1</span><div><span class="eyebrow">OUVINDO AGORA</span><strong id="midiNowLabel">Bateria</strong></div></div>
+              <audio id="midiAudio" controls preload="none"></audio>
+              <p class="preview-status" id="midiAudioStatus">Escolha uma das seis faixas.</p>
+            </div>
+            <details class="midi-details"><summary>Ver canais detectados</summary><div id="midiChannels" class="midi-channel-list"></div></details>
+          </article>
+        </section>
+
         <section class="view" data-view-panel="settings">
           <div class="settings-grid">
             <article class="dash-card">
@@ -358,6 +427,6 @@
       } catch (_) {}
     })();
   </script>
-  <script src="/central-mdd-7k29/panel.js?v=17"></script>
+  <script src="/central-mdd-7k29/panel.js?v=20"></script>
 </body>
 </html>

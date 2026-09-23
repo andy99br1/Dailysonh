@@ -39,7 +39,25 @@ function storedToken(){return localStorage.getItem("musicadodia:admin-token")||s
 function storeToken(value){localStorage.setItem("musicadodia:admin-token",value);sessionStorage.setItem("musicadodia:admin-token",value)}
 function clearToken(){sessionStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-token");token=""}
 async function validate(){var repoInfo=await api("/repos/"+OWNER+"/"+REPO);if(!repoInfo||String(repoInfo.full_name||"").toLowerCase()!==(OWNER+"/"+REPO).toLowerCase())throw new Error("Repositório não autorizado");E.githubUser.textContent=OWNER;E.connectionLabel.textContent="Conectado";return true}
-async function connect(value){token=String(value||"").trim();if(!token)throw new Error("Token vazio");await validate();storeToken(token);document.body.classList.remove("auth-locked");E.loginView.classList.add("hidden");E.panel.classList.remove("hidden");await Promise.all([loadCatalog(),loadAnalyticsConfig()]);await refreshDashboard()}
+async function connect(value){
+ token=String(value||"").trim();
+ if(!token)throw new Error("Token vazio");
+ await validate();
+ storeToken(token);
+ document.body.classList.remove("auth-locked");
+ E.loginView.classList.add("hidden");
+ E.panel.classList.remove("hidden");
+
+ var catalogOk=true,analyticsOk=true;
+ try{await loadCatalog()}catch(err){catalogOk=false;console.error("catalog",err)}
+ try{await loadAnalyticsConfig()}catch(err){analyticsOk=false;console.error("analytics-config",err)}
+ try{await refreshDashboard()}catch(err){analyticsOk=false;console.error("dashboard",err)}
+
+ if(!catalogOk||!analyticsOk){
+   toast("GitHub conectado. Alguns dados demoraram para carregar; tente Atualizar se necessário.");
+ }
+ return true;
+}
 async function getRepoFile(path){return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path)+"?ref="+encodeURIComponent(BRANCH))}
 async function loadCatalog(){var data=await getRepoFile("catalog.json");catalogSha=data.sha;var decoded=decodeURIComponent(escape(atob(String(data.content||"").replace(/\n/g,""))));catalog=JSON.parse(decoded);if(!Array.isArray(catalog.songs))catalog.songs=[];renderSongs();renderSelectedChallenge()}
 function renderSongs(){
@@ -50,7 +68,7 @@ function renderSongs(){
  var actions=document.createElement("div");actions.className="song-actions";var edit=document.createElement("button");edit.className="mini-btn";edit.type="button";edit.textContent="Editar";edit.onclick=function(){openEdit(idx)};var open=document.createElement("a");open.className="mini-btn";open.textContent="Abrir";open.href="/";open.target="_blank";open.rel="noopener";actions.append(edit,open);row.append(d,main,actions);E.songsList.appendChild(row)
  })
 }
-function songForDate(date){var exact=catalog.songs.find(function(s){return String(s.date||"")===String(date||"")});return exact||null}
+function songForDate(date){var eligible=catalog.songs.filter(function(s){return String(s.date||"")<=String(date||"")});return eligible.length?eligible[eligible.length-1]:null}
 function renderSelectedChallenge(){
  var song=songForDate(selectedDate||brazilDate());
  if(!song){E.todaySongTitle.textContent="Nenhum desafio nesta data";E.todayChallenge.textContent="#—";return}
@@ -86,7 +104,7 @@ function formValues(){return{title:E.songTitle.value.trim(),artist:E.songArtist.
 function setDefaultDate(){E.songDateInput.value=brazilDate()}
 async function loadAnalyticsConfig(){try{var r=await fetch("/analytics-config.json?v="+Date.now(),{cache:"no-store"});analyticsConfig=r.ok?await r.json():null}catch(_){analyticsConfig=null}updateAnalyticsStatus()}
 function updateAnalyticsStatus(){
- var url=analyticsConfig&&(analyticsConfig.dashboardEndpoint||analyticsConfig.endpoint);if(url){E.analyticsStatusPanel.querySelector("i").className="status-green";E.analyticsStatusTitle.textContent="Conectado";E.analyticsStatusText.textContent="Endpoint de estatísticas configurado.";E.analyticsWarning.classList.add("hidden")}else{E.analyticsStatusPanel.querySelector("i").className="status-red";E.analyticsStatusTitle.textContent="Não conectado";E.analyticsStatusText.textContent="Nenhum endpoint configurado.";E.analyticsWarning.classList.remove("hidden")}
+ var url=analyticsConfig&&(analyticsConfig.dashboardEndpoint||analyticsConfig.endpoint);if(url){E.analyticsStatusPanel.querySelector("i").className="status-green";E.analyticsStatusTitle.textContent="Conectado";E.analyticsStatusText.textContent="Supabase conectado e recebendo estatísticas.";E.analyticsWarning.classList.add("hidden")}else{E.analyticsStatusPanel.querySelector("i").className="status-red";E.analyticsStatusTitle.textContent="Não conectado";E.analyticsStatusText.textContent="Nenhum endpoint configurado.";E.analyticsWarning.classList.remove("hidden")}
 }
 async function refreshDashboard(){
  if(!selectedDate)selectedDate=brazilDate();
@@ -101,7 +119,12 @@ async function refreshDashboard(){
    renderAnalytics(data);
    if(selectedDate!==brazilDate()){E.metricOnline.textContent="—"} 
    E.analyticsWarning.classList.add("hidden")
- }catch(_){E.analyticsWarning.classList.remove("hidden")}
+ }catch(err){
+   console.error("analytics",err);
+   E.analyticsWarning.classList.remove("hidden");
+   E.analyticsWarning.querySelector("strong").textContent="Não consegui carregar as estatísticas";
+   E.analyticsWarning.querySelector("span").textContent="A coleta continua ativa no Supabase. Recarregue o painel para tentar novamente.";
+ }
 }
 function renderAnalytics(data){
  var today=data.today||data.summary||data||{};

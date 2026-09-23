@@ -8,7 +8,7 @@
   <title>Stem + Flauta · Central MDD</title>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
   <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=16">
-  <link rel="stylesheet" href="/central-mdd-7k29/stem-flute-lab.css?v=1">
+  <link rel="stylesheet" href="/central-mdd-7k29/stem-flute-lab.css?v=2">
 </head>
 <body data-admin-theme="night">
   <div class="app-shell">
@@ -120,12 +120,31 @@
             <audio id="labAudio" controls preload="metadata"></audio>
             <p class="preview-status" id="labAudioStatus">O mix “sem voz + flauta” é o melhor para avaliar a ideia.</p>
           </div>
+
+          <section class="game-preview hidden" id="gamePreviewSection">
+            <div class="game-preview-head">
+              <div>
+                <span class="eyebrow">SIMULAÇÃO DO JOGO</span>
+                <h2>Como ficaria nas 5 faixas</h2>
+                <p>As quatro primeiras etapas são cumulativas. A quinta toca o trecho original para revelação.</p>
+              </div>
+              <strong id="gameRoundLabel">Faixa 1 de 5</strong>
+            </div>
+
+            <div class="game-preview-rounds" id="gameRoundList"></div>
+
+            <div class="game-preview-player">
+              <span>OUVINDO</span>
+              <strong id="gameNowLabel">Bateria</strong>
+              <audio id="gameAudio" controls preload="metadata"></audio>
+            </div>
+          </section>
         </article>
       </div>
     </main>
   </div>
 
   <div class="toast hidden" id="toast"></div>
-  <script src="/central-mdd-7k29/stem-flute-lab.js?v=3"></script>
+  <script src="/central-mdd-7k29/stem-flute-lab.js?v=4"></script>
 </body>
 </html>

@@ -619,6 +619,36 @@ def build_full_body_guitar(stems, out_path):
     sf.write(out_path, enhanced, TARGET_SR, subtype="PCM_16")
 
 
+def build_full_body_piano(stems, out_path):
+    """
+    Faz o mesmo tratamento de corpo para piano/teclas.
+    O stem do piano continua sendo a base; recuperamos só uma parte dos
+    médios-graves e harmônicos que normalmente vazam para 'other'.
+    """
+    piano = read_stereo(stems["piano"])
+    other = read_stereo(stems["other"])
+    guitar = read_stereo(stems["guitar"])
+    n = min(len(piano), len(other), len(guitar))
+    piano = piano[:n]
+    other = other[:n]
+    guitar = guitar[:n]
+
+    body_residual = _bandpass_stereo(other, 90.0, 1500.0)
+    presence_residual = _bandpass_stereo(other, 1500.0, 5200.0)
+    guitar_warmth = _bandpass_stereo(guitar, 120.0, 700.0)
+
+    enhanced = (
+        piano
+        + 0.22 * body_residual
+        + 0.045 * presence_residual
+        + 0.025 * guitar_warmth
+    )
+
+    enhanced = np.tanh(enhanced * 1.09) / np.tanh(1.09)
+    enhanced = _normalize_peak(enhanced, 0.91)
+    sf.write(out_path, enhanced, TARGET_SR, subtype="PCM_16")
+
+
 def build_mix(stems, flute_path, instruments_path, out_path):
     parts = [
         read_stereo(stems["drums"]),
@@ -670,6 +700,9 @@ def main():
         guitar_full_wav = work / "guitar-full-body.wav"
         build_full_body_guitar(stems, guitar_full_wav)
 
+        piano_full_wav = work / "piano-full-body.wav"
+        build_full_body_piano(stems, piano_full_wav)
+
         mix_wav = work / "instrumental-with-flute.wav"
         build_mix(stems, flute_wav, instruments_wav, mix_wav)
 
@@ -680,7 +713,7 @@ def main():
             "bass": stems["bass"],
             "instruments": instruments_wav,
             "guitar": guitar_full_wav,
-            "piano": stems["piano"],
+            "piano": piano_full_wav,
             "other": stems["other"],
             "vocals": stems["vocals"],
             "original": clip,
@@ -693,7 +726,7 @@ def main():
             "bass": "Baixo",
             "instruments": "Instrumentos completos",
             "guitar": "Guitarra / violão (encorpada)",
-            "piano": "Piano / teclas",
+            "piano": "Piano / teclas (encorpado)",
             "other": "Outros instrumentos",
             "vocals": "Voz isolada (comparação)",
             "original": "Trecho original",

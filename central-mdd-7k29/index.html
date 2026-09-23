@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#0b1230">
+  <title>Central MDD · Música do Dia</title>
+  <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=1">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="side-brand" href="/">
+        <img src="/logo.svg?v=20260922-3" alt="">
+        <span><strong>Música do Dia</strong><small>Central administrativa</small></span>
+      </a>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
+        <button class="nav-item" data-view="new-song"><span class="nav-icon">＋</span><span>Nova música</span></button>
+        <button class="nav-item" data-view="catalog"><span class="nav-icon">♫</span><span>Catálogo</span></button>
+        <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span>Configurações</span></button>
+      </nav>
+
+      <div class="side-footer">
+        <a href="/" target="_blank" rel="noopener">Abrir site</a>
+        <button id="disconnectBtn" type="button">Sair</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow" id="sectionEyebrow">PAINEL</span>
+          <h1 id="sectionTitle">Visão geral</h1>
+        </div>
+        <div class="top-actions">
+          <span class="live-pill"><i></i><span id="connectionLabel">Desconectado</span></span>
+          <button class="icon-btn mobile-menu" id="menuBtn" type="button">☰</button>
+        </div>
+      </header>
+
+      <section id="loginView" class="login-card">
+        <div class="login-mark">
+          <img src="/logo.svg?v=20260922-3" alt="">
+        </div>
+        <span class="eyebrow">ACESSO RESTRITO</span>
+        <h2>Conectar painel</h2>
+        <p>Use o token Fine-grained do GitHub com acesso somente ao repositório Dailysonh.</p>
+        <form id="connectForm">
+          <label>Token do GitHub
+            <input id="tokenInput" type="password" autocomplete="off" placeholder="github_pat_..." required>
+          </label>
+          <label class="remember"><input id="rememberToken" type="checkbox"><span>Lembrar neste dispositivo</span></label>
+          <button class="btn primary" type="submit">Conectar</button>
+        </form>
+      </section>
+
+      <div id="panel" class="hidden">
+        <section class="view active" data-view-panel="dashboard">
+          <div class="metrics-grid">
+            <article class="metric-card accent-blue">
+              <div class="metric-head"><span>Jogadores hoje</span><i>◉</i></div>
+              <strong id="metricPlayers">—</strong>
+              <small id="metricPlayersSub">Aguardando analytics</small>
+            </article>
+            <article class="metric-card accent-cyan">
+              <div class="metric-head"><span>Pessoas online</span><i>●</i></div>
+              <strong id="metricOnline">—</strong>
+              <small id="metricOnlineSub">Últimos 90 segundos</small>
+            </article>
+            <article class="metric-card accent-purple">
+              <div class="metric-head"><span>Acessos únicos</span><i>◆</i></div>
+              <strong id="metricUnique">—</strong>
+              <small id="metricUniqueSub">Hoje</small>
+            </article>
+            <article class="metric-card accent-orange">
+              <div class="metric-head"><span>Tempo médio</span><i>◷</i></div>
+              <strong id="metricDuration">—</strong>
+              <small id="metricDurationSub">Por sessão</small>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="dash-card traffic-card">
+              <div class="card-title-row">
+                <div><span class="eyebrow">ACESSOS</span><h2>Últimos 7 dias</h2></div>
+                <span class="mini-stat" id="trafficTotal">— total</span>
+              </div>
+              <div class="line-chart" id="trafficChart">
+                <div class="empty-chart">Aguardando coleta de acessos</div>
+              </div>
+            </article>
+
+            <article class="dash-card today-card">
+              <div class="card-title-row">
+                <div><span class="eyebrow">DESAFIO DE HOJE</span><h2 id="todaySongTitle">—</h2></div>
+                <span class="challenge-chip" id="todayChallenge">#—</span>
+              </div>
+              <div class="today-stats">
+                <div><span>Acertos</span><strong id="todayWins">—</strong></div>
+                <div><span>Erros</span><strong id="todayFails">—</strong></div>
+                <div><span>Taxa de acerto</span><strong id="todayRate">—</strong></div>
+              </div>
+              <div class="round-bars" id="roundBars">
+                <div class="empty-chart compact">Sem resultados coletados</div>
+              </div>
+            </article>
+
+            <article class="dash-card guesses-card">
+              <div class="card-title-row">
+                <div><span class="eyebrow">PALPITES</span><h2>Tentativas mais comuns</h2></div>
+              </div>
+              <div id="commonGuesses" class="rank-list">
+                <div class="empty-row">Aguardando dados de palpites</div>
+              </div>
+            </article>
+
+            <article class="dash-card quality-card">
+              <div class="card-title-row">
+                <div><span class="eyebrow">QUALIDADE</span><h2>Erros e comportamento</h2></div>
+              </div>
+              <div class="quality-list">
+                <div><span>Erros de áudio</span><strong id="audioErrors">—</strong></div>
+                <div><span>Abandonos</span><strong id="abandonRate">—</strong></div>
+                <div><span>Conclusões</span><strong id="completionRate">—</strong></div>
+                <div><span>Páginas vistas</span><strong id="pageViews">—</strong></div>
+              </div>
+            </article>
+          </div>
+
+          <div class="analytics-warning" id="analyticsWarning">
+            <div><strong>Analytics ainda não conectado</strong><span>O painel está pronto, mas o GitHub Pages não armazena estatísticas dos visitantes sozinho. Assim que conectarmos o endpoint de analytics, estes cards passam a mostrar dados reais.</span></div>
+            <button class="btn secondary" data-view-jump="settings">Configurar</button>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="new-song">
+          <div class="content-grid">
+            <article class="dash-card form-card">
+              <div class="card-title-row">
+                <div><span class="eyebrow">NOVO DESAFIO</span><h2>Enviar música</h2></div>
+                <span class="challenge-chip">1 áudio → 5 rodadas</span>
+              </div>
+
+              <form id="songForm">
+                <div class="upload-zone" id="uploadZone">
+                  <input id="audioFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*" required>
+                  <div class="upload-symbol">♫</div>
+                  <strong id="fileLabel">Escolher arquivo de áudio</strong>
+                  <span>MP3, WAV, M4A, FLAC, OGG ou AAC · até 45 MB</span>
+                </div>
+
+                <div class="fields two">
+                  <label>Título<input id="songTitle" type="text" placeholder="Ex.: Secretária"></label>
+                  <label>Artista<input id="songArtist" type="text" placeholder="Ex.: Amado Batista"></label>
+                </div>
+
+                <div class="fields three">
+                  <label>Data do desafio<input id="songDateInput" type="date" required></label>
+                  <label>Ano<input id="releaseYearInput" type="number" min="1900" max="2100" placeholder="2001"></label>
+                  <label>Dificuldade
+                    <select id="difficultyInput"><option value="">Não informar</option><option>Fácil</option><option>Médio</option><option>Difícil</option></select>
+                  </label>
+                </div>
+
+                <div class="fields two">
+                  <label>Views no YouTube<input id="youtubeViewsInput" type="text" inputmode="numeric" placeholder="125000000"></label>
+                  <label>Início do trecho (s)<input id="clipStartInput" type="number" min="0" step="0.1" placeholder="Automático"></label>
+                </div>
+
+                <details class="advanced">
+                  <summary>Links das plataformas</summary>
+                  <div class="fields one inner">
+                    <label>YouTube<input id="youtubeUrlInput" type="url" placeholder="https://youtube.com/..."></label>
+                    <label>Spotify<input id="spotifyUrlInput" type="url" placeholder="https://open.spotify.com/..."></label>
+                    <label>Apple Music<input id="appleMusicUrlInput" type="url" placeholder="https://music.apple.com/..."></label>
+                    <label>Deezer<input id="deezerUrlInput" type="url" placeholder="https://deezer.com/..."></label>
+                  </div>
+                </details>
+
+                <button class="btn primary wide" id="publishBtn" type="submit">Enviar e processar música</button>
+              </form>
+
+              <div class="job-box hidden" id="jobBox">
+                <div class="job-line"><strong id="jobTitle">Preparando...</strong><span id="jobPercent">0%</span></div>
+                <div class="progress-track"><span id="jobProgress"></span></div>
+                <p id="jobMessage"></p>
+                <a class="hidden" id="workflowLink" target="_blank" rel="noopener">Ver execução no GitHub</a>
+              </div>
+            </article>
+
+            <aside class="dash-card process-card">
+              <span class="eyebrow">PROCESSAMENTO</span>
+              <h2>O sistema faz o resto</h2>
+              <div class="process-flow">
+                <div><i>1</i><p><strong>Upload</strong><span>Recebe o áudio original.</span></p></div>
+                <div><i>2</i><p><strong>Separação</strong><span>Bateria, baixo, instrumental e voz.</span></p></div>
+                <div><i>3</i><p><strong>Melodia</strong><span>Cria a camada sintetizada.</span></p></div>
+                <div><i>4</i><p><strong>Publicação</strong><span>Entra no dia agendado.</span></p></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="catalog">
+          <article class="dash-card catalog-card">
+            <div class="card-title-row">
+              <div><span class="eyebrow">CATÁLOGO</span><h2>Músicas cadastradas</h2></div>
+              <button class="btn secondary small" id="refreshSongsBtn" type="button">Atualizar</button>
+            </div>
+            <div id="songsEmpty" class="empty-row hidden">Nenhuma música cadastrada.</div>
+            <div id="songsList" class="songs-list"></div>
+          </article>
+        </section>
+
+        <section class="view" data-view-panel="settings">
+          <div class="settings-grid">
+            <article class="dash-card">
+              <span class="eyebrow">ANALYTICS</span>
+              <h2>Coleta de estatísticas</h2>
+              <p class="muted">O site já está preparado para enviar eventos anônimos de acesso, sessão, duração, palpites, conclusão e erros. Falta apenas conectar um endpoint de armazenamento.</p>
+              <div class="status-panel" id="analyticsStatusPanel">
+                <i class="status-red"></i>
+                <div><strong id="analyticsStatusTitle">Não conectado</strong><span id="analyticsStatusText">Nenhum endpoint configurado.</span></div>
+              </div>
+              <p class="note">Não coloque chaves secretas no arquivo público de configuração. O endpoint precisa aceitar gravações públicas com regras próprias.</p>
+            </article>
+
+            <article class="dash-card">
+              <span class="eyebrow">GITHUB</span>
+              <h2>Conexão do painel</h2>
+              <div class="quality-list">
+                <div><span>Usuário</span><strong id="githubUser">—</strong></div>
+                <div><span>Repositório</span><strong>Dailysonh</strong></div>
+                <div><span>Branch</span><strong>main</strong></div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="editDialog" class="edit-dialog">
+    <form method="dialog" class="dialog-shell" id="editForm">
+      <div class="dialog-head">
+        <div><span class="eyebrow">EDITAR</span><h2 id="editHeading">Música</h2></div>
+        <button class="close-btn" value="cancel" aria-label="Fechar">×</button>
+      </div>
+      <input id="editIndex" type="hidden">
+      <div class="fields two">
+        <label>Título<input id="editTitle" type="text" required></label>
+        <label>Artista<input id="editArtist" type="text" required></label>
+      </div>
+      <div class="fields three">
+        <label>Ano<input id="editReleaseYear" type="text"></label>
+        <label>Views<input id="editYoutubeViews" type="text"></label>
+        <label>Dificuldade<select id="editDifficulty"><option value="">Não informar</option><option>Fácil</option><option>Médio</option><option>Difícil</option></select></label>
+      </div>
+      <div class="fields one">
+        <label>YouTube<input id="editYoutubeUrl" type="url"></label>
+        <label>Spotify<input id="editSpotifyUrl" type="url"></label>
+        <label>Apple Music<input id="editAppleMusicUrl" type="url"></label>
+        <label>Deezer<input id="editDeezerUrl" type="url"></label>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn secondary" value="cancel">Cancelar</button>
+        <button class="btn primary" id="saveEditBtn" value="default">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast hidden" id="toast"></div>
+  <script src="/central-mdd-7k29/panel.js?v=1"></script>
+</body>
+</html>

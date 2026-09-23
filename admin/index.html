@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#f5efe4">
+  <title>Painel · Música do Dia</title>
+  <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
+  <link rel="stylesheet" href="/admin/admin.css?v=1">
+</head>
+<body>
+  <main class="admin-shell">
+    <header class="admin-header">
+      <a class="brand" href="/" aria-label="Voltar ao Música do Dia">
+        <img src="/logo.svg?v=20260922-3" alt="">
+        <span><strong>Música do Dia</strong><small>Painel de administrador</small></span>
+      </a>
+      <div class="header-actions">
+        <a class="ghost-btn" href="/" target="_blank" rel="noopener">Ver site</a>
+        <button class="ghost-btn hidden" id="disconnectBtn" type="button">Sair</button>
+      </div>
+    </header>
+
+    <section class="notice connection-card" id="connectionCard">
+      <div>
+        <span class="eyebrow">Acesso</span>
+        <h1>Conectar ao painel</h1>
+        <p>Use uma credencial do GitHub apenas para este repositório. Ela é enviada somente para a API do GitHub e não passa por nenhum servidor do Música do Dia.</p>
+      </div>
+
+      <form id="connectForm" class="connect-form">
+        <label>
+          Token do GitHub
+          <input id="tokenInput" type="password" autocomplete="off" placeholder="github_pat_… ou ghp_…" required>
+        </label>
+        <label class="check-row">
+          <input id="rememberToken" type="checkbox">
+          <span>Lembrar neste dispositivo</span>
+        </label>
+        <button class="primary-btn" type="submit">Conectar</button>
+      </form>
+
+      <details class="help-box">
+        <summary>Como criar a credencial uma única vez</summary>
+        <p>No GitHub, crie um Fine-grained personal access token para o repositório <strong>andy99br1/Dailysonh</strong> com <strong>Contents: Read and write</strong> e <strong>Actions: Read and write</strong>. Depois cole aqui. O painel pode lembrar o token neste aparelho.</p>
+        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Abrir criação do token no GitHub</a>
+      </details>
+    </section>
+
+    <div id="panel" class="hidden">
+      <section class="account-strip">
+        <div>
+          <span class="status-dot"></span>
+          <span>Conectado como <strong id="githubUser">—</strong></span>
+        </div>
+        <span id="repoStatus">Dailysonh</span>
+      </section>
+
+      <section class="panel-grid">
+        <div class="card upload-card">
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">Novo desafio</span>
+              <h2>Adicionar música</h2>
+            </div>
+            <span class="step-badge">1 áudio → 5 rodadas</span>
+          </div>
+
+          <form id="songForm">
+            <div class="upload-zone" id="uploadZone">
+              <input id="audioFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*" required>
+              <div class="upload-icon">♫</div>
+              <strong id="fileLabel">Escolher arquivo de áudio</strong>
+              <small>MP3, WAV, M4A, FLAC, OGG ou AAC · até 45 MB</small>
+            </div>
+
+            <div class="fields two">
+              <label>
+                Título
+                <input id="songTitle" type="text" placeholder="Ex.: Secretária">
+              </label>
+              <label>
+                Artista
+                <input id="songArtist" type="text" placeholder="Ex.: Amado Batista">
+              </label>
+            </div>
+
+            <div class="fields three">
+              <label>
+                Data do desafio
+                <input id="songDateInput" type="date" required>
+              </label>
+              <label>
+                Ano de lançamento
+                <input id="releaseYearInput" type="number" min="1900" max="2100" placeholder="2001">
+              </label>
+              <label>
+                Dificuldade
+                <select id="difficultyInput">
+                  <option value="">Não informar</option>
+                  <option>Fácil</option>
+                  <option>Médio</option>
+                  <option>Difícil</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="fields two">
+              <label>
+                Views no YouTube
+                <input id="youtubeViewsInput" type="text" inputmode="numeric" placeholder="Ex.: 125000000">
+              </label>
+              <label>
+                Início do trecho em segundos
+                <input id="clipStartInput" type="number" min="0" step="0.1" placeholder="Automático">
+                <small class="field-help">Vazio = o sistema escolhe o trecho.</small>
+              </label>
+            </div>
+
+            <details class="advanced">
+              <summary>Links das plataformas</summary>
+              <div class="fields one">
+                <label>YouTube <input id="youtubeUrlInput" type="url" placeholder="https://youtube.com/..."></label>
+                <label>Spotify <input id="spotifyUrlInput" type="url" placeholder="https://open.spotify.com/..."></label>
+                <label>Apple Music <input id="appleMusicUrlInput" type="url" placeholder="https://music.apple.com/..."></label>
+                <label>Deezer <input id="deezerUrlInput" type="url" placeholder="https://deezer.com/..."></label>
+              </div>
+            </details>
+
+            <button class="primary-btn wide" id="publishBtn" type="submit">Enviar e processar música</button>
+          </form>
+
+          <div class="job-box hidden" id="jobBox">
+            <div class="job-line">
+              <strong id="jobTitle">Enviando áudio…</strong>
+              <span id="jobPercent">0%</span>
+            </div>
+            <div class="progress-track"><span id="jobProgress"></span></div>
+            <p id="jobMessage">Preparando arquivo.</p>
+            <a class="hidden" id="workflowLink" target="_blank" rel="noopener">Ver processamento no GitHub</a>
+          </div>
+        </div>
+
+        <aside class="card tips-card">
+          <span class="eyebrow">Como funciona</span>
+          <h2>Você só envia uma vez</h2>
+          <div class="flow-list">
+            <div><span>1</span><p><strong>Upload</strong><small>Você escolhe o áudio e a data.</small></p></div>
+            <div><span>2</span><p><strong>Processamento</strong><small>O sistema separa bateria, baixo, instrumental e melodia.</small></p></div>
+            <div><span>3</span><p><strong>Publicação</strong><small>O desafio entra no site automaticamente na data escolhida.</small></p></div>
+          </div>
+          <p class="muted-note">Você pode cadastrar músicas de datas futuras. Elas ficam no catálogo, mas só aparecem no jogo quando chegar o dia no horário de Brasília.</p>
+        </aside>
+      </section>
+
+      <section class="card library-card">
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">Catálogo</span>
+            <h2>Músicas cadastradas</h2>
+          </div>
+          <button class="ghost-btn" id="refreshSongsBtn" type="button">Atualizar</button>
+        </div>
+
+        <div id="songsEmpty" class="empty-state hidden">Nenhuma música cadastrada.</div>
+        <div id="songsList" class="songs-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="editDialog" class="edit-dialog">
+    <form method="dialog" class="dialog-shell" id="editForm">
+      <div class="dialog-head">
+        <div>
+          <span class="eyebrow">Editar cadastro</span>
+          <h2 id="editHeading">Música</h2>
+        </div>
+        <button class="close-btn" value="cancel" aria-label="Fechar">×</button>
+      </div>
+
+      <input id="editIndex" type="hidden">
+      <div class="fields two">
+        <label>Título <input id="editTitle" type="text" required></label>
+        <label>Artista <input id="editArtist" type="text" required></label>
+      </div>
+      <div class="fields three">
+        <label>Ano <input id="editReleaseYear" type="text"></label>
+        <label>Views <input id="editYoutubeViews" type="text"></label>
+        <label>
+          Dificuldade
+          <select id="editDifficulty">
+            <option value="">Não informar</option>
+            <option>Fácil</option>
+            <option>Médio</option>
+            <option>Difícil</option>
+          </select>
+        </label>
+      </div>
+      <div class="fields one">
+        <label>YouTube <input id="editYoutubeUrl" type="url"></label>
+        <label>Spotify <input id="editSpotifyUrl" type="url"></label>
+        <label>Apple Music <input id="editAppleMusicUrl" type="url"></label>
+        <label>Deezer <input id="editDeezerUrl" type="url"></label>
+      </div>
+
+      <div class="dialog-actions">
+        <button class="ghost-btn" value="cancel">Cancelar</button>
+        <button class="primary-btn" id="saveEditBtn" value="default">Salvar alterações</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="/admin/admin.js?v=1"></script>
+</body>
+</html>

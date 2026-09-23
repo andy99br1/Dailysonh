@@ -55,12 +55,26 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=20260922-8">
+  <link rel="stylesheet" href="styles.css?v=20260922-10">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Ativar modo noturno" title="Alternar tema">☾</button>
+      <div class="theme-picker">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Escolher paleta de cores" title="Escolher cores" aria-expanded="false">
+          <span class="palette-icon" aria-hidden="true">
+            <i></i><i></i><i></i><i></i>
+          </span>
+        </button>
+        <div class="theme-menu hidden" id="themeMenu" aria-label="Paletas de cores">
+          <button class="theme-option" type="button" data-theme-choice="creme"><span class="theme-swatch swatch-creme"></span><span>Creme</span></button>
+          <button class="theme-option" type="button" data-theme-choice="azul"><span class="theme-swatch swatch-azul"></span><span>Azul</span></button>
+          <button class="theme-option" type="button" data-theme-choice="verde"><span class="theme-swatch swatch-verde"></span><span>Verde</span></button>
+          <button class="theme-option" type="button" data-theme-choice="rosa"><span class="theme-swatch swatch-rosa"></span><span>Rosa</span></button>
+          <button class="theme-option" type="button" data-theme-choice="lilas"><span class="theme-swatch swatch-lilas"></span><span>Lilás</span></button>
+          <button class="theme-option" type="button" data-theme-choice="noite"><span class="theme-swatch swatch-noite"></span><span>Noite</span></button>
+        </div>
+      </div>
 
       <div class="brand">
         <img class="brand-logo" src="/logo.svg" width="38" height="38" alt="" aria-hidden="true">
@@ -121,7 +135,11 @@
 
         <div class="player-controls">
           <button class="seek-circle seek-back" id="rewindBtn" type="button" disabled aria-label="Voltar 5 segundos">
-            <span class="seek-arrow" aria-hidden="true">↶</span><span class="seek-number">5</span>
+            <svg class="seek-arrow-svg" viewBox="0 0 32 32" aria-hidden="true">
+              <path class="seek-arc" d="M9.5 8.5H4.5V3.5"></path>
+              <path class="seek-arc" d="M4.8 8.2A11 11 0 1 1 4 20"></path>
+            </svg>
+            <span class="seek-number">5</span>
           </button>
 
           <button class="play-btn" id="playBtn" type="button" disabled aria-label="Tocar trecho">
@@ -129,7 +147,11 @@
           </button>
 
           <button class="seek-circle seek-forward" id="forwardBtn" type="button" disabled aria-label="Avançar 5 segundos">
-            <span class="seek-arrow" aria-hidden="true">↷</span><span class="seek-number">5</span>
+            <svg class="seek-arrow-svg seek-arrow-forward" viewBox="0 0 32 32" aria-hidden="true">
+              <path class="seek-arc" d="M9.5 8.5H4.5V3.5"></path>
+              <path class="seek-arc" d="M4.8 8.2A11 11 0 1 1 4 20"></path>
+            </svg>
+            <span class="seek-number">5</span>
           </button>
         </div>
 
@@ -176,6 +198,6 @@
     </footer>
   </main>
 
-  <script src="app.js?v=20260922-5"></script>
+  <script src="app.js?v=20260922-7"></script>
 </body>
 </html>

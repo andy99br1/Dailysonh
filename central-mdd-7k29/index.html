@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#0b1230">
   <title>Central MDD · Música do Dia</title>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=1">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=2">
 </head>
 <body>
   <div class="app-shell">
@@ -60,11 +60,26 @@
 
       <div id="panel" class="hidden">
         <section class="view active" data-view-panel="dashboard">
+          <div class="date-filter">
+            <div class="date-filter-copy">
+              <span class="eyebrow">PERÍODO</span>
+              <strong id="selectedDateLabel">Hoje</strong>
+            </div>
+            <div class="date-filter-controls">
+              <button class="date-nav-btn" id="prevDateBtn" type="button" aria-label="Dia anterior">‹</button>
+              <label class="date-input-wrap" aria-label="Escolher dia">
+                <input id="dashboardDate" type="date">
+              </label>
+              <button class="date-nav-btn" id="nextDateBtn" type="button" aria-label="Próximo dia">›</button>
+              <button class="today-btn" id="todayDateBtn" type="button">Hoje</button>
+            </div>
+          </div>
+
           <div class="metrics-grid">
             <article class="metric-card accent-blue">
-              <div class="metric-head"><span>Jogadores hoje</span><i>◉</i></div>
+              <div class="metric-head"><span>Jogadores</span><i>◉</i></div>
               <strong id="metricPlayers">—</strong>
-              <small id="metricPlayersSub">Aguardando analytics</small>
+              <small id="metricPlayersSub">No dia selecionado</small>
             </article>
             <article class="metric-card accent-cyan">
               <div class="metric-head"><span>Pessoas online</span><i>●</i></div>
@@ -74,7 +89,7 @@
             <article class="metric-card accent-purple">
               <div class="metric-head"><span>Acessos únicos</span><i>◆</i></div>
               <strong id="metricUnique">—</strong>
-              <small id="metricUniqueSub">Hoje</small>
+              <small id="metricUniqueSub">No dia selecionado</small>
             </article>
             <article class="metric-card accent-orange">
               <div class="metric-head"><span>Tempo médio</span><i>◷</i></div>
@@ -86,7 +101,7 @@
           <div class="dashboard-grid">
             <article class="dash-card traffic-card">
               <div class="card-title-row">
-                <div><span class="eyebrow">ACESSOS</span><h2>Últimos 7 dias</h2></div>
+                <div><span class="eyebrow">ACESSOS</span><h2 id="trafficPeriodTitle">7 dias até a data selecionada</h2></div>
                 <span class="mini-stat" id="trafficTotal">— total</span>
               </div>
               <div class="line-chart" id="trafficChart">
@@ -96,7 +111,7 @@
 
             <article class="dash-card today-card">
               <div class="card-title-row">
-                <div><span class="eyebrow">DESAFIO DE HOJE</span><h2 id="todaySongTitle">—</h2></div>
+                <div><span class="eyebrow">DESAFIO DO DIA</span><h2 id="todaySongTitle">—</h2></div>
                 <span class="challenge-chip" id="todayChallenge">#—</span>
               </div>
               <div class="today-stats">
@@ -274,6 +289,6 @@
   </dialog>
 
   <div class="toast hidden" id="toast"></div>
-  <script src="/central-mdd-7k29/panel.js?v=1"></script>
+  <script src="/central-mdd-7k29/panel.js?v=2"></script>
 </body>
 </html>

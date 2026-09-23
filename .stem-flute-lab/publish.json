@@ -1,0 +1,29 @@
+{
+  "title": "Infiel",
+  "artist": "Marília Mendonça",
+  "date": "2026-09-24",
+  "releaseYear": "2015",
+  "difficulty": "Fácil",
+  "youtubeViews": "681M",
+  "youtubeUrl": "",
+  "coverUrl": "https://i.ytimg.com/vi/bfeqcnRWCbw/maxresdefault.jpg",
+  "spotifyUrl": "",
+  "appleMusicUrl": "",
+  "deezerUrl": "",
+  "expectedCreatedAt": "2026-09-23T09:34:07.523598+00:00",
+  "selectedLayers": [
+    "drums",
+    "bass",
+    "guitar",
+    "piano",
+    "flute"
+  ],
+  "selectedLayerLabels": [
+    "Bateria",
+    "Baixo",
+    "Violão",
+    "Piano",
+    "Melodia"
+  ],
+  "nonce": "1790202599331"
+}

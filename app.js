@@ -27,6 +27,7 @@
     attempts: el("attempts"),
     message: el("message"),
     reveal: el("reveal"),
+    resultStatus: el("resultStatus"),
     revealCover: el("revealCover"),
     revealTitle: el("revealTitle"),
     revealArtist: el("revealArtist"),
@@ -874,6 +875,8 @@
 
     E.reveal.classList.remove("hidden");
     E.guessForm.classList.add("hidden");
+    E.resultStatus.textContent = success ? "Acertou!" : "Errou!";
+    E.resultStatus.className = success ? "result-status success" : "result-status fail";
     E.revealTitle.textContent = cleanedSongTitle();
     E.revealArtist.textContent = song.artist;
 
@@ -884,8 +887,8 @@
 
     E.guessInput.disabled = true;
     E.guessBtn.disabled = true;
-    E.message.textContent = success ? "Acertou!" : "Fim das rodadas.";
-    E.message.className = success ? "message success" : "message";
+    E.message.textContent = "";
+    E.message.className = "message";
 
     renderRounds();
     prepareAudio();
@@ -958,9 +961,10 @@
 
     stopAudio();
     localStorage.removeItem(key());
+    localStorage.removeItem(oldVersionKey());
 
     if (songVersion() === 1) {
-      localStorage.removeItem(legacyKey());
+      localStorage.removeItem(oldLegacyKey());
     }
 
     roundIndex = 0;
@@ -970,6 +974,8 @@
     solvedRound = null;
 
     E.reveal.classList.add("hidden");
+    E.resultStatus.textContent = "";
+    E.resultStatus.className = "result-status";
     E.guessForm.classList.add("hidden");
     E.guessInput.disabled = false;
     E.guessInput.value = "";

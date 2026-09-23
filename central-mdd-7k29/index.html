@@ -12,7 +12,7 @@
     }
   </script>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=14">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=15">
 </head>
 <body class="auth-locked">
   <div class="app-shell">
@@ -309,6 +309,22 @@
             </div>
             <div class="midi-role-grid" id="midiRoles"></div>
             <div class="midi-rounds" id="midiRounds"></div>
+
+            <div class="midi-name-editor">
+              <div class="midi-name-head">
+                <div>
+                  <span class="eyebrow">NOMES DAS PISTAS</span>
+                  <strong>Personalizar instrumentos</strong>
+                </div>
+                <button class="btn secondary small" id="midiEditNamesBtn" type="button">Editar nomes</button>
+              </div>
+              <div class="midi-name-fields hidden" id="midiNameFields"></div>
+              <div class="midi-name-actions hidden" id="midiNameActions">
+                <button class="btn primary small" id="midiSaveNamesBtn" type="button">Salvar nomes</button>
+                <button class="btn secondary small" id="midiCancelNamesBtn" type="button">Cancelar</button>
+                <span class="muted" id="midiNameStatus"></span>
+              </div>
+            </div>
             <div class="midi-player-card">
               <div class="preview-now"><span class="preview-number" id="midiNowNumber">1</span><div><span class="eyebrow">OUVINDO AGORA</span><strong id="midiNowLabel">Bateria</strong></div></div>
               <audio id="midiAudio" controls preload="none"></audio>
@@ -467,6 +483,6 @@
       } catch (_) {}
     })();
   </script>
-  <script src="/central-mdd-7k29/panel.js?v=22"></script>
+  <script src="/central-mdd-7k29/panel.js?v=23"></script>
 </body>
 </html>

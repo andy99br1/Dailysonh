@@ -37,10 +37,26 @@ function sanitizeFilename(name){var dot=name.lastIndexOf("."),ext=dot>=0?name.sl
 async function fileToBase64(file){var bytes=new Uint8Array(await file.arrayBuffer()),binary="",chunk=0x8000;for(var i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));return btoa(binary)}
 function getCookie(name){var parts=document.cookie.split("; ");for(var i=0;i<parts.length;i++){var p=parts[i].split("=");if(p.shift()===name)return decodeURIComponent(p.join("="))}return""}
 function setTokenCookie(value){var c="mdd_admin_token="+encodeURIComponent(value)+"; Max-Age=2592000; Path=/central-mdd-7k29/; SameSite=Strict; Secure";if(location.hostname==="musicadodia.com"||location.hostname.endsWith(".musicadodia.com"))c+="; Domain=.musicadodia.com";document.cookie=c}
-function clearTokenCookie(){var c="mdd_admin_token=; Max-Age=0; Path=/central-mdd-7k29/; SameSite=Strict; Secure";if(location.hostname==="musicadodia.com"||location.hostname.endsWith(".musicadodia.com"))c+="; Domain=.musicadodia.com";document.cookie=c}
+function clearTokenCookie(){
+ var expirations=[
+   "mdd_admin_token=; Max-Age=0; Path=/central-mdd-7k29/; SameSite=Strict; Secure",
+   "mdd_admin_token=; Max-Age=0; Path=/; SameSite=Strict; Secure"
+ ];
+ if(location.hostname==="musicadodia.com"||location.hostname.endsWith(".musicadodia.com")){
+   expirations.push("mdd_admin_token=; Max-Age=0; Path=/central-mdd-7k29/; Domain=.musicadodia.com; SameSite=Strict; Secure");
+   expirations.push("mdd_admin_token=; Max-Age=0; Path=/; Domain=.musicadodia.com; SameSite=Strict; Secure");
+ }
+ expirations.forEach(function(c){document.cookie=c});
+}
 function storedToken(){return localStorage.getItem("musicadodia:admin-token")||sessionStorage.getItem("musicadodia:admin-token")||getCookie("mdd_admin_token")||""}
 function storeToken(value){localStorage.setItem("musicadodia:admin-token",value);sessionStorage.setItem("musicadodia:admin-token",value);setTokenCookie(value)}
-function clearToken(){sessionStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-token");clearTokenCookie();token=""}
+function clearToken(){
+ sessionStorage.removeItem("musicadodia:admin-token");
+ localStorage.removeItem("musicadodia:admin-token");
+ localStorage.removeItem("musicadodia:admin-validated");
+ clearTokenCookie();
+ token="";
+}
 async function validate(){var repoInfo=await api("/repos/"+OWNER+"/"+REPO);if(!repoInfo||String(repoInfo.full_name||"").toLowerCase()!==(OWNER+"/"+REPO).toLowerCase())throw new Error("Repositório não autorizado");E.githubUser.textContent=OWNER;E.connectionLabel.textContent="Conectado";return true}
 async function openPanel(){
  document.body.classList.remove("auth-locked");
@@ -169,7 +185,16 @@ document.querySelectorAll(".nav-item").forEach(function(b){b.addEventListener("c
 document.querySelectorAll("[data-view-jump]").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.viewJump)})});
 E.menuBtn.addEventListener("click",function(){document.querySelector(".sidebar").classList.toggle("open")});
 E.connectForm.addEventListener("submit",async function(ev){ev.preventDefault();var btn=ev.submitter;if(btn)btn.disabled=true;try{await connect(E.tokenInput.value);E.tokenInput.value=""}catch(err){toast(err.status===401?"Token inválido ou expirado.":err.status===403?"O token não tem acesso suficiente ao Dailysonh.":"Não consegui conectar ao GitHub. A key salva não foi apagada.")}finally{if(btn)btn.disabled=false}});
-E.disconnectBtn.addEventListener("click",function(){clearToken();location.reload()});
+E.disconnectBtn.addEventListener("click",function(){
+ clearToken();
+ document.body.classList.add("auth-locked");
+ E.panel.classList.add("hidden");
+ E.loginView.classList.remove("hidden");
+ E.connectionLabel.textContent="Desconectado";
+ E.githubUser.textContent="—";
+ E.tokenInput.value="";
+ toast("Você saiu do painel.");
+});
 E.audioFile.addEventListener("change",function(){var f=E.audioFile.files&&E.audioFile.files[0];E.fileLabel.textContent=f?f.name:"Escolher arquivo de áudio"});
 ["dragenter","dragover"].forEach(function(n){E.uploadZone.addEventListener(n,function(ev){ev.preventDefault();E.uploadZone.classList.add("drag")})});["dragleave","drop"].forEach(function(n){E.uploadZone.addEventListener(n,function(){E.uploadZone.classList.remove("drag")})});
 E.songForm.addEventListener("submit",async function(ev){ev.preventDefault();var file=E.audioFile.files&&E.audioFile.files[0];if(!file){toast("Escolha o arquivo de áudio.");return}if(file.size>MAX_FILE_MB*1024*1024){toast("O áudio passa de "+MAX_FILE_MB+" MB.");return}var v=formValues();if(!v.date){toast("Escolha a data.");return}E.publishBtn.disabled=true;E.workflowLink.classList.add("hidden");try{var path="incoming/"+Date.now()+"-"+sanitizeFilename(file.name);setJob(15,"Enviando áudio","Preparando arquivo.");await uploadAudio(file,path);setJob(55,"Upload concluído","Iniciando processamento.");var t=Date.now();await dispatch(path,v);setJob(62,"Processamento solicitado","Localizando execução.");var run=await waitRun(t);if(!run){setJob(66,"Processamento iniciado","Atualize o catálogo em alguns minutos.");toast("Processamento enviado.");return}await monitor(run)}catch(err){console.error(err);setJob(100,"Não foi possível concluir",err.status===403?"O token precisa de Contents e Actions em leitura e escrita.":"Confira a conexão ou a execução no GitHub.");toast("Ocorreu um erro no envio.")}finally{E.publishBtn.disabled=false}});

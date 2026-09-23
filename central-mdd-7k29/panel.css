@@ -231,3 +231,11 @@ body.auth-locked .login-card{
   body.auth-locked .main{padding:12px}
   body.auth-locked .login-card{margin-top:6vh}
 }
+
+.login-persist-note{
+  margin:10px 0 14px;
+  color:var(--muted);
+  font-size:8px;
+  line-height:1.45
+}
+.login-persist-note strong{color:#dbe3ff}

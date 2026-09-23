@@ -12,7 +12,7 @@
     }
   </script>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=12">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=13">
 </head>
 <body class="auth-locked">
   <div class="app-shell">
@@ -307,6 +307,29 @@
               <p class="preview-status" id="midiAudioStatus">Escolha uma das seis faixas.</p>
             </div>
             <details class="midi-details"><summary>Ver canais detectados</summary><div id="midiChannels" class="midi-channel-list"></div></details>
+
+            <div class="midi-publish-box">
+              <div>
+                <span class="eyebrow">APROVOU?</span>
+                <h3>Publicar como música do dia</h3>
+                <p class="muted">Copia exatamente estas 6 faixas para a pasta oficial. O jogo usa 5 tentativas e a 6ª faixa vira a revelação.</p>
+              </div>
+              <div class="fields two">
+                <label>Título<input id="midiPublishTitle" type="text" placeholder="Ex.: Não Olhe Pra Trás"></label>
+                <label>Artista<input id="midiPublishArtist" type="text" placeholder="Ex.: Capital Inicial"></label>
+              </div>
+              <div class="fields three">
+                <label>Data<input id="midiPublishDate" type="date"></label>
+                <label>Ano<input id="midiPublishYear" type="number" min="1900" max="2100" placeholder="Opcional"></label>
+                <label>Dificuldade
+                  <select id="midiPublishDifficulty"><option value="">Não informar</option><option>Fácil</option><option>Médio</option><option>Difícil</option></select>
+                </label>
+              </div>
+              <div class="midi-publish-actions">
+                <button class="btn primary" id="midiPublishBtn" type="button">Publicar como música do dia</button>
+                <span id="midiPublishStatus" class="muted"></span>
+              </div>
+            </div>
           </article>
         </section>
 
@@ -427,6 +450,6 @@
       } catch (_) {}
     })();
   </script>
-  <script src="/central-mdd-7k29/panel.js?v=20"></script>
+  <script src="/central-mdd-7k29/panel.js?v=21"></script>
 </body>
 </html>

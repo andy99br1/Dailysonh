@@ -649,6 +649,16 @@ def build_full_body_piano(stems, out_path):
     sf.write(out_path, enhanced, TARGET_SR, subtype="PCM_16")
 
 
+def build_layer_mix(paths, out_path):
+    parts = [read_stereo(path) for path in paths]
+    n = min(len(x) for x in parts)
+    mix = np.zeros((n, 2), dtype=np.float32)
+    for part in parts:
+        mix += part[:n]
+    mix = _normalize_peak(mix, 0.91)
+    sf.write(out_path, mix, TARGET_SR, subtype="PCM_16")
+
+
 def build_mix(stems, flute_path, instruments_path, out_path):
     parts = [
         read_stereo(stems["drums"]),
@@ -706,6 +716,24 @@ def main():
         mix_wav = work / "instrumental-with-flute.wav"
         build_mix(stems, flute_wav, instruments_wav, mix_wav)
 
+        # Simulação exata da progressão de 5 faixas do jogo.
+        game_round_1 = work / "game-round-1.wav"
+        game_round_2 = work / "game-round-2.wav"
+        game_round_3 = work / "game-round-3.wav"
+        game_round_4 = work / "game-round-4.wav"
+        game_round_5 = clip
+
+        build_layer_mix([stems["drums"]], game_round_1)
+        build_layer_mix([stems["drums"], stems["bass"]], game_round_2)
+        build_layer_mix(
+            [stems["drums"], stems["bass"], instruments_wav],
+            game_round_3,
+        )
+        build_layer_mix(
+            [stems["drums"], stems["bass"], instruments_wav, flute_wav],
+            game_round_4,
+        )
+
         outputs = {
             "preview": mix_wav,
             "flute": flute_wav,
@@ -743,6 +771,16 @@ def main():
                 "url": f"/stem-flute-lab/{filename}",
             })
 
+        game_round_sources = [
+            game_round_1,
+            game_round_2,
+            game_round_3,
+            game_round_4,
+            game_round_5,
+        ]
+        for index, source_path in enumerate(game_round_sources, start=1):
+            encode_ogg(source_path, OUT_DIR / f"game-round-{index}.ogg")
+
         manifest = {
             "version": 1,
             "createdAt": datetime.now(timezone.utc).isoformat(),
@@ -757,6 +795,33 @@ def main():
             "webAudioEncoding": "Ogg Vorbis q8",
             "flute": flute_stats,
             "tracks": tracks,
+            "gameRounds": [
+                {
+                    "index": 1,
+                    "label": "Bateria",
+                    "url": "/stem-flute-lab/game-round-1.ogg",
+                },
+                {
+                    "index": 2,
+                    "label": "Baixo",
+                    "url": "/stem-flute-lab/game-round-2.ogg",
+                },
+                {
+                    "index": 3,
+                    "label": "Instrumentos",
+                    "url": "/stem-flute-lab/game-round-3.ogg",
+                },
+                {
+                    "index": 4,
+                    "label": "Melodia",
+                    "url": "/stem-flute-lab/game-round-4.ogg",
+                },
+                {
+                    "index": 5,
+                    "label": "Revelação",
+                    "url": "/stem-flute-lab/game-round-5.ogg",
+                },
+            ],
         }
         (OUT_DIR / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",

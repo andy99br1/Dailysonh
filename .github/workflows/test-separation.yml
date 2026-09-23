@@ -1,0 +1,119 @@
+name: Separation lab
+
+on:
+  workflow_dispatch:
+    inputs:
+      audio_path:
+        description: "Arquivo enviado para o laboratório"
+        required: true
+        type: string
+      title:
+        description: "Título opcional"
+        required: false
+        type: string
+      artist:
+        description: "Artista opcional"
+        required: false
+        type: string
+      clip_start:
+        description: "Início do trecho em segundos. Vazio = automático"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dailysonh-separation-lab
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Cache Demucs models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/torch/hub/checkpoints
+          key: separation-lab-demucs-v1
+
+      - name: Cache BS-Roformer model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/audio-separator-models
+          key: bs-roformer-viperx-1297-v1
+
+      - name: FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio torchcodec
+          pip install -r requirements.txt
+
+      - name: Install isolated BS-Roformer environment
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/audio-separator-env"
+          "$RUNNER_TEMP/audio-separator-env/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/audio-separator-env/bin/pip" install --index-url https://download.pytorch.org/whl/cpu torch
+          "$RUNNER_TEMP/audio-separator-env/bin/pip" install "audio-separator[cpu]==0.47.0"
+          echo "AUDIO_SEPARATOR_BIN=$RUNNER_TEMP/audio-separator-env/bin/audio-separator" >> "$GITHUB_ENV"
+
+      - name: Check uploaded audio
+        env:
+          AUDIO_FILE: ${{ inputs.audio_path }}
+        run: |
+          if [ ! -f "$AUDIO_FILE" ]; then
+            echo "Arquivo do laboratório não encontrado: $AUDIO_FILE"
+            exit 1
+          fi
+
+      - name: Run three separation methods
+        env:
+          AUDIO_FILE: ${{ inputs.audio_path }}
+          SONG_TITLE: ${{ inputs.title }}
+          SONG_ARTIST: ${{ inputs.artist }}
+          CLIP_START: ${{ inputs.clip_start }}
+        run: |
+          python scripts/test_separation.py \
+            --file "$AUDIO_FILE" \
+            --title "$SONG_TITLE" \
+            --artist "$SONG_ARTIST" \
+            --clip-start "$CLIP_START"
+
+      - name: Publish laboratory result
+        env:
+          AUDIO_FILE: ${{ inputs.audio_path }}
+        run: |
+          git config user.name "dailysonh-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add separation-tests/
+          git rm --ignore-unmatch "$AUDIO_FILE"
+
+          if git diff --cached --quiet; then
+            echo "Nenhum resultado novo para publicar."
+            exit 0
+          fi
+
+          git commit -m "Update separation laboratory result"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main

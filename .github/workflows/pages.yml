@@ -16,10 +16,11 @@ on:
       - "analytics-config.json"
       - "songs/**"
       - "midi-lab/**"
+      - "stem-flute-lab/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
   workflow_run:
-    workflows: ["Process uploaded audio", "MIDI laboratory", "Publish MIDI song"]
+    workflows: ["Process uploaded audio", "MIDI laboratory", "Publish MIDI song", "Stem + Flute laboratory"]
     types: [completed]
 
 permissions:
@@ -52,6 +53,7 @@ jobs:
           if [ -d central-mdd-7k29 ]; then cp -R central-mdd-7k29 _site/; fi
           if [ -d songs ]; then cp -R songs _site/; fi
           if [ -d midi-lab ]; then cp -R midi-lab _site/; fi
+          if [ -d stem-flute-lab ]; then cp -R stem-flute-lab _site/; fi
           touch _site/.nojekyll
 
       - name: Configure Pages

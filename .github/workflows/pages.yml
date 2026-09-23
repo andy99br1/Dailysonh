@@ -12,7 +12,8 @@ on:
       - "robots.txt"
       - "sitemap.xml"
       - "site.webmanifest"
-      - "admin/**"
+      - "central-mdd-7k29/**"
+      - "analytics-config.json"
       - "songs/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
@@ -46,8 +47,8 @@ jobs:
       - name: Build static site
         run: |
           mkdir -p _site
-          cp index.html styles.css app.js catalog.json logo.svg robots.txt sitemap.xml site.webmanifest _site/
-          if [ -d admin ]; then cp -R admin _site/; fi
+          cp index.html styles.css app.js catalog.json logo.svg robots.txt sitemap.xml site.webmanifest analytics-config.json _site/
+          if [ -d central-mdd-7k29 ]; then cp -R central-mdd-7k29 _site/; fi
           if [ -d songs ]; then cp -R songs _site/; fi
           touch _site/.nojekyll
 

@@ -12,7 +12,7 @@
     }
   </script>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=16">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=17">
 </head>
 <body class="auth-locked">
   <div class="app-shell">
@@ -400,35 +400,16 @@
   </div>
 
 
-  <dialog id="previewDialog" class="preview-dialog">
-    <div class="preview-shell">
-      <div class="dialog-head">
-        <div>
-          <span class="eyebrow">TESTE DAS FAIXAS</span>
-          <h2 id="previewTitle">Música</h2>
-          <p id="previewMeta" class="preview-meta"></p>
-        </div>
-        <button class="close-btn" id="previewCloseBtn" type="button" aria-label="Fechar">×</button>
-      </div>
-
-      <div class="preview-track-list" id="previewTrackList"></div>
-
-      <div class="preview-player-card">
-        <div class="preview-now">
-          <span class="preview-number" id="previewNumber">1</span>
-          <div>
-            <span class="eyebrow">OUVINDO AGORA</span>
-            <strong id="previewTrackName">Bateria</strong>
-          </div>
-        </div>
-        <audio id="previewAudio" controls preload="metadata"></audio>
-        <p id="previewStatus" class="preview-status">Escolha uma faixa para testar.</p>
-      </div>
-
-      <div class="preview-help">
-        <strong>Isso é só um teste do administrador.</strong>
-        <span>Não altera o progresso do jogo e não entra nas estatísticas.</span>
-      </div>
+  <dialog id="previewDialog" class="preview-dialog official-preview-dialog">
+    <div class="official-preview-shell">
+      <iframe
+        id="previewFrame"
+        class="official-preview-frame"
+        title="Prévia oficial do jogo"
+        src="about:blank"
+        allow="autoplay"
+      ></iframe>
+      <button class="official-preview-close" id="previewCloseBtn" type="button" aria-label="Fechar prévia">×</button>
     </div>
   </dialog>
 
@@ -489,6 +470,6 @@
       } catch (_) {}
     })();
   </script>
-  <script src="/central-mdd-7k29/panel.js?v=18"></script>
+  <script src="/central-mdd-7k29/panel.js?v=19"></script>
 </body>
 </html>

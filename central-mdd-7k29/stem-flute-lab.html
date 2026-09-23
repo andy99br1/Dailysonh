@@ -8,7 +8,7 @@
   <title>Stem + Flauta · Central MDD</title>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
   <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=16">
-  <link rel="stylesheet" href="/central-mdd-7k29/stem-flute-lab.css?v=5">
+  <link rel="stylesheet" href="/central-mdd-7k29/stem-flute-lab.css?v=6">
 </head>
 <body data-admin-theme="night">
   <div class="app-shell">
@@ -130,8 +130,8 @@
             <div class="game-preview-head">
               <div>
                 <span class="eyebrow">SIMULAÇÃO DO JOGO</span>
-                <h2>Como ficaria nas 5 faixas</h2>
-                <p>As quatro primeiras etapas são cumulativas. A quinta toca o trecho original para revelação.</p>
+                <h2>Prévia automática de 5 faixas</h2>
+                <p>Esta é a montagem padrão. Abaixo você pode montar uma versão com mais ou menos camadas antes de publicar.</p>
               </div>
               <strong id="gameRoundLabel">Faixa 1 de 5</strong>
             </div>
@@ -145,12 +145,41 @@
             </div>
           </section>
 
+          <section class="round-builder hidden" id="roundBuilder">
+            <div class="round-builder-head">
+              <div>
+                <span class="eyebrow">MONTAR O JOGO</span>
+                <h2>Escolher as camadas</h2>
+                <p>Marque somente as camadas que ficaram boas. Cada camada selecionada vira uma nova tentativa cumulativa; a revelação original é adicionada automaticamente no final.</p>
+              </div>
+              <strong id="roundBuilderCount">5 faixas</strong>
+            </div>
+
+            <div class="round-builder-note">
+              <strong>Instrumentos completos</strong> usa guitarra + piano + outros juntos. Se você escolher guitarra, piano ou outros separadamente, “Instrumentos completos” é desmarcado para não duplicar áudio.
+            </div>
+
+            <div class="round-layer-list" id="roundLayerList"></div>
+
+            <div class="round-custom-preview">
+              <div class="round-custom-head">
+                <div>
+                  <span class="eyebrow">PRÉVIA PERSONALIZADA</span>
+                  <strong id="customPreviewTitle">Faixas selecionadas</strong>
+                </div>
+                <button class="btn secondary small hidden" id="customStopBtn" type="button">Parar</button>
+              </div>
+              <div class="custom-round-list" id="customRoundList"></div>
+              <p class="muted" id="customPreviewStatus">Clique em uma faixa para ouvir a soma das camadas escolhidas até aquele ponto.</p>
+            </div>
+          </section>
+
           <section class="stem-publish-box hidden" id="stemPublishBox">
             <div class="stem-publish-head">
               <div>
                 <span class="eyebrow">APROVOU O RESULTADO?</span>
                 <h2>Publicar no jogo oficial</h2>
-                <p>Publica exatamente as 5 faixas da simulação acima para a data escolhida. Se já existir uma música nessa data, ela será substituída por uma nova versão.</p>
+                <p>Publica exatamente a seleção de camadas montada acima, mais a revelação original. Se já existir uma música nessa data, ela será substituída por uma nova versão.</p>
               </div>
               <span class="official-chip">OFICIAL</span>
             </div>
@@ -200,6 +229,6 @@
   </div>
 
   <div class="toast hidden" id="toast"></div>
-  <script src="/central-mdd-7k29/stem-flute-lab.js?v=7"></script>
+  <script src="/central-mdd-7k29/stem-flute-lab.js?v=8"></script>
 </body>
 </html>

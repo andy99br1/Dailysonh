@@ -1,0 +1,153 @@
+name: Publish MIDI song
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: "Título da música"
+        required: true
+        type: string
+      artist:
+        description: "Artista"
+        required: true
+        type: string
+      date:
+        description: "Data do desafio YYYY-MM-DD"
+        required: true
+        type: string
+      release_year:
+        description: "Ano de lançamento (opcional)"
+        required: false
+        type: string
+      difficulty:
+        description: "Dificuldade (opcional)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dailysonh-publish-midi
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Validate MIDI laboratory result
+        run: |
+          set -euo pipefail
+          test -f midi-lab/manifest.json
+          for N in 1 2 3 4 5 6; do
+            test -f "midi-lab/round-$N.ogg"
+          done
+
+      - name: Publish MIDI challenge
+        env:
+          SONG_TITLE: ${{ inputs.title }}
+          SONG_ARTIST: ${{ inputs.artist }}
+          SONG_DATE: ${{ inputs.date }}
+          RELEASE_YEAR: ${{ inputs.release_year }}
+          DIFFICULTY: ${{ inputs.difficulty }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          root = Path(".")
+          date = os.environ["SONG_DATE"].strip()
+          title = os.environ["SONG_TITLE"].strip()
+          artist = os.environ["SONG_ARTIST"].strip()
+
+          if not date or len(date) != 10:
+              raise SystemExit("Data inválida.")
+          if not title or not artist:
+              raise SystemExit("Título e artista são obrigatórios.")
+
+          manifest = json.loads((root / "midi-lab/manifest.json").read_text(encoding="utf-8"))
+          catalog_path = root / "catalog.json"
+          catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+          songs = catalog.setdefault("songs", [])
+
+          dest = root / "songs" / date
+          dest.mkdir(parents=True, exist_ok=True)
+          for n in range(1, 7):
+              shutil.copy2(root / "midi-lab" / f"round-{n}.ogg", dest / f"round-{n}.ogg")
+
+          existing_index = next((i for i, s in enumerate(songs) if str(s.get("date", "")) == date), None)
+          version = 1
+          existing = None
+          if existing_index is not None:
+              existing = songs[existing_index]
+              try:
+                  version = max(1, int(existing.get("version", 1)) + 1)
+              except Exception:
+                  version = 2
+
+          entry = {
+              "date": date,
+              "title": title,
+              "artist": artist,
+              "clipStart": manifest.get("clipStart", 0),
+              "source": "midi",
+              "sourceName": manifest.get("sourceName", ""),
+              "version": version,
+              "challengeRounds": 5,
+              "safeRevealRound": 5,
+              "roundLabels": [
+                  "Bateria",
+                  "Baixo",
+                  "Instrumentos 1",
+                  "Instrumentos 2",
+                  "Melodia",
+                  "Revelação",
+              ],
+              "rounds": [f"songs/{date}/round-{n}.ogg" for n in range(1, 7)],
+              "releaseYear": os.environ.get("RELEASE_YEAR", "").strip(),
+              "youtubeViews": (existing or {}).get("youtubeViews", ""),
+              "difficulty": os.environ.get("DIFFICULTY", "").strip(),
+              "youtubeUrl": (existing or {}).get("youtubeUrl", ""),
+              "spotifyUrl": (existing or {}).get("spotifyUrl", ""),
+              "appleMusicUrl": (existing or {}).get("appleMusicUrl", ""),
+              "deezerUrl": (existing or {}).get("deezerUrl", ""),
+              "midiMelodyStyle": manifest.get("melodyStyle", ""),
+              "midiMelodyStyleName": manifest.get("melodyStyleName", ""),
+          }
+
+          if existing_index is None:
+              songs.append(entry)
+          else:
+              songs[existing_index] = entry
+
+          songs.sort(key=lambda s: str(s.get("date", "")))
+          catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(entry, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Commit published song
+        run: |
+          set -euo pipefail
+          git config user.name "dailysonh-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add catalog.json "songs/${{ inputs.date }}/"
+
+          if git diff --cached --quiet; then
+            echo "Nada para publicar."
+            exit 0
+          fi
+
+          git commit -m "Publish MIDI song for ${{ inputs.date }}"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main

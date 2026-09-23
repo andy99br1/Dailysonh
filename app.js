@@ -25,8 +25,6 @@
     guessInput: el("guessInput"),
     guessBtn: el("guessBtn"),
     closeGuessBtn: el("closeGuessBtn"),
-    cancelGuessBtn: el("cancelGuessBtn"),
-    guessSkipBtn: el("guessSkipBtn"),
     attempts: el("attempts"),
     message: el("message"),
     reveal: el("reveal"),
@@ -1096,11 +1094,6 @@
   E.skipBtn.addEventListener("click", nextOrSkip);
   E.openGuessBtn.addEventListener("click", toggleGuessForm);
   E.closeGuessBtn.addEventListener("click", closeGuessForm);
-  E.cancelGuessBtn.addEventListener("click", closeGuessForm);
-  E.guessSkipBtn.addEventListener("click", function () {
-    closeGuessForm();
-    nextOrSkip();
-  });
   E.themeToggle.addEventListener("click", function (event) {
     event.stopPropagation();
     toggleThemeMenu();

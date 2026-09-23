@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#0b1230" id="adminThemeColor">
+  <title>Stem + Flauta · Central MDD</title>
+  <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=16">
+  <link rel="stylesheet" href="/central-mdd-7k29/stem-flute-lab.css?v=1">
+</head>
+<body data-admin-theme="night">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="side-brand" href="/central-mdd-7k29/">
+        <img src="/logo.svg?v=20260922-3" alt="">
+        <span><strong>Música do Dia</strong><small>Central administrativa</small></span>
+      </a>
+
+      <nav class="nav">
+        <a class="nav-item" href="/central-mdd-7k29/"><span class="nav-icon">←</span><span>Voltar ao painel</span></a>
+        <a class="nav-item active" href="/central-mdd-7k29/stem-flute-lab.html"><span class="nav-icon">≈</span><span>Stem + Flauta</span></a>
+      </nav>
+
+      <div class="side-footer">
+        <a href="/" target="_blank" rel="noopener">Abrir site</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">LABORATÓRIO ISOLADO</span>
+          <h1>Stem + Flauta</h1>
+        </div>
+        <div class="top-actions">
+          <div class="theme-switch" role="group" aria-label="Tema do painel">
+            <button id="themeDayBtn" type="button" aria-label="Modo dia" title="Modo dia">☀</button>
+            <button id="themeNightBtn" type="button" aria-label="Modo noite" title="Modo noite">☾</button>
+          </div>
+          <span class="live-pill"><i></i><span id="connectionLabel">Verificando...</span></span>
+        </div>
+      </header>
+
+      <section id="labAuth" class="lab-auth hidden">
+        <span class="eyebrow">ACESSO</span>
+        <h2>Conecte primeiro no painel principal</h2>
+        <p>Este laboratório usa a mesma sessão do painel administrativo. Abra a Central MDD, conecte com seu token e volte aqui.</p>
+        <a class="btn primary" href="/central-mdd-7k29/">Abrir painel</a>
+      </section>
+
+      <div id="labPanel" class="hidden">
+        <p class="lab-shell-note"><strong>Ambiente totalmente separado.</strong> Este teste não publica música, não altera o Laboratório MIDI e não muda nenhuma faixa já usada no jogo. Ele só grava os próprios resultados em <code>stem-flute-lab/</code>.</p>
+
+        <div class="lab-grid">
+          <article class="dash-card lab-card">
+            <div class="card-title-row">
+              <div>
+                <span class="eyebrow">TESTE ÁUDIO → STEMS → FLAUTA</span>
+                <h2>Enviar música completa</h2>
+              </div>
+              <span class="lab-safe-chip">ISOLADO</span>
+            </div>
+
+            <p class="muted">Envie apenas o MP3. O GitHub escolhe automaticamente um trecho de 18 segundos, separa bateria, baixo, guitarra/violão, piano/teclas, outros e voz; depois transforma a voz em uma flauta contínua sem usar MIDI.</p>
+
+            <form id="labForm">
+              <div class="upload-zone lab-upload-zone" id="labUploadZone">
+                <input id="labAudioFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*" required>
+                <div class="upload-symbol">♪</div>
+                <strong id="labFileLabel">Escolher MP3 ou áudio</strong>
+                <span>MP3, WAV, M4A, FLAC, OGG ou AAC · até 45 MB</span>
+              </div>
+              <button class="btn primary wide" id="labRunBtn" type="submit">Processar teste de 18s</button>
+            </form>
+
+            <div class="job-box hidden" id="labJobBox">
+              <div class="job-line"><strong id="labJobTitle">Preparando...</strong><span id="labJobPercent">0%</span></div>
+              <div class="progress-track"><span id="labJobProgress"></span></div>
+              <p id="labJobMessage"></p>
+              <a class="hidden" id="labWorkflowLink" target="_blank" rel="noopener">Ver execução no GitHub</a>
+            </div>
+          </article>
+
+          <aside class="dash-card process-card">
+            <span class="eyebrow">FLUXO DO TESTE</span>
+            <h2>O que acontece</h2>
+            <div class="process-flow">
+              <div><i>1</i><p><strong>Escolha dos 18s</strong><span>Procura um trecho forte e movimentado, evitando intro e final.</span></p></div>
+              <div><i>2</i><p><strong>6 stems</strong><span>Demucs separa bateria, baixo, voz, guitarra, piano e outros.</span></p></div>
+              <div><i>3</i><p><strong>Voz → flauta</strong><span>Segue a afinação contínua da voz, mantendo slides e vibrato, sem MIDI.</span></p></div>
+              <div><i>4</i><p><strong>Comparação</strong><span>Você ouve cada stem, a flauta, o original e um mix sem voz + flauta.</span></p></div>
+            </div>
+          </aside>
+        </div>
+
+        <article class="dash-card lab-card lab-result-card hidden" id="labResultsCard">
+          <div class="card-title-row">
+            <div>
+              <span class="eyebrow">ÚLTIMO RESULTADO</span>
+              <h2 id="labResultTitle">Teste</h2>
+              <p class="lab-result-meta" id="labResultMeta"></p>
+            </div>
+            <button class="btn secondary small" id="labRefreshBtn" type="button">Recarregar</button>
+          </div>
+
+          <div class="lab-stats">
+            <div class="lab-stat"><span>INÍCIO</span><strong id="labClipStart">—</strong></div>
+            <div class="lab-stat"><span>DURAÇÃO</span><strong>18s</strong></div>
+            <div class="lab-stat"><span>MODELO</span><strong id="labModel">—</strong></div>
+            <div class="lab-stat"><span>VOZ DETECTADA</span><strong id="labVoiced">—</strong></div>
+          </div>
+
+          <div class="stem-track-grid" id="stemTrackList"></div>
+
+          <div class="lab-player-card">
+            <div class="lab-now"><i>▶</i><div><span class="eyebrow">OUVINDO AGORA</span><strong id="labNowLabel">Escolha uma faixa</strong></div></div>
+            <audio id="labAudio" controls preload="metadata"></audio>
+            <p class="preview-status" id="labAudioStatus">O mix “sem voz + flauta” é o melhor para avaliar a ideia.</p>
+          </div>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+  <script src="/central-mdd-7k29/stem-flute-lab.js?v=1"></script>
+</body>
+</html>

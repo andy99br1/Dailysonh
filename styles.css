@@ -769,8 +769,8 @@ button:disabled {
   letter-spacing: -.025em;
 }
 
-.result-status.success { color: var(--green); }
-.result-status.fail { color: var(--red); }
+.reveal > .result-status.success { color: var(--green); }
+.reveal > .result-status.fail { color: var(--red); }
 
 .reveal-kicker {
   margin: 0;

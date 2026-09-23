@@ -484,10 +484,30 @@ def main():
     clip_start = choose_clip(stats, lyrics, duration, drums, bass, melody, manual)
     group1, group2, active_all = choose_groups(stats, drums, bass, melody, clip_start)
 
+    name_overrides = {}
+    try:
+        previous_manifest_path = OUT_DIR / "manifest.json"
+        if previous_manifest_path.exists():
+            previous_manifest = json.loads(previous_manifest_path.read_text(encoding="utf-8"))
+            if str(previous_manifest.get("sourcePath", "")) == str(args.source_path or source.name):
+                raw_overrides = previous_manifest.get("nameOverrides") or {}
+                if isinstance(raw_overrides, dict):
+                    name_overrides = {
+                        str(k): str(v).strip()[:60]
+                        for k, v in raw_overrides.items()
+                        if str(v).strip()
+                    }
+    except Exception as exc:
+        print(f"Aviso: não consegui reaproveitar nomes personalizados: {exc}")
+
     names = numbered_names(active_all)
     names[drums["channel"]] = "Bateria"
     names[bass["channel"]] = names.get(bass["channel"], "Baixo")
     names[melody["channel"]] = "Melodia da voz"
+    for ch in list(names):
+        custom = name_overrides.get(str(ch))
+        if custom:
+            names[ch] = custom
 
     cumulative = []
     rounds = []
@@ -576,11 +596,12 @@ def main():
         "ticksPerBeat": mid.ticks_per_beat,
         "melodyStyle": style_id,
         "melodyStyleName": style["name"],
+        "nameOverrides": name_overrides,
         "roles": {
-            "drums": {"channel": drums["channel"], "name": "Bateria", "confidence": 99 if drums["channel"] == 9 else 78},
+            "drums": {"channel": drums["channel"], "name": names.get(drums["channel"], "Bateria"), "confidence": 99 if drums["channel"] == 9 else 78},
             "bass": {"channel": bass["channel"], "name": names.get(bass["channel"], "Baixo"), "confidence": bass_conf},
             "melody": {
-                "channel": melody["channel"], "name": "Melodia da voz",
+                "channel": melody["channel"], "name": names.get(melody["channel"], "Melodia da voz"),
                 "sourceInstrument": program_name(melody["program"] or 0),
                 "confidence": melody_conf, "lyricAlignment": round(melody_align, 3),
             },

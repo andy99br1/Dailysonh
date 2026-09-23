@@ -1106,17 +1106,12 @@ button:disabled {
   background: var(--pill-active);
 }
 
-.platform-dot {
-  width: 9px;
-  height: 9px;
-  flex: 0 0 9px;
-  border-radius: 50%;
-}
-
-.platform-youtube .platform-dot { background: #ff0033; }
-.platform-spotify .platform-dot { background: #1ed760; }
-.platform-apple .platform-dot { background: #888; }
-.platform-deezer .platform-dot { background: #8b5cf6; }
+.platform-logo{width:18px;height:18px;flex:0 0 18px;display:block}
+.platform-youtube .platform-logo{color:#ff0033}
+.platform-spotify .platform-logo{color:#1ed760}
+.platform-apple .platform-logo{color:#8a8a8f}
+body[data-theme="noite"] .platform-apple .platform-logo{color:#f3f3f5}
+.platform-deezer .platform-logo{color:#8b5cf6}
 
 .result-insights {
   display: grid;
@@ -1213,11 +1208,7 @@ button:disabled {
     font-size: 9px;
   }
 
-  .platform-dot {
-    width: 7px;
-    height: 7px;
-    flex-basis: 7px;
-  }
+  .platform-logo{width:15px;height:15px;flex-basis:15px}
 
   .result-insights {
     margin-top: 7px;
@@ -1252,3 +1243,9 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.reveal-song{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:2px}
+.reveal-song-copy{min-width:0;text-align:left}
+.reveal-song-copy h2{margin:0}.reveal-song-copy p{margin:4px 0 0}
+.reveal-cover{width:74px;height:74px;flex:0 0 74px;border-radius:12px;object-fit:cover;border:1px solid var(--line);box-shadow:0 4px 16px var(--shadow);background:var(--surface-2)}
+@media(max-width:600px){.reveal-cover{width:62px;height:62px;flex-basis:62px;border-radius:10px}.reveal-song{gap:10px}}

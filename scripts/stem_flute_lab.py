@@ -680,6 +680,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", required=True)
     parser.add_argument("--source-path", default="")
+    parser.add_argument("--start", type=float, default=None)
     args = parser.parse_args()
 
     source = Path(args.file)
@@ -697,7 +698,19 @@ def main():
 
     with tempfile.TemporaryDirectory(prefix="mdd-stem-flute-") as td:
         work = Path(td)
-        clip_start, choice = choose_clip_start(source, work)
+        if args.start is None:
+            clip_start, choice = choose_clip_start(source, work)
+            choice["mode"] = "automatic"
+        else:
+            duration_probe, _ = librosa.load(source, sr=11025, mono=True, duration=None)
+            duration_seconds = len(duration_probe) / 11025.0
+            clip_start = max(0.0, min(float(args.start), max(0.0, duration_seconds - CLIP_SECONDS)))
+            choice = {
+                "duration": round(duration_seconds, 3),
+                "candidates": 1,
+                "score": None,
+                "mode": "manual",
+            }
         print(f"Trecho escolhido: {clip_start:.2f}s", flush=True)
         clip = extract_clip(source, clip_start, work)
         stems = separate_stems(clip, work)

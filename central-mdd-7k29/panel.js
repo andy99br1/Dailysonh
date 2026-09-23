@@ -19,6 +19,11 @@ var E={
  dashboardDate:$("dashboardDate"),selectedDateLabel:$("selectedDateLabel"),prevDateBtn:$("prevDateBtn"),nextDateBtn:$("nextDateBtn"),todayDateBtn:$("todayDateBtn"),trafficPeriodTitle:$("trafficPeriodTitle")
 };
 var token="",catalog={songs:[]},catalogSha="",analyticsConfig=null,toastTimer=null,selectedDate="";
+var DEFAULT_ANALYTICS_CONFIG={
+  endpoint:"https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-analytics",
+  supabaseUrl:"https://kxoxlgiktwumooixedgu.supabase.co",
+  supabasePublishableKey:"sb_publishable_-It1y0ZrgHKjEtPGgt6DYQ_m631G-u2"
+};
 function headers(extra){return Object.assign({"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"},extra||{})}
 async function api(path,options){
  var response=await fetch(API+path,Object.assign({headers:headers()},options||{}));
@@ -126,11 +131,35 @@ async function waitRun(after){var started=Date.now();while(Date.now()-started<90
 async function monitor(run){E.workflowLink.href=run.html_url;E.workflowLink.classList.remove("hidden");while(true){var l=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);if(l.status==="queued")setJob(68,"Na fila","Preparando o ambiente.");else if(l.status==="in_progress")setJob(84,"Processando áudio","Separando as camadas. Isso pode levar alguns minutos.");else if(l.status==="completed"){if(l.conclusion==="success"){setJob(100,"Música pronta","Processamento concluído.");await new Promise(function(r){setTimeout(r,2000)});await loadCatalog();E.songForm.reset();setDefaultDate();E.fileLabel.textContent="Escolher arquivo de áudio";toast("Música processada com sucesso.");switchView("catalog");return}setJob(100,"Falha no processamento","Abra a execução do GitHub para detalhes.");throw new Error("Workflow "+l.conclusion)}await new Promise(function(r){setTimeout(r,6500)})}}
 function formValues(){return{title:E.songTitle.value.trim(),artist:E.songArtist.value.trim(),date:E.songDateInput.value,releaseYear:E.releaseYearInput.value.trim(),youtubeViews:E.youtubeViewsInput.value.trim(),difficulty:E.difficultyInput.value,youtubeUrl:E.youtubeUrlInput.value.trim(),spotifyUrl:E.spotifyUrlInput.value.trim(),appleMusicUrl:E.appleMusicUrlInput.value.trim(),deezerUrl:E.deezerUrlInput.value.trim(),clipStart:E.clipStartInput.value.trim()}}
 function setDefaultDate(){E.songDateInput.value=brazilDate()}
-async function loadAnalyticsConfig(){try{var r=await fetch("/analytics-config.json?v="+Date.now(),{cache:"no-store"});analyticsConfig=r.ok?await r.json():null}catch(_){analyticsConfig=null}updateAnalyticsStatus()}
+async function loadAnalyticsConfig(){
+ analyticsConfig=Object.assign({},DEFAULT_ANALYTICS_CONFIG);
+ try{
+   var r=await fetch("/analytics-config.json?v="+Date.now(),{cache:"no-store"});
+   if(r.ok){
+     var remote=await r.json();
+     analyticsConfig=Object.assign({},DEFAULT_ANALYTICS_CONFIG,remote||{});
+   }
+ }catch(err){
+   console.warn("analytics-config fallback",err);
+ }
+ updateAnalyticsStatus();
+}
 function updateAnalyticsStatus(){
- var url=analyticsConfig&&(analyticsConfig.dashboardEndpoint||analyticsConfig.endpoint);if(url){E.analyticsStatusPanel.querySelector("i").className="status-green";E.analyticsStatusTitle.textContent="Conectado";E.analyticsStatusText.textContent="Supabase conectado e recebendo estatísticas.";E.analyticsWarning.classList.add("hidden")}else{E.analyticsStatusPanel.querySelector("i").className="status-red";E.analyticsStatusTitle.textContent="Não conectado";E.analyticsStatusText.textContent="Nenhum endpoint configurado.";E.analyticsWarning.classList.remove("hidden")}
+ var connected=Boolean(analyticsConfig&&analyticsConfig.supabaseUrl&&analyticsConfig.supabasePublishableKey);
+ if(connected){
+   E.analyticsStatusPanel.querySelector("i").className="status-green";
+   E.analyticsStatusTitle.textContent="Conectado";
+   E.analyticsStatusText.textContent="Supabase conectado e recebendo estatísticas.";
+   E.analyticsWarning.classList.add("hidden");
+ }else{
+   E.analyticsStatusPanel.querySelector("i").className="status-red";
+   E.analyticsStatusTitle.textContent="Não conectado";
+   E.analyticsStatusText.textContent="Configuração do Supabase indisponível.";
+   E.analyticsWarning.classList.remove("hidden");
+ }
 }
 async function refreshDashboard(){
+ if(!analyticsConfig)analyticsConfig=Object.assign({},DEFAULT_ANALYTICS_CONFIG);
  if(!selectedDate)selectedDate=brazilDate();
  updateDateFilterUi();
  renderSelectedChallenge();

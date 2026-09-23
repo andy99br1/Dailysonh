@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var OWNER="andy99br1",REPO="Dailysonh",BRANCH="main",API="https://api.github.com",WORKFLOW="process-upload.yml",MIDI_WORKFLOW="midi-lab.yml",MIDI_PUBLISH_WORKFLOW="publish-midi.yml",MAX_FILE_MB=45;
+var BRANCH="main",GITHUB_PROXY="https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-github",WORKFLOW="process-upload.yml",MIDI_WORKFLOW="midi-lab.yml",MIDI_PUBLISH_WORKFLOW="publish-midi.yml",MAX_FILE_MB=45,directUploadBase="";
 function $(id){return document.getElementById(id)}
 var E={
  loginView:$("loginView"),panel:$("panel"),connectForm:$("connectForm"),tokenInput:$("tokenInput"),disconnectBtn:$("disconnectBtn"),
@@ -30,10 +30,13 @@ var DEFAULT_ANALYTICS_CONFIG={
   supabaseUrl:"https://kxoxlgiktwumooixedgu.supabase.co",
   supabasePublishableKey:"sb_publishable_-It1y0ZrgHKjEtPGgt6DYQ_m631G-u2"
 };
-function headers(extra){return Object.assign({"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"},extra||{})}
+function headers(extra){return Object.assign({"Content-Type":"application/json"},extra||{})}
 async function api(path,options){
- var response=await fetch(API+path,Object.assign({headers:headers()},options||{}));
- if(!response.ok){var t="";try{t=await response.text()}catch(_){ }var e=new Error("GitHub API "+response.status);e.status=response.status;e.details=t;throw e}
+ options=options||{};
+ var payload={path:path,method:String(options.method||"GET").toUpperCase()};
+ if(options.body!==undefined)payload.body=options.body;
+ var response=await fetch(GITHUB_PROXY,{method:"POST",headers:{"Content-Type":"application/json","X-Admin-Token":token},body:JSON.stringify(payload),cache:"no-store"});
+ if(!response.ok){var t="";try{t=await response.text()}catch(_){ }var e=new Error("Operação do repositório "+response.status);e.status=response.status;e.details=t;throw e}
  if(response.status===204)return null;return response.json()
 }
 function toast(message){E.toast.textContent=message;E.toast.classList.remove("hidden");clearTimeout(toastTimer);toastTimer=setTimeout(function(){E.toast.classList.add("hidden")},3000)}
@@ -83,13 +86,13 @@ function clearToken(){
  clearTokenCookie();
  token="";
 }
-async function validate(){var repoInfo=await api("/repos/"+OWNER+"/"+REPO);if(!repoInfo||String(repoInfo.full_name||"").toLowerCase()!==(OWNER+"/"+REPO).toLowerCase())throw new Error("Repositório não autorizado");E.githubUser.textContent=OWNER;E.connectionLabel.textContent="Conectado";return true}
+async function validate(){var repoInfo=await api("/meta");if(!repoInfo||!repoInfo.ok||!repoInfo.uploadBase)throw new Error("Repositório não autorizado");directUploadBase=String(repoInfo.uploadBase);E.githubUser.textContent="Administrador";E.connectionLabel.textContent="Conectado";return true}
 async function openPanel(){
  document.body.classList.remove("auth-locked");
  E.loginView.classList.add("hidden");
  E.panel.classList.remove("hidden");
  E.connectionLabel.textContent="Conectado";
- E.githubUser.textContent=OWNER;
+ E.githubUser.textContent="Administrador";
 
  var catalogOk=true,analyticsOk=true;
  try{await loadCatalog()}catch(err){catalogOk=false;console.error("catalog",err)}
@@ -109,7 +112,7 @@ async function connect(value){
  await openPanel();
  return true;
 }
-async function getRepoFile(path){return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path)+"?ref="+encodeURIComponent(BRANCH))}
+async function getRepoFile(path){return api("/contents/"+encodeURI(path)+"?ref="+encodeURIComponent(BRANCH))}
 async function loadCatalog(){
  var r=await fetch("/catalog.json?_="+Date.now(),{cache:"no-store"});
  if(!r.ok)throw new Error("catalog "+r.status);
@@ -223,7 +226,7 @@ async function deleteRepoFile(path,message){
  try{
    var info=await getRepoFile(path);
    if(!info||!info.sha)return;
-   await api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path),{
+   await api("/contents/"+encodeURI(path),{
      method:"DELETE",
      headers:headers({"Content-Type":"application/json"}),
      body:JSON.stringify({message:message,sha:info.sha,branch:BRANCH})
@@ -266,7 +269,7 @@ async function deleteSong(index,button){
    var bytes=new TextEncoder().encode(json),binary="";
    for(var j=0;j<bytes.length;j+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(j,Math.min(j+0x8000,bytes.length)));
 
-   await api("/repos/"+OWNER+"/"+REPO+"/contents/catalog.json",{
+   await api("/contents/catalog.json",{
      method:"PUT",
      headers:headers({"Content-Type":"application/json"}),
      body:JSON.stringify({
@@ -295,14 +298,20 @@ async function saveCatalog(){
  catalogSha=current.sha;
  var json=JSON.stringify(catalog,null,2)+"\n",bytes=new TextEncoder().encode(json),binary="";
  for(var i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
- var r=await api("/repos/"+OWNER+"/"+REPO+"/contents/catalog.json",{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({message:"Update song metadata from admin dashboard",content:btoa(binary),sha:catalogSha,branch:BRANCH})});
+ var r=await api("/contents/catalog.json",{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({message:"Update song metadata from admin dashboard",content:btoa(binary),sha:catalogSha,branch:BRANCH})});
  catalogSha=r.content.sha
 }
 function setJob(percent,title,message){E.jobBox.classList.remove("hidden");E.jobPercent.textContent=percent+"%";E.jobProgress.style.width=percent+"%";E.jobTitle.textContent=title;E.jobMessage.textContent=message||""}
-async function uploadAudio(file,path){var b64=await fileToBase64(file);return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path),{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({message:"Upload audio from Música do Dia dashboard",content:b64,branch:BRANCH})})}
-async function dispatch(path,v){return api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+WORKFLOW+"/dispatches",{method:"POST",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({ref:BRANCH,inputs:{audio_path:path,title:v.title,artist:v.artist,date:v.date,release_year:v.releaseYear,youtube_views:v.youtubeViews,difficulty:v.difficulty,youtube_url:v.youtubeUrl,spotify_url:v.spotifyUrl,apple_music_url:v.appleMusicUrl,deezer_url:v.deezerUrl,clip_start:v.clipStart}})})}
-async function waitRun(after){var started=Date.now();while(Date.now()-started<90000){var d=await api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+WORKFLOW+"/runs?event=workflow_dispatch&branch="+BRANCH+"&per_page=10"),r=(d.workflow_runs||[]).find(function(x){return new Date(x.created_at).getTime()>=after-5000});if(r)return r;await new Promise(function(res){setTimeout(res,3500)})}return null}
-async function monitor(run){E.workflowLink.href=run.html_url;E.workflowLink.classList.remove("hidden");while(true){var l=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);if(l.status==="queued")setJob(68,"Na fila","Preparando o ambiente.");else if(l.status==="in_progress")setJob(84,"Processando áudio","Separando as camadas. Isso pode levar alguns minutos.");else if(l.status==="completed"){if(l.conclusion==="success"){setJob(100,"Música pronta","Processamento concluído.");await new Promise(function(r){setTimeout(r,2000)});await loadCatalog();E.songForm.reset();setDefaultDate();E.fileLabel.textContent="Escolher arquivo de áudio";toast("Música processada com sucesso.");switchView("catalog");return}setJob(100,"Falha no processamento","Abra a execução do GitHub para detalhes.");throw new Error("Workflow "+l.conclusion)}await new Promise(function(r){setTimeout(r,6500)})}}
+async function uploadAudio(file,path){
+ if(!directUploadBase)await validate();
+ var b64=await fileToBase64(file);
+ var response=await fetch(directUploadBase+encodeURI(path),{method:"PUT",headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"},body:JSON.stringify({message:"Upload audio from Música do Dia dashboard",content:b64,branch:BRANCH})});
+ if(!response.ok){var t="";try{t=await response.text()}catch(_){ }var e=new Error("Falha no upload "+response.status);e.status=response.status;e.details=t;throw e}
+ if(response.status===204)return null;return response.json()
+}
+async function dispatch(path,v){return api("/actions/workflows/"+WORKFLOW+"/dispatches",{method:"POST",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({ref:BRANCH,inputs:{audio_path:path,title:v.title,artist:v.artist,date:v.date,release_year:v.releaseYear,youtube_views:v.youtubeViews,difficulty:v.difficulty,youtube_url:v.youtubeUrl,spotify_url:v.spotifyUrl,apple_music_url:v.appleMusicUrl,deezer_url:v.deezerUrl,clip_start:v.clipStart}})})}
+async function waitRun(after){var started=Date.now();while(Date.now()-started<90000){var d=await api("/actions/workflows/"+WORKFLOW+"/runs?event=workflow_dispatch&branch="+BRANCH+"&per_page=10"),r=(d.workflow_runs||[]).find(function(x){return new Date(x.created_at).getTime()>=after-5000});if(r)return r;await new Promise(function(res){setTimeout(res,3500)})}return null}
+async function monitor(run){E.workflowLink.removeAttribute("href");E.workflowLink.classList.add("hidden");while(true){var l=await api("/actions/runs/"+run.id);if(l.status==="queued")setJob(68,"Na fila","Preparando o ambiente.");else if(l.status==="in_progress")setJob(84,"Processando áudio","Separando as camadas. Isso pode levar alguns minutos.");else if(l.status==="completed"){if(l.conclusion==="success"){setJob(100,"Música pronta","Processamento concluído.");await new Promise(function(r){setTimeout(r,2000)});await loadCatalog();E.songForm.reset();setDefaultDate();E.fileLabel.textContent="Escolher arquivo de áudio";toast("Música processada com sucesso.");switchView("catalog");return}setJob(100,"Falha no processamento","Abra a execução do GitHub para detalhes.");throw new Error("Workflow "+l.conclusion)}await new Promise(function(r){setTimeout(r,6500)})}}
 
 function setMidiJob(percent,title,message){E.midiJobBox.classList.remove("hidden");E.midiJobPercent.textContent=percent+"%";E.midiJobProgress.style.width=percent+"%";E.midiJobTitle.textContent=title;E.midiJobMessage.textContent=message||""}
 async function putRepoText(path,obj,message){
@@ -310,10 +319,10 @@ async function putRepoText(path,obj,message){
  var json=JSON.stringify(obj,null,2)+"\n",bytes=new TextEncoder().encode(json),binary="";
  for(var i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
  var body={message:message||"Update request",content:btoa(binary),branch:BRANCH};if(current&&current.sha)body.sha=current.sha;
- return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path),{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify(body)})
+ return api("/contents/"+encodeURI(path),{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify(body)})
 }
 async function requestMidiLab(sourcePath,style,clipStart,revealSourcePath){return putRepoText(".midi-lab/request.json",{sourcePath:sourcePath,revealSourcePath:revealSourcePath||"",melodyStyle:style||"bandle",clipStart:clipStart||"",nonce:String(Date.now())},"Run MIDI laboratory")}
-async function waitMidiRun(after){var started=Date.now();while(Date.now()-started<90000){var d=await api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+MIDI_WORKFLOW+"/runs?branch="+BRANCH+"&per_page=10"),r=(d.workflow_runs||[]).find(function(x){return new Date(x.created_at).getTime()>=after-5000});if(r)return r;await new Promise(function(resolve){setTimeout(resolve,3000)})}return null}
+async function waitMidiRun(after){var started=Date.now();while(Date.now()-started<90000){var d=await api("/actions/workflows/"+MIDI_WORKFLOW+"/runs?branch="+BRANCH+"&per_page=10"),r=(d.workflow_runs||[]).find(function(x){return new Date(x.created_at).getTime()>=after-5000});if(r)return r;await new Promise(function(resolve){setTimeout(resolve,3000)})}return null}
 function midiRoundLabelStorageKey(data){
  return "musicadodia:midi-round-labels:"+(data&&data.sourcePath||data&&data.sourceName||"latest")
 }
@@ -462,11 +471,11 @@ function renderMidiResult(data){
 async function loadLatestMidiResult(silent){try{var r=await fetch("/midi-lab/manifest.json?_="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("manifest "+r.status);var data=await r.json();renderMidiResult(data);if(!silent)toast("Resultado MIDI atualizado.");return data}catch(err){if(!silent)toast("Ainda não há resultado MIDI publicado.");return null}}
 async function waitMidiPublicResult(after){var started=Date.now();while(Date.now()-started<180000){try{var r=await fetch("/midi-lab/manifest.json?_="+Date.now(),{cache:"no-store"});if(r.ok){var data=await r.json(),created=Date.parse(data.createdAt||"");if(!Number.isFinite(created)||created>=after-5000){renderMidiResult(data);return data}}}catch(_){}await new Promise(function(resolve){setTimeout(resolve,3500)})}return null}
 async function monitorMidi(run,startedAt){
- E.midiWorkflowLink.href=run.html_url;E.midiWorkflowLink.classList.remove("hidden");while(true){var latest=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);if(latest.status==="queued")setMidiJob(55,"Na fila","Preparando o renderizador MIDI.");else if(latest.status==="in_progress")setMidiJob(78,"Montando desafio","Escolhendo o trecho, classificando as pistas e renderizando somente 18 segundos.");else if(latest.status==="completed"){if(latest.conclusion==="success"){setMidiJob(94,"MIDI processado","Publicando as seis faixas no painel...");var result=await waitMidiPublicResult(startedAt);if(result){setMidiJob(100,"Pronto","As cinco etapas e a revelação estão disponíveis abaixo.");toast("Laboratório MIDI pronto.");return}setMidiJob(100,"Áudios gerados","O deploy ainda está finalizando. Use Recarregar em instantes.");return}setMidiJob(100,"Falha no MIDI","Abra a execução do GitHub para ver a etapa que falhou.");throw new Error("MIDI workflow "+latest.conclusion)}await new Promise(function(resolve){setTimeout(resolve,4500)})}
+ E.midiWorkflowLink.removeAttribute("href");E.midiWorkflowLink.classList.add("hidden");while(true){var latest=await api("/actions/runs/"+run.id);if(latest.status==="queued")setMidiJob(55,"Na fila","Preparando o renderizador MIDI.");else if(latest.status==="in_progress")setMidiJob(78,"Montando desafio","Escolhendo o trecho, classificando as pistas e renderizando somente 18 segundos.");else if(latest.status==="completed"){if(latest.conclusion==="success"){setMidiJob(94,"MIDI processado","Publicando as seis faixas no painel...");var result=await waitMidiPublicResult(startedAt);if(result){setMidiJob(100,"Pronto","As cinco etapas e a revelação estão disponíveis abaixo.");toast("Laboratório MIDI pronto.");return}setMidiJob(100,"Áudios gerados","O deploy ainda está finalizando. Use Recarregar em instantes.");return}setMidiJob(100,"Falha no MIDI","Abra a execução do GitHub para ver a etapa que falhou.");throw new Error("MIDI workflow "+latest.conclusion)}await new Promise(function(resolve){setTimeout(resolve,4500)})}
 }
 async function startMidiRequest(sourcePath,revealSourcePath){var startedAt=Date.now();setMidiJob(40,"Solicitando análise","Enviando preferências para o processador.");await requestMidiLab(sourcePath,E.midiMelodyStyle.value,E.midiClipStart.value.trim(),revealSourcePath);setMidiJob(50,"Pedido enviado","Localizando a execução no GitHub.");var run=await waitMidiRun(startedAt);if(!run){setMidiJob(54,"Processamento iniciado","A execução foi enviada. Recarregue o resultado em alguns instantes.");return}await monitorMidi(run,startedAt)}
 async function dispatchMidiPublish(values){
- return api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+MIDI_PUBLISH_WORKFLOW+"/dispatches",{
+ return api("/actions/workflows/"+MIDI_PUBLISH_WORKFLOW+"/dispatches",{
    method:"POST",
    headers:headers({"Content-Type":"application/json"}),
    body:JSON.stringify({ref:BRANCH,inputs:{
@@ -488,7 +497,7 @@ async function dispatchMidiPublish(values){
 async function waitMidiPublishRun(after){
  var started=Date.now();
  while(Date.now()-started<90000){
-   var d=await api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+MIDI_PUBLISH_WORKFLOW+"/runs?event=workflow_dispatch&branch="+BRANCH+"&per_page=10");
+   var d=await api("/actions/workflows/"+MIDI_PUBLISH_WORKFLOW+"/runs?event=workflow_dispatch&branch="+BRANCH+"&per_page=10");
    var r=(d.workflow_runs||[]).find(function(x){return new Date(x.created_at).getTime()>=after-5000});
    if(r)return r;
    await new Promise(function(resolve){setTimeout(resolve,3000)})
@@ -498,7 +507,7 @@ async function waitMidiPublishRun(after){
 async function monitorMidiPublish(run){
  E.midiPublishStatus.textContent="Publicando...";
  while(true){
-   var latest=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);
+   var latest=await api("/actions/runs/"+run.id);
    if(latest.status==="queued")E.midiPublishStatus.textContent="Na fila...";
    else if(latest.status==="in_progress")E.midiPublishStatus.textContent="Copiando as 6 faixas e atualizando o catálogo...";
    else if(latest.status==="completed"){

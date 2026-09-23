@@ -17,7 +17,7 @@ concurrency:
 jobs:
   process:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 50
 
     steps:
       - name: Checkout
@@ -31,11 +31,13 @@ jobs:
           python-version: "3.10"
           cache: pip
 
-      - name: Cache Demucs model
+      - name: Cache separation models
         uses: actions/cache@v4
         with:
-          path: ~/.cache/torch/hub/checkpoints
-          key: demucs-htdemucs-6s-v1
+          path: |
+            ~/.cache/torch/hub/checkpoints
+            ~/.cache/audio-separator-models
+          key: stem-flute-hybrid-roformer-v1
 
       - name: FFmpeg
         run: |
@@ -47,6 +49,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio torchcodec
           pip install "numpy<2" "demucs==4.0.1" "librosa>=0.10,<0.12" "soundfile>=0.12" "scipy>=1.10"
+
+      - name: Install isolated BS-RoFormer environment
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/audio-separator-env"
+          "$RUNNER_TEMP/audio-separator-env/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/audio-separator-env/bin/pip" install --index-url https://download.pytorch.org/whl/cpu torch
+          "$RUNNER_TEMP/audio-separator-env/bin/pip" install "audio-separator[cpu]==0.47.0"
+          echo "AUDIO_SEPARATOR_BIN=$RUNNER_TEMP/audio-separator-env/bin/audio-separator" >> "$GITHUB_ENV"
 
       - name: Read request and recover upload
         id: audio

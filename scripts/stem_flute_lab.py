@@ -2,6 +2,7 @@
 import argparse
 import json
 import math
+import os
 import shutil
 import subprocess
 import sys
@@ -139,26 +140,110 @@ def extract_clip(source, start, work):
     return clip
 
 
+def _find_named_wav(folder, wanted):
+    direct = folder / f"{wanted}.wav"
+    if direct.exists():
+        return direct
+
+    wanted_lower = wanted.lower()
+    candidates = sorted(folder.glob("*.wav"))
+    for path in candidates:
+        name = path.stem.lower()
+        if wanted_lower in name:
+            return path
+    return None
+
+
 def separate_stems(clip, work):
-    out = work / "separated"
+    """
+    Híbrido focado em qualidade:
+    - Demucs FT fica só com bateria/baixo, que já funcionavam bem no jogo.
+    - BS-RoFormer-SW fornece voz, guitarra, piano e other.
+    """
+    demucs_out = work / "demucs"
     run([
         sys.executable, "-m", "demucs.separate",
-        "-n", "htdemucs_6s",
+        "-n", "htdemucs_ft",
         "--device", "cpu",
         "--shifts", "1",
         "--overlap", "0.25",
-        "--out", out,
+        "--out", demucs_out,
         clip,
     ])
 
-    stem_dir = out / "htdemucs_6s" / clip.stem
-    names = ("drums", "bass", "vocals", "guitar", "piano", "other")
-    stems = {name: stem_dir / f"{name}.wav" for name in names}
-    missing = [name for name, path in stems.items() if not path.exists()]
-    if missing:
-        raise RuntimeError("Demucs 6 stems não gerou: " + ", ".join(missing))
-    return stems
+    demucs_dir = demucs_out / "htdemucs_ft" / clip.stem
+    demucs_drums = demucs_dir / "drums.wav"
+    demucs_bass = demucs_dir / "bass.wav"
+    if not demucs_drums.exists() or not demucs_bass.exists():
+        raise RuntimeError("Demucs FT não gerou bateria/baixo.")
 
+    roformer_out = work / "roformer6"
+    roformer_out.mkdir(parents=True, exist_ok=True)
+
+    separator_bin = Path(
+        os.environ.get(
+            "AUDIO_SEPARATOR_BIN",
+            str(Path(sys.executable).with_name("audio-separator")),
+        )
+    )
+    if not separator_bin.exists():
+        raise RuntimeError(f"audio-separator não encontrado: {separator_bin}")
+
+    model_dir = Path.home() / ".cache" / "audio-separator-models"
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    output_names = json.dumps({
+        "Vocals": "vocals",
+        "Drums": "drums_roformer",
+        "Bass": "bass_roformer",
+        "Guitar": "guitar",
+        "Piano": "piano",
+        "Other": "other",
+    })
+
+    run([
+        separator_bin,
+        clip,
+        "--model_filename", "BS-Roformer-SW.ckpt",
+        "--output_format", "WAV",
+        "--output_dir", roformer_out,
+        "--model_file_dir", model_dir,
+        "--normalization", "0.9",
+        "--mdxc_overlap", "8",
+        "--custom_output_names", output_names,
+    ])
+
+    vocals = _find_named_wav(roformer_out, "vocals")
+    guitar = _find_named_wav(roformer_out, "guitar")
+    piano = _find_named_wav(roformer_out, "piano")
+    other = _find_named_wav(roformer_out, "other")
+
+    missing = [
+        name for name, path in (
+            ("vocals", vocals),
+            ("guitar", guitar),
+            ("piano", piano),
+            ("other", other),
+        )
+        if path is None or not path.exists()
+    ]
+    if missing:
+        found = ", ".join(p.name for p in roformer_out.glob("*.wav"))
+        raise RuntimeError(
+            "BS-RoFormer-SW não gerou os stems esperados: "
+            + ", ".join(missing)
+            + ". Arquivos encontrados: "
+            + found
+        )
+
+    return {
+        "drums": demucs_drums,
+        "bass": demucs_bass,
+        "vocals": vocals,
+        "guitar": guitar,
+        "piano": piano,
+        "other": other,
+    }
 
 def _fix_octaves(midi_curve, valid):
     fixed = midi_curve.copy()
@@ -185,8 +270,95 @@ def _fix_octaves(midi_curve, valid):
     return fixed
 
 
+def _fill_short_note_gaps(notes, max_gap):
+    notes = notes.copy()
+    i = 0
+    while i < len(notes):
+        if notes[i] >= 0:
+            i += 1
+            continue
+
+        j = i + 1
+        while j < len(notes) and notes[j] < 0:
+            j += 1
+
+        gap = j - i
+        left = int(notes[i - 1]) if i > 0 else -1
+        right = int(notes[j]) if j < len(notes) else -1
+
+        if gap <= max_gap and left >= 0 and right >= 0 and abs(left - right) <= 3:
+            if left == right:
+                notes[i:j] = left
+            else:
+                bridge = np.rint(np.linspace(left, right, gap + 2)[1:-1]).astype(np.int16)
+                notes[i:j] = bridge
+
+        i = j
+    return notes
+
+
+def _clean_short_note_runs(notes, min_frames):
+    notes = notes.copy()
+
+    for _ in range(3):
+        runs = []
+        i = 0
+        while i < len(notes):
+            value = int(notes[i])
+            j = i + 1
+            while j < len(notes) and int(notes[j]) == value:
+                j += 1
+            runs.append((i, j, value))
+            i = j
+
+        changed = False
+        for idx, (start, end, value) in enumerate(runs):
+            if value < 0 or end - start >= min_frames:
+                continue
+
+            left = runs[idx - 1][2] if idx > 0 else -1
+            right = runs[idx + 1][2] if idx + 1 < len(runs) else -1
+            replacement = -1
+
+            if left >= 0 and right >= 0:
+                if left == right:
+                    replacement = left
+                elif abs(value - left) <= abs(value - right):
+                    replacement = left
+                else:
+                    replacement = right
+            elif left >= 0:
+                replacement = left
+            elif right >= 0:
+                replacement = right
+
+            notes[start:end] = replacement
+            changed = True
+
+        if not changed:
+            break
+
+    return notes
+
+
+def _count_note_segments(notes):
+    count = 0
+    previous = -1
+    for value in notes:
+        value = int(value)
+        if value >= 0 and value != previous:
+            count += 1
+        previous = value
+    return count
+
+
 def synthesize_flute(vocal_path, out_path):
-    """Transforma o contorno contínuo da voz em flauta. Não cria MIDI."""
+    """
+    Faz a voz virar uma linha de flauta estável.
+    O vibrato da cantora NÃO é copiado quadro a quadro: usamos o pitch para
+    descobrir a nota musical, estabilizamos notas curtas e só então criamos
+    transições suaves. Isso evita a flauta 'tremendo' ou falhando junto da voz.
+    """
     y, sr = librosa.load(vocal_path, sr=TARGET_SR, mono=True)
     target_len = int(round(CLIP_SECONDS * sr))
     if len(y) < target_len:
@@ -208,75 +380,138 @@ def synthesize_flute(vocal_path, out_path):
 
     if f0 is None or len(f0) == 0:
         sf.write(out_path, np.zeros((target_len, 2), dtype=np.float32), sr, subtype="PCM_16")
-        return {"voicedPercent": 0.0, "medianHz": 0.0}
+        return {"voicedPercent": 0.0, "medianHz": 0.0, "noteSegments": 0}
 
-    voiced_prob = np.asarray(voiced_prob if voiced_prob is not None else np.zeros_like(f0), dtype=np.float64)
-    voiced_flag = np.asarray(voiced_flag if voiced_flag is not None else np.isfinite(f0), dtype=bool)
-    valid = voiced_flag & np.isfinite(f0) & (voiced_prob >= 0.50)
+    voiced_prob = np.asarray(
+        voiced_prob if voiced_prob is not None else np.zeros_like(f0),
+        dtype=np.float64,
+    )
+    voiced_flag = np.asarray(
+        voiced_flag if voiced_flag is not None else np.isfinite(f0),
+        dtype=bool,
+    )
 
-    # Limpa ilhas de 1-2 frames sem apagar vibrato.
-    gate_frames = valid.astype(np.float64)
-    gate_frames = gaussian_filter1d(gate_frames, sigma=1.15)
-    valid = gate_frames >= 0.36
+    raw_valid = voiced_flag & np.isfinite(f0) & (voiced_prob >= 0.38)
 
     midi_curve = np.full(len(f0), np.nan, dtype=np.float64)
     finite_f0 = np.isfinite(f0) & (f0 > 0)
     midi_curve[finite_f0] = 69.0 + 12.0 * np.log2(f0[finite_f0] / 440.0)
-    midi_curve = _fix_octaves(midi_curve, valid & np.isfinite(midi_curve))
+    midi_curve = _fix_octaves(midi_curve, raw_valid & np.isfinite(midi_curve))
 
-    good = valid & np.isfinite(midi_curve)
+    good = raw_valid & np.isfinite(midi_curve)
     if np.count_nonzero(good) < 3:
         sf.write(out_path, np.zeros((target_len, 2), dtype=np.float32), sr, subtype="PCM_16")
-        return {"voicedPercent": 0.0, "medianHz": 0.0}
+        return {"voicedPercent": 0.0, "medianHz": 0.0, "noteSegments": 0}
 
-    frame_x = np.arange(len(midi_curve), dtype=np.float64)
-    interp_midi = np.interp(frame_x, frame_x[good], midi_curve[good])
-    # Suavização mínima: tira jitter digital, preservando slides e vibrato.
-    interp_midi = gaussian_filter1d(interp_midi, sigma=0.75)
-    interp_hz = 440.0 * np.power(2.0, (interp_midi - 69.0) / 12.0)
+    x = np.arange(len(midi_curve), dtype=np.float64)
+    filled = np.interp(x, x[good], midi_curve[good])
 
-    rms = librosa.feature.rms(y=y, frame_length=frame_length, hop_length=hop, center=True)[0]
-    if len(rms) < len(f0):
-        rms = np.pad(rms, (0, len(f0) - len(rms)), mode="edge")
-    rms = rms[: len(f0)]
-    if float(np.max(rms)) > 1e-8:
-        rms = rms / float(np.max(rms))
-    amp_frames = np.power(np.clip(rms, 0.0, 1.0), 0.62) * gate_frames
-    amp_frames = gaussian_filter1d(amp_frames, sigma=1.2)
+    # ~64 ms de mediana: remove vibrato/jitter sem atrasar demais a melodia.
+    smooth_midi = median_filter(filled, size=11, mode="nearest")
 
-    frame_times = np.arange(len(f0), dtype=np.float64) * hop / sr
-    sample_times = np.arange(target_len, dtype=np.float64) / sr
-    freq = np.interp(sample_times, frame_times, interp_hz, left=interp_hz[0], right=interp_hz[-1])
-    amp = np.interp(sample_times, frame_times, amp_frames, left=0.0, right=0.0)
+    note_frames = np.rint(smooth_midi).astype(np.int16)
+    note_frames[~raw_valid] = -1
 
-    # Fase contínua = nada de notas picotadas/8-bit.
-    phase = 2.0 * np.pi * np.cumsum(freq) / sr
-
-    # Timbre de flauta por síntese aditiva, mantendo pitch contínuo da cantora.
-    tone = (
-        1.00 * np.sin(phase)
-        + 0.16 * np.sin(2.0 * phase + 0.17)
-        + 0.055 * np.sin(3.0 * phase + 0.31)
-        + 0.018 * np.sin(4.0 * phase + 0.53)
+    frames_per_second = sr / hop
+    note_frames = _fill_short_note_gaps(
+        note_frames,
+        max_gap=max(1, int(round(0.16 * frames_per_second))),
+    )
+    note_frames = _clean_short_note_runs(
+        note_frames,
+        min_frames=max(2, int(round(0.055 * frames_per_second))),
+    )
+    note_frames = _fill_short_note_gaps(
+        note_frames,
+        max_gap=max(1, int(round(0.10 * frames_per_second))),
     )
 
-    # Leve sopro determinístico para fugir de um seno "MIDI".
+    stable_valid = note_frames >= 0
+    if np.count_nonzero(stable_valid) < 3:
+        sf.write(out_path, np.zeros((target_len, 2), dtype=np.float32), sr, subtype="PCM_16")
+        return {"voicedPercent": 0.0, "medianHz": 0.0, "noteSegments": 0}
+
+    # Cria pitch constante dentro de cada nota e glides curtos nas mudanças.
+    stable_pitch = note_frames.astype(np.float64)
+    stable_pitch[~stable_valid] = np.nan
+
+    frame_pitch = np.full(len(stable_pitch), np.nan, dtype=np.float64)
+    i = 0
+    while i < len(stable_pitch):
+        if not np.isfinite(stable_pitch[i]):
+            i += 1
+            continue
+        j = i + 1
+        while j < len(stable_pitch) and np.isfinite(stable_pitch[j]):
+            j += 1
+
+        phrase = stable_pitch[i:j].copy()
+        phrase = gaussian_filter1d(phrase, sigma=1.45, mode="nearest")
+        frame_pitch[i:j] = phrase
+        i = j
+
+    valid_pitch = np.isfinite(frame_pitch)
+    px = np.flatnonzero(valid_pitch)
+    interp_pitch = np.interp(
+        np.arange(len(frame_pitch), dtype=np.float64),
+        px,
+        frame_pitch[valid_pitch],
+    )
+    interp_hz = 440.0 * np.power(2.0, (interp_pitch - 69.0) / 12.0)
+
+    # Dinâmica da voz, mas bastante suavizada para não copiar falhas/sílabas.
+    rms = librosa.feature.rms(
+        y=y,
+        frame_length=frame_length,
+        hop_length=hop,
+        center=True,
+    )[0]
+    if len(rms) < len(note_frames):
+        rms = np.pad(rms, (0, len(note_frames) - len(rms)), mode="edge")
+    rms = rms[: len(note_frames)]
+    if float(np.max(rms)) > 1e-8:
+        rms = rms / float(np.max(rms))
+
+    gate_frames = stable_valid.astype(np.float64)
+    gate_frames = gaussian_filter1d(gate_frames, sigma=2.0)
+    dynamics = gaussian_filter1d(np.power(np.clip(rms, 0.0, 1.0), 0.45), sigma=7.0)
+    amp_frames = np.clip((0.58 + 0.42 * dynamics) * gate_frames, 0.0, 1.0)
+
+    frame_times = np.arange(len(note_frames), dtype=np.float64) * hop / sr
+    sample_times = np.arange(target_len, dtype=np.float64) / sr
+    freq = np.interp(
+        sample_times,
+        frame_times,
+        interp_hz,
+        left=interp_hz[0],
+        right=interp_hz[-1],
+    )
+    amp = np.interp(sample_times, frame_times, amp_frames, left=0.0, right=0.0)
+
+    # Fase contínua e timbre de flauta mais arredondado.
+    phase = 2.0 * np.pi * np.cumsum(freq) / sr
+    tone = (
+        1.00 * np.sin(phase)
+        + 0.105 * np.sin(2.0 * phase + 0.13)
+        + 0.032 * np.sin(3.0 * phase + 0.29)
+        + 0.009 * np.sin(4.0 * phase + 0.47)
+    )
+
     rng = np.random.default_rng(20260923)
     breath = rng.standard_normal(target_len)
-    breath = gaussian_filter1d(breath, sigma=2.0)
+    breath = gaussian_filter1d(breath, sigma=3.0)
     breath /= max(float(np.max(np.abs(breath))), 1e-9)
 
-    mono = (tone + 0.018 * breath) * amp
+    mono = (tone + 0.010 * breath) * amp
 
-    # Ambiência curta e discreta.
-    d1 = int(0.027 * sr)
-    d2 = int(0.043 * sr)
+    d1 = int(0.029 * sr)
+    d2 = int(0.047 * sr)
     left = mono.copy()
     right = mono.copy()
     if d1 < target_len:
-        left[d1:] += mono[:-d1] * 0.10
+        left[d1:] += mono[:-d1] * 0.085
     if d2 < target_len:
-        right[d2:] += mono[:-d2] * 0.085
+        right[d2:] += mono[:-d2] * 0.07
 
     stereo = np.column_stack([left, right])
     peak = float(np.max(np.abs(stereo))) if stereo.size else 0.0
@@ -284,12 +519,14 @@ def synthesize_flute(vocal_path, out_path):
         stereo = stereo * (0.86 / peak)
 
     sf.write(out_path, stereo.astype(np.float32), sr, subtype="PCM_16")
-    median_hz = float(np.median(f0[good])) if np.any(good) else 0.0
-    return {
-        "voicedPercent": round(float(np.mean(good) * 100.0), 1),
-        "medianHz": round(median_hz, 2),
-    }
 
+    original_good_f0 = f0[good]
+    median_hz = float(np.median(original_good_f0)) if original_good_f0.size else 0.0
+    return {
+        "voicedPercent": round(float(np.mean(stable_valid) * 100.0), 1),
+        "medianHz": round(median_hz, 2),
+        "noteSegments": int(_count_note_segments(note_frames)),
+    }
 
 def encode_ogg(source, target):
     run([
@@ -407,8 +644,8 @@ def main():
             "clipStart": round(float(clip_start), 3),
             "clipSeconds": CLIP_SECONDS,
             "selection": choice,
-            "separationModel": "htdemucs_6s",
-            "voiceTransform": "continuous-pitch flute (pYIN, no MIDI)",
+            "separationModel": "Hybrid: htdemucs_ft (drums/bass) + BS-Roformer-SW (vocals/instruments)",
+            "voiceTransform": "stabilized-note flute (pYIN + note cleanup, no MIDI)",
             "flute": flute_stats,
             "tracks": tracks,
         }

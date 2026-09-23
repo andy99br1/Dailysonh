@@ -480,3 +480,24 @@ body[data-admin-theme="day"] .lab-round-btn.active{background:rgba(93,113,226,.1
 body[data-admin-theme="day"] .lab-primary-badge{color:#277e8a;background:rgba(35,160,175,.09)}
 @media(max-width:1100px){.lab-results-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.lab-method-head{min-height:0;margin-bottom:10px}.lab-round-buttons{grid-template-columns:repeat(5,minmax(48px,1fr));overflow-x:auto;padding-bottom:3px}.lab-method-card{padding:10px}}
+
+.melody-lab-card{margin-top:12px}
+.melody-result-shell{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.melody-result-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.melody-result-head>div{display:grid;gap:3px}
+.melody-result-head strong{font-size:11px}
+.melody-result-head span{color:var(--muted);font-size:8px}
+.melody-results-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.melody-method-card{min-width:0;padding:13px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.02)}
+.melody-method-head{min-height:92px}
+.melody-method-head h3{margin:2px 0 0;font-size:13px}
+.melody-method-head p{margin:6px 0 0;color:var(--muted);font-size:7.5px;line-height:1.45}
+.melody-buttons{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.melody-audio-btn{min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.025);color:var(--muted);font-size:7px;font-weight:900;cursor:pointer}
+.melody-audio-btn:hover{border-color:rgba(35,199,217,.35);background:rgba(35,199,217,.06)}
+.melody-audio-btn.active{border-color:rgba(35,199,217,.58);background:rgba(35,199,217,.12);color:#b9f5fa}
+body[data-admin-theme="day"] .melody-method-card{background:rgba(38,55,92,.025)}
+body[data-admin-theme="day"] .melody-audio-btn{background:rgba(38,55,92,.025);color:#64728a}
+body[data-admin-theme="day"] .melody-audio-btn.active{background:rgba(35,160,175,.09);color:#286b75}
+@media(max-width:1100px){.melody-results-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.melody-result-head{align-items:flex-start;flex-direction:column}.melody-method-head{min-height:0}.melody-method-card{padding:10px}}

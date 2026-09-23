@@ -113,8 +113,9 @@ jobs:
       - name: Choose 18s, split stems and transform voice to flute
         env:
           AUDIO_FILE: ${{ steps.audio.outputs.file }}
+          SOURCE_PATH: ${{ steps.audio.outputs.source_path }}
         run: |
-          python scripts/stem_flute_lab.py --file "$AUDIO_FILE"
+          python scripts/stem_flute_lab.py --file "$AUDIO_FILE" --source-path "$SOURCE_PATH"
 
       - name: Commit isolated lab result
         env:

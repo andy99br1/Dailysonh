@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "createdAt": "2026-09-23T08:57:04.287164+00:00",
+  "createdAt": "2026-09-23T09:19:09.845887+00:00",
   "sourceName": "1790152240590-Marilia-Mendonca-Infiel-Video-Oficial-Marilia-Mendonca-youtube.mp3",
-  "sourcePath": "/home/runner/work/_temp/1790152240590-Marilia-Mendonca-Infiel-Video-Oficial-Marilia-Mendonca-youtube.mp3",
+  "sourcePath": "stem-flute-incoming/1790152240590-Marilia-Mendonca-Infiel-Video-Oficial-Marilia-Mendonca-youtube.mp3",
   "clipStart": 102.0,
   "clipSeconds": 18.0,
   "selection": {
@@ -12,6 +12,8 @@
   },
   "separationModel": "Hybrid: htdemucs_ft (drums/bass) + BS-Roformer-SW (vocals/instruments)",
   "voiceTransform": "stabilized-note flute (pYIN + note cleanup, no MIDI)",
+  "instrumentBody": "recombined accompaniment + filtered residual body restoration",
+  "webAudioEncoding": "Ogg Vorbis q8",
   "flute": {
     "voicedPercent": 79.1,
     "medianHz": 387.32,
@@ -39,13 +41,18 @@
       "url": "/stem-flute-lab/bass.ogg"
     },
     {
+      "id": "instruments",
+      "label": "Instrumentos completos",
+      "url": "/stem-flute-lab/instruments.ogg"
+    },
+    {
       "id": "guitar",
-      "label": "Guitarra / violão",
+      "label": "Guitarra / violão (encorpada)",
       "url": "/stem-flute-lab/guitar.ogg"
     },
     {
       "id": "piano",
-      "label": "Piano / teclas",
+      "label": "Piano / teclas (encorpado)",
       "url": "/stem-flute-lab/piano.ogg"
     },
     {
@@ -62,6 +69,33 @@
       "id": "original",
       "label": "Trecho original",
       "url": "/stem-flute-lab/original.ogg"
+    }
+  ],
+  "gameRounds": [
+    {
+      "index": 1,
+      "label": "Bateria",
+      "url": "/stem-flute-lab/game-round-1.ogg"
+    },
+    {
+      "index": 2,
+      "label": "Baixo",
+      "url": "/stem-flute-lab/game-round-2.ogg"
+    },
+    {
+      "index": 3,
+      "label": "Instrumentos",
+      "url": "/stem-flute-lab/game-round-3.ogg"
+    },
+    {
+      "index": 4,
+      "label": "Melodia",
+      "url": "/stem-flute-lab/game-round-4.ogg"
+    },
+    {
+      "index": 5,
+      "label": "Revelação",
+      "url": "/stem-flute-lab/game-round-5.ogg"
     }
   ]
 }

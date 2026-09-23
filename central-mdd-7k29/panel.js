@@ -308,11 +308,58 @@ async function putRepoText(path,obj,message){
 }
 async function requestMidiLab(sourcePath,style,clipStart,revealSourcePath){return putRepoText(".midi-lab/request.json",{sourcePath:sourcePath,revealSourcePath:revealSourcePath||"",melodyStyle:style||"bandle",clipStart:clipStart||"",nonce:String(Date.now())},"Run MIDI laboratory")}
 async function waitMidiRun(after){var started=Date.now();while(Date.now()-started<90000){var d=await api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+MIDI_WORKFLOW+"/runs?branch="+BRANCH+"&per_page=10"),r=(d.workflow_runs||[]).find(function(x){return new Date(x.created_at).getTime()>=after-5000});if(r)return r;await new Promise(function(resolve){setTimeout(resolve,3000)})}return null}
+function midiRoundLabelStorageKey(data){
+ return "musicadodia:midi-round-labels:"+(data&&data.sourcePath||data&&data.sourceName||"latest")
+}
+function getMidiRoundLabels(data){
+ var fallback=(data&&Array.isArray(data.rounds)?data.rounds:[]).map(function(round){return String(round.label||("Faixa "+round.number))});
+ try{
+   var saved=JSON.parse(localStorage.getItem(midiRoundLabelStorageKey(data))||"null");
+   if(Array.isArray(saved))return fallback.map(function(label,i){return String(saved[i]||label)})
+ }catch(_){}
+ return fallback
+}
+function saveMidiRoundLabels(data,labels){
+ try{localStorage.setItem(midiRoundLabelStorageKey(data),JSON.stringify(labels))}catch(_){}
+}
+function currentMidiRoundLabels(){
+ if(!E.midiRounds)return [];
+ return Array.prototype.slice.call(E.midiRounds.querySelectorAll(".midi-round-name")).map(function(input){return input.value.trim()})
+}
 function renderMidiResult(data){
  if(!data||!Array.isArray(data.rounds))return;latestMidiManifest=data;E.midiResultsCard.classList.remove("hidden");E.midiRerenderBtn.classList.remove("hidden");E.midiResultTitle.textContent=data.sourceName||"MIDI";
  var start=Number(data.clipStart||0),seconds=Number(data.clipSeconds||18);E.midiResultMeta.textContent="Trecho escolhido: "+start.toFixed(1)+"s–"+(start+seconds).toFixed(1)+"s · "+(data.melodyStyleName||"melodia padrão");E.midiClipStart.placeholder=start.toFixed(1)+" (automático)";
  E.midiRoles.innerHTML="";[["Bateria",data.roles&&data.roles.drums],["Baixo",data.roles&&data.roles.bass],["Melodia",data.roles&&data.roles.melody]].forEach(function(pair){var box=document.createElement("div");box.className="midi-role";var span=document.createElement("span");span.textContent=pair[0];var strong=document.createElement("strong");strong.textContent=pair[1]&&pair[1].name||"—";var small=document.createElement("small");small.textContent=pair[1]&&pair[1].confidence?pair[1].confidence+"% confiança":"";box.append(span,strong,small);E.midiRoles.appendChild(box)});
- E.midiRounds.innerHTML="";data.rounds.forEach(function(round){var btn=document.createElement("button");btn.type="button";btn.className="midi-round";var n=document.createElement("b");n.textContent=String(round.number);var copy=document.createElement("span"),title=document.createElement("strong"),desc=document.createElement("small");title.textContent=round.label||("Faixa "+round.number);desc.textContent=(round.added||[]).join(" + ")||"Arranjo completo";copy.append(title,desc);btn.append(n,copy);btn.addEventListener("click",function(){E.midiRounds.querySelectorAll(".midi-round").forEach(function(x){x.classList.remove("active")});btn.classList.add("active");E.midiNowNumber.textContent=String(round.number);E.midiNowLabel.textContent=round.label||("Faixa "+round.number);E.midiAudio.src="/"+String(round.audio||"").replace(/^\/+/, "")+"?v="+encodeURIComponent(data.createdAt||Date.now());E.midiAudio.load();E.midiAudioStatus.textContent=(round.added||[]).length?"Adiciona: "+round.added.join(" + "):"Revelação completa";var p=E.midiAudio.play();if(p&&p.catch)p.catch(function(){})});E.midiRounds.appendChild(btn)});
+ E.midiRounds.innerHTML="";
+ var editableLabels=getMidiRoundLabels(data);
+ data.rounds.forEach(function(round,index){
+   var card=document.createElement("div");card.className="midi-round";card.setAttribute("role","button");card.tabIndex=0;
+   var n=document.createElement("b");n.textContent=String(round.number);
+   var copy=document.createElement("span"),title=document.createElement("input"),desc=document.createElement("small");
+   title.type="text";title.className="midi-round-name";title.value=editableLabels[index]||round.label||("Faixa "+round.number);title.maxLength=42;title.setAttribute("aria-label","Nome da faixa "+round.number);
+   desc.textContent=(round.added||[]).join(" + ")||"Arranjo completo";
+   copy.append(title,desc);card.append(n,copy);
+   function playRound(){
+     E.midiRounds.querySelectorAll(".midi-round").forEach(function(x){x.classList.remove("active")});card.classList.add("active");
+     E.midiNowNumber.textContent=String(round.number);E.midiNowLabel.textContent=title.value.trim()||round.label||("Faixa "+round.number);
+     E.midiAudio.src="/"+String(round.audio||"").replace(/^\/+/, "")+"?v="+encodeURIComponent(data.createdAt||Date.now());E.midiAudio.load();
+     E.midiAudioStatus.textContent=(round.added||[]).length?"Adiciona: "+round.added.join(" + "):"Revelação completa";
+     var p=E.midiAudio.play();if(p&&p.catch)p.catch(function(){})
+   }
+   card.addEventListener("click",function(ev){if(ev.target===title)return;playRound()});
+   card.addEventListener("keydown",function(ev){if((ev.key==="Enter"||ev.key===" ")&&ev.target!==title){ev.preventDefault();playRound()}});
+   title.addEventListener("click",function(ev){ev.stopPropagation()});
+   title.addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();title.blur()}});
+   title.addEventListener("input",function(){
+     var labels=currentMidiRoundLabels();saveMidiRoundLabels(data,labels);
+     if(card.classList.contains("active"))E.midiNowLabel.textContent=title.value.trim()||("Faixa "+round.number)
+   });
+   title.addEventListener("change",function(){
+     if(!title.value.trim())title.value=round.label||("Faixa "+round.number);
+     var labels=currentMidiRoundLabels();saveMidiRoundLabels(data,labels)
+   });
+   E.midiRounds.appendChild(card)
+ });
  E.midiChannels.innerHTML="";(data.channels||[]).forEach(function(ch){var row=document.createElement("div"),name=document.createElement("span"),info=document.createElement("small");name.textContent="Canal "+(Number(ch.channel)+1)+" · "+(ch.name||"Instrumento");info.textContent=(ch.notesInClip||0)+" notas no trecho"+(ch.pitchBends?" · "+ch.pitchBends+" pitch bends":"");row.append(name,info);E.midiChannels.appendChild(row)});
  if(data.melodyStyle)E.midiMelodyStyle.value=data.melodyStyle;
  if(E.midiPublishDate&&!E.midiPublishDate.value)E.midiPublishDate.value=brazilDate()
@@ -337,7 +384,8 @@ async function dispatchMidiPublish(values){
      youtube_url:values.youtubeUrl||"",
      spotify_url:values.spotifyUrl||"",
      apple_music_url:values.appleMusicUrl||"",
-     deezer_url:values.deezerUrl||""
+     deezer_url:values.deezerUrl||"",
+     round_labels:JSON.stringify(values.roundLabels||[])
    }})
  })
 }
@@ -555,7 +603,8 @@ E.midiPublishBtn.addEventListener("click",async function(){
    youtubeUrl:E.midiPublishYoutubeUrl.value.trim(),
    spotifyUrl:E.midiPublishSpotifyUrl.value.trim(),
    appleMusicUrl:E.midiPublishAppleMusicUrl.value.trim(),
-   deezerUrl:E.midiPublishDeezerUrl.value.trim()
+   deezerUrl:E.midiPublishDeezerUrl.value.trim(),
+   roundLabels:currentMidiRoundLabels()
  };
  if(!values.title||!values.artist||!values.date){toast("Preencha título, artista e data.");return}
  var existing=(catalog.songs||[]).find(function(song){return String(song.date||"")===values.date});

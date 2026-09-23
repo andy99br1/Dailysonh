@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "createdAt": "2026-09-23T08:38:43.459672+00:00",
+  "sourceName": "1790152240590-Marilia-Mendonca-Infiel-Video-Oficial-Marilia-Mendonca-youtube.mp3",
+  "sourcePath": "stem-flute-incoming/1790152240590-Marilia-Mendonca-Infiel-Video-Oficial-Marilia-Mendonca-youtube.mp3",
+  "clipStart": 102.0,
+  "clipSeconds": 18.0,
+  "selection": {
+    "duration": 209.189,
+    "candidates": 126,
+    "score": 0.8386
+  },
+  "separationModel": "htdemucs_6s",
+  "voiceTransform": "continuous-pitch flute (pYIN, no MIDI)",
+  "flute": {
+    "voicedPercent": 61.6,
+    "medianHz": 387.32
+  },
+  "tracks": [
+    {
+      "id": "preview",
+      "label": "Mix sem voz + flauta",
+      "url": "/stem-flute-lab/preview.ogg"
+    },
+    {
+      "id": "flute",
+      "label": "Melodia em flauta",
+      "url": "/stem-flute-lab/flute.ogg"
+    },
+    {
+      "id": "drums",
+      "label": "Bateria",
+      "url": "/stem-flute-lab/drums.ogg"
+    },
+    {
+      "id": "bass",
+      "label": "Baixo",
+      "url": "/stem-flute-lab/bass.ogg"
+    },
+    {
+      "id": "guitar",
+      "label": "Guitarra / violão",
+      "url": "/stem-flute-lab/guitar.ogg"
+    },
+    {
+      "id": "piano",
+      "label": "Piano / teclas",
+      "url": "/stem-flute-lab/piano.ogg"
+    },
+    {
+      "id": "other",
+      "label": "Outros instrumentos",
+      "url": "/stem-flute-lab/other.ogg"
+    },
+    {
+      "id": "vocals",
+      "label": "Voz isolada (comparação)",
+      "url": "/stem-flute-lab/vocals.ogg"
+    },
+    {
+      "id": "original",
+      "label": "Trecho original",
+      "url": "/stem-flute-lab/original.ogg"
+    }
+  ]
+}

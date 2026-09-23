@@ -36,17 +36,16 @@ function formatDuration(v){var n=Number(v);if(!Number.isFinite(n))return"—";va
 function sanitizeFilename(name){var dot=name.lastIndexOf("."),ext=dot>=0?name.slice(dot).toLowerCase():"",stem=dot>=0?name.slice(0,dot):name;stem=stem.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]+/g,"-").replace(/-+/g,"-").replace(/^[-.]+|[-.]+$/g,"").slice(0,90);return(stem||"audio")+ext}
 async function fileToBase64(file){var bytes=new Uint8Array(await file.arrayBuffer()),binary="",chunk=0x8000;for(var i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));return btoa(binary)}
 function storedToken(){return localStorage.getItem("musicadodia:admin-token")||sessionStorage.getItem("musicadodia:admin-token")||""}
-function storeToken(value){localStorage.setItem("musicadodia:admin-token",value);sessionStorage.setItem("musicadodia:admin-token",value)}
-function clearToken(){sessionStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-token");token=""}
+function tokenWasValidated(){return localStorage.getItem("musicadodia:admin-validated")==="1"}
+function storeToken(value){localStorage.setItem("musicadodia:admin-token",value);sessionStorage.setItem("musicadodia:admin-token",value);localStorage.setItem("musicadodia:admin-validated","1")}
+function clearToken(){sessionStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-validated");token=""}
 async function validate(){var repoInfo=await api("/repos/"+OWNER+"/"+REPO);if(!repoInfo||String(repoInfo.full_name||"").toLowerCase()!==(OWNER+"/"+REPO).toLowerCase())throw new Error("Repositório não autorizado");E.githubUser.textContent=OWNER;E.connectionLabel.textContent="Conectado";return true}
-async function connect(value){
- token=String(value||"").trim();
- if(!token)throw new Error("Token vazio");
- await validate();
- storeToken(token);
+async function openPanel(){
  document.body.classList.remove("auth-locked");
  E.loginView.classList.add("hidden");
  E.panel.classList.remove("hidden");
+ E.connectionLabel.textContent="Conectado";
+ E.githubUser.textContent=OWNER;
 
  var catalogOk=true,analyticsOk=true;
  try{await loadCatalog()}catch(err){catalogOk=false;console.error("catalog",err)}
@@ -54,8 +53,15 @@ async function connect(value){
  try{await refreshDashboard()}catch(err){analyticsOk=false;console.error("dashboard",err)}
 
  if(!catalogOk||!analyticsOk){
-   toast("GitHub conectado. Alguns dados demoraram para carregar; tente Atualizar se necessário.");
+   toast("Painel aberto. Alguns dados demoraram para carregar.");
  }
+}
+async function connect(value){
+ token=String(value||"").trim();
+ if(!token)throw new Error("Token vazio");
+ await validate();
+ storeToken(token);
+ await openPanel();
  return true;
 }
 async function getRepoFile(path){return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path)+"?ref="+encodeURIComponent(BRANCH))}
@@ -110,21 +116,35 @@ async function refreshDashboard(){
  if(!selectedDate)selectedDate=brazilDate();
  updateDateFilterUi();
  renderSelectedChallenge();
- var endpoint=analyticsConfig&&analyticsConfig.dashboardEndpoint;if(!endpoint)return;
- try{
-   var sep=endpoint.indexOf("?")>=0?"&":"?";
-   var r=await fetch(endpoint+sep+"range=7d&date="+encodeURIComponent(selectedDate),{cache:"no-store"});
-   if(!r.ok)throw new Error("analytics");
-   var data=await r.json();
-   renderAnalytics(data);
-   if(selectedDate!==brazilDate()){E.metricOnline.textContent="—"} 
-   E.analyticsWarning.classList.add("hidden")
- }catch(err){
-   console.error("analytics",err);
-   E.analyticsWarning.classList.remove("hidden");
-   E.analyticsWarning.querySelector("strong").textContent="Não consegui carregar as estatísticas";
-   E.analyticsWarning.querySelector("span").textContent="A coleta continua ativa no Supabase. Recarregue o painel para tentar novamente.";
+
+ var primary=analyticsConfig&&analyticsConfig.dashboardEndpoint;
+ var fallback=analyticsConfig&&analyticsConfig.endpoint
+   ? analyticsConfig.endpoint+(analyticsConfig.endpoint.indexOf("?")>=0?"&":"?")+"mode=dashboard"
+   : "";
+ var endpoints=[primary,fallback].filter(function(v,i,a){return v&&a.indexOf(v)===i});
+ if(!endpoints.length)return;
+
+ var lastError=null;
+ for(var i=0;i<endpoints.length;i++){
+   try{
+     var endpoint=endpoints[i];
+     var sep=endpoint.indexOf("?")>=0?"&":"?";
+     var r=await fetch(endpoint+sep+"range=7d&date="+encodeURIComponent(selectedDate)+"&_="+Date.now(),{cache:"no-store"});
+     if(!r.ok)throw new Error("analytics "+r.status);
+     var data=await r.json();
+     renderAnalytics(data);
+     if(selectedDate!==brazilDate())E.metricOnline.textContent="—";
+     E.analyticsWarning.classList.add("hidden");
+     return;
+   }catch(err){
+     lastError=err;
+     console.error("analytics endpoint",endpoints[i],err);
+   }
  }
+ E.analyticsWarning.classList.remove("hidden");
+ E.analyticsWarning.querySelector("strong").textContent="Não consegui carregar as estatísticas";
+ E.analyticsWarning.querySelector("span").textContent="Os dados continuam salvos no Supabase. O painel tentará novamente ao atualizar.";
+ if(lastError)throw lastError;
 }
 function renderAnalytics(data){
  var today=data.today||data.summary||data||{};
@@ -168,22 +188,32 @@ E.todayDateBtn.addEventListener("click",function(){setDashboardDate(brazilDate()
 
 async function boot(){
  setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();
- var st=storedToken();if(!st)return;
+ var st=storedToken();
+ if(!st)return;
+
+ token=st;
+
+ if(tokenWasValidated()){
+   await openPanel();
+   validate().catch(function(err){
+     console.warn("Validação em segundo plano falhou",err);
+     if(err&&err.status===401){
+       E.connectionLabel.textContent="Key expirada";
+       toast("A key salva expirou. Gere uma nova quando precisar alterar músicas.");
+     }
+   });
+   return;
+ }
+
+ E.tokenInput.value=st;
  try{
    await connect(st);
- }catch(firstError){
-   await new Promise(function(resolve){setTimeout(resolve,900)});
-   try{
-     await connect(st);
-   }catch(err){
-     token=st;
-     document.body.classList.add("auth-locked");
-     E.loginView.classList.remove("hidden");
-     E.panel.classList.add("hidden");
-     E.connectionLabel.textContent="Desconectado";
-     E.tokenInput.value=st;
-     toast(err.status===401?"A key salva parece inválida ou expirada.":"Não consegui validar agora, mas sua key continua salva. Tente Conectar novamente.");
-   }
+ }catch(err){
+   document.body.classList.add("auth-locked");
+   E.loginView.classList.remove("hidden");
+   E.panel.classList.add("hidden");
+   E.connectionLabel.textContent="Desconectado";
+   toast(err.status===401?"A key salva parece inválida ou expirada.":"Não consegui validar a key agora. Ela continua salva.");
  }
 }
 boot();

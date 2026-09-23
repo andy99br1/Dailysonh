@@ -32,7 +32,19 @@ on:
         required: false
         type: string
       youtube_url:
-        description: "Link do YouTube para a revelação. Opcional"
+        description: "Link direto do YouTube. Opcional"
+        required: false
+        type: string
+      spotify_url:
+        description: "Link direto do Spotify. Opcional"
+        required: false
+        type: string
+      apple_music_url:
+        description: "Link direto do Apple Music. Opcional"
+        required: false
+        type: string
+      deezer_url:
+        description: "Link direto do Deezer. Opcional"
         required: false
         type: string
 
@@ -191,6 +203,9 @@ jobs:
           YOUTUBE_VIEWS: ${{ inputs.youtube_views }}
           DIFFICULTY: ${{ inputs.difficulty }}
           YOUTUBE_URL: ${{ inputs.youtube_url }}
+          SPOTIFY_URL: ${{ inputs.spotify_url }}
+          APPLE_MUSIC_URL: ${{ inputs.apple_music_url }}
+          DEEZER_URL: ${{ inputs.deezer_url }}
         run: |
           python scripts/process_upload.py \
             --file "$AUDIO_FILE" \
@@ -200,7 +215,10 @@ jobs:
             --release-year "$RELEASE_YEAR" \
             --youtube-views "$YOUTUBE_VIEWS" \
             --difficulty "$DIFFICULTY" \
-            --youtube-url "$YOUTUBE_URL"
+            --youtube-url "$YOUTUBE_URL" \
+            --spotify-url "$SPOTIFY_URL" \
+            --apple-music-url "$APPLE_MUSIC_URL" \
+            --deezer-url "$DEEZER_URL"
 
       - name: Commit generated game assets
         env:

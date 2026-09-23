@@ -476,3 +476,10 @@ body[data-admin-theme="day"] .midi-role,body[data-admin-theme="day"] .midi-round
 body[data-admin-theme="day"] .midi-player-card{background:rgba(38,55,92,.035)}
 @media(max-width:1050px){.midi-lab-grid{grid-template-columns:1fr}.midi-rounds{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.midi-role-grid,.midi-rounds{grid-template-columns:1fr}.midi-actions>*{flex:1 1 100%}.midi-channel-list>div{flex-direction:column;gap:2px}}
+
+.midi-publish-box{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(35,199,217,.035)}
+.midi-publish-box h3{margin:2px 0 4px;font-size:12px}.midi-publish-box p{margin:0 0 10px;line-height:1.45}
+.midi-publish-box .fields{margin-top:8px}.midi-publish-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.midi-publish-actions .muted{font-size:7.5px}
+body[data-admin-theme="day"] .midi-publish-box{background:rgba(35,199,217,.045)}
+@media(max-width:600px){.midi-publish-actions .btn{width:100%}}

@@ -15,11 +15,10 @@ on:
       - "central-mdd-7k29/**"
       - "analytics-config.json"
       - "songs/**"
-      - "separation-tests/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
   workflow_run:
-    workflows: ["Process uploaded audio", "Separation lab", "Melody expression lab"]
+    workflows: ["Process uploaded audio"]
     types: [completed]
 
 permissions:
@@ -51,7 +50,6 @@ jobs:
           cp index.html styles.css app.js catalog.json logo.svg robots.txt sitemap.xml site.webmanifest analytics-config.json _site/
           if [ -d central-mdd-7k29 ]; then cp -R central-mdd-7k29 _site/; fi
           if [ -d songs ]; then cp -R songs _site/; fi
-          if [ -d separation-tests ]; then cp -R separation-tests _site/; fi
           touch _site/.nojekyll
 
       - name: Configure Pages

@@ -12,7 +12,7 @@
     }
   </script>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=11">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=9">
 </head>
 <body class="auth-locked">
   <div class="app-shell">
@@ -26,7 +26,6 @@
         <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
         <button class="nav-item" data-view="new-song"><span class="nav-icon">＋</span><span>Nova música</span></button>
         <button class="nav-item" data-view="catalog"><span class="nav-icon">♫</span><span>Catálogo</span></button>
-        <button class="nav-item" data-view="lab"><span class="nav-icon">⚗</span><span>Laboratório</span></button>
         <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span>Configurações</span></button>
       </nav>
 
@@ -242,101 +241,6 @@
           </article>
         </section>
 
-
-        <section class="view" data-view-panel="lab">
-          <div class="content-grid lab-top-grid">
-            <article class="dash-card form-card">
-              <div class="card-title-row">
-                <div>
-                  <span class="eyebrow">LABORATÓRIO</span>
-                  <h2>Comparar separação</h2>
-                </div>
-                <span class="challenge-chip">Não publica no jogo</span>
-              </div>
-
-              <p class="muted lab-intro">Envie uma música difícil. O sistema usa exatamente os mesmos 18 segundos e gera três formas diferentes de separação para você comparar.</p>
-
-              <form id="labForm">
-                <div class="upload-zone" id="labUploadZone">
-                  <input id="labAudioFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*" required>
-                  <div class="upload-symbol">⚗</div>
-                  <strong id="labFileLabel">Escolher música para teste</strong>
-                  <span>O resultado não entra no catálogo · até 45 MB</span>
-                </div>
-
-                <div class="fields two">
-                  <label>Título<input id="labTitle" type="text" placeholder="Opcional"></label>
-                  <label>Artista<input id="labArtist" type="text" placeholder="Opcional"></label>
-                </div>
-
-                <div class="fields one">
-                  <label>Início do trecho (s)<input id="labClipStart" type="number" min="0" step="0.1" placeholder="Automático"></label>
-                </div>
-
-                <button class="btn primary wide" id="labRunBtn" type="submit">Gerar comparação</button>
-              </form>
-
-              <div class="job-box hidden" id="labJobBox">
-                <div class="job-line"><strong id="labJobTitle">Preparando...</strong><span id="labJobPercent">0%</span></div>
-                <div class="progress-track"><span id="labJobProgress"></span></div>
-                <p id="labJobMessage"></p>
-                <a class="hidden" id="labWorkflowLink" target="_blank" rel="noopener">Ver execução no GitHub</a>
-              </div>
-            </article>
-
-            <aside class="dash-card process-card lab-methods-info">
-              <span class="eyebrow">COMPARAÇÃO</span>
-              <h2>Os três métodos</h2>
-              <div class="process-flow">
-                <div><i>1</i><p><strong>Atual</strong><span>Corta 18s primeiro e separa depois, exatamente como o jogo faz hoje.</span></p></div>
-                <div><i>2</i><p><strong>6 stems</strong><span>Separa bateria, baixo, guitarra, piano, outros e voz usando contexto maior.</span></p></div>
-                <div><i>3</i><p><strong>Contexto avançado</strong><span>Demucs FT + BS-Roformer recebem mais áudio antes do corte final de 18s.</span></p></div>
-              </div>
-            </aside>
-          </div>
-
-          <article class="dash-card lab-results-card hidden" id="labResultsCard">
-            <div class="card-title-row">
-              <div>
-                <span class="eyebrow">RESULTADO</span>
-                <h2 id="labResultTitle">Último teste</h2>
-                <p class="lab-result-meta" id="labResultMeta"></p>
-              </div>
-              <button class="btn secondary small" id="labRefreshBtn" type="button">Recarregar resultado</button>
-            </div>
-            <div class="lab-results-grid" id="labResults"></div>
-          </article>
-
-          <article class="dash-card melody-lab-card">
-            <div class="card-title-row">
-              <div>
-                <span class="eyebrow">MELODIA</span>
-                <h2>Expressão da voz</h2>
-                <p class="lab-result-meta">Compara a melodia atual com duas versões que preservam slides, vibrato e dinâmica da voz.</p>
-              </div>
-              <button class="btn secondary small" id="melodyRunBtn" type="button">Gerar teste de melodia</button>
-            </div>
-
-            <div class="job-box hidden" id="melodyJobBox">
-              <div class="job-line"><strong id="melodyJobTitle">Preparando...</strong><span id="melodyJobPercent">0%</span></div>
-              <div class="progress-track"><span id="melodyJobProgress"></span></div>
-              <p id="melodyJobMessage"></p>
-              <a class="hidden" id="melodyWorkflowLink" target="_blank" rel="noopener">Ver execução no GitHub</a>
-            </div>
-
-            <div class="hidden melody-result-shell" id="melodyResultsCard">
-              <div class="melody-result-head">
-                <div>
-                  <strong id="melodyResultTitle">Último teste</strong>
-                  <span id="melodyResultMeta"></span>
-                </div>
-                <button class="btn secondary small" id="melodyRefreshBtn" type="button">Recarregar</button>
-              </div>
-              <div class="melody-results-grid" id="melodyResults"></div>
-            </div>
-          </article>
-        </section>
-
         <section class="view" data-view-panel="settings">
           <div class="settings-grid">
             <article class="dash-card">
@@ -454,6 +358,6 @@
       } catch (_) {}
     })();
   </script>
-  <script src="/central-mdd-7k29/panel.js?v=19"></script>
+  <script src="/central-mdd-7k29/panel.js?v=17"></script>
 </body>
 </html>

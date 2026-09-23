@@ -55,7 +55,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=20260923-5">
+  <link rel="stylesheet" href="styles.css?v=20260923-6">
 </head>
 <body>
   <main class="shell">
@@ -170,10 +170,17 @@
       </div>
 
       <form class="guess-form hidden" id="guessForm">
-        <label for="guessInput">Qual é a música?</label>
+        <div class="guess-form-top">
+          <label for="guessInput">Qual é a música?</label>
+          <button class="guess-close" id="closeGuessBtn" type="button" aria-label="Fechar palpite">×</button>
+        </div>
         <div class="guess-row">
           <input id="guessInput" autocomplete="off" inputmode="text" placeholder="Digite o nome da música" disabled>
           <button type="submit" id="guessBtn" disabled>Enviar palpite</button>
+        </div>
+        <div class="guess-form-actions">
+          <button class="guess-cancel" id="cancelGuessBtn" type="button">Cancelar</button>
+          <button class="guess-skip" id="guessSkipBtn" type="button">Pular faixa</button>
         </div>
       </form>
 
@@ -236,6 +243,6 @@
     </footer>
   </main>
 
-  <script src="app.js?v=20260923-4"></script>
+  <script src="app.js?v=20260923-5"></script>
 </body>
 </html>

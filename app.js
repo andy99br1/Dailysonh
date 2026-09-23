@@ -67,6 +67,28 @@
     return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2);
   }
 
+  function readCookie(name) {
+    var parts = document.cookie ? document.cookie.split("; ") : [];
+    for (var i = 0; i < parts.length; i += 1) {
+      var pair = parts[i].split("=");
+      var key = pair.shift();
+      if (key === name) return decodeURIComponent(pair.join("="));
+    }
+    return "";
+  }
+
+  function writeVisitorCookie(value) {
+    var cookie =
+      "mdd_visitor_id=" + encodeURIComponent(value) +
+      "; Max-Age=31536000; Path=/; SameSite=Lax; Secure";
+
+    if (location.hostname === "musicadodia.com" || location.hostname.endsWith(".musicadodia.com")) {
+      cookie += "; Domain=.musicadodia.com";
+    }
+
+    document.cookie = cookie;
+  }
+
   function getAnalyticsIds() {
     analyticsSessionId = sessionStorage.getItem("musicadodia:session-id") || "";
     if (!analyticsSessionId) {
@@ -74,11 +96,13 @@
       sessionStorage.setItem("musicadodia:session-id", analyticsSessionId);
     }
 
-    analyticsVisitorId = localStorage.getItem("musicadodia:visitor-id") || "";
-    if (!analyticsVisitorId) {
-      analyticsVisitorId = randomId("v_");
-      localStorage.setItem("musicadodia:visitor-id", analyticsVisitorId);
-    }
+    var cookieVisitor = readCookie("mdd_visitor_id");
+    var localVisitor = localStorage.getItem("musicadodia:visitor-id") || "";
+
+    analyticsVisitorId = cookieVisitor || localVisitor || randomId("v_");
+
+    localStorage.setItem("musicadodia:visitor-id", analyticsVisitorId);
+    writeVisitorCookie(analyticsVisitorId);
   }
 
   async function loadAnalyticsConfig() {

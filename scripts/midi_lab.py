@@ -307,8 +307,21 @@ def choose_groups(stats, drums, bass, melody, start):
     scored = [(local_accompaniment_score(s, start, end), s) for s in candidates]
     scored = [(score, s) for score, s in scored if score >= 0]
     scored.sort(key=lambda x: x[0], reverse=True)
-    group1 = [s for _, s in scored[:2]]
-    group2 = [s for _, s in scored[2:4]]
+    if len(scored) >= 4:
+        group1 = [s for _, s in scored[:2]]
+        group2 = [s for _, s in scored[2:4]]
+    elif len(scored) == 3:
+        group1 = [s for _, s in scored[:2]]
+        group2 = [scored[2][1]]
+    elif len(scored) == 2:
+        group1 = [scored[0][1]]
+        group2 = [scored[1][1]]
+    elif len(scored) == 1:
+        group1 = [scored[0][1]]
+        group2 = []
+    else:
+        group1 = []
+        group2 = []
     active_all = []
     for s in stats.values():
         n, a = count_window(s, start, end)

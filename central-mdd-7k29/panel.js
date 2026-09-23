@@ -11,7 +11,7 @@ var E={
  jobBox:$("jobBox"),jobTitle:$("jobTitle"),jobPercent:$("jobPercent"),jobProgress:$("jobProgress"),jobMessage:$("jobMessage"),workflowLink:$("workflowLink"),
  midiForm:$("midiForm"),midiUploadZone:$("midiUploadZone"),midiFile:$("midiFile"),midiFileLabel:$("midiFileLabel"),midiRevealUploadZone:$("midiRevealUploadZone"),midiRevealFile:$("midiRevealFile"),midiRevealFileLabel:$("midiRevealFileLabel"),midiMelodyStyle:$("midiMelodyStyle"),midiClipStart:$("midiClipStart"),midiRunBtn:$("midiRunBtn"),midiRerenderBtn:$("midiRerenderBtn"),
  midiJobBox:$("midiJobBox"),midiJobTitle:$("midiJobTitle"),midiJobPercent:$("midiJobPercent"),midiJobProgress:$("midiJobProgress"),midiJobMessage:$("midiJobMessage"),midiWorkflowLink:$("midiWorkflowLink"),
- midiResultsCard:$("midiResultsCard"),midiResultTitle:$("midiResultTitle"),midiResultMeta:$("midiResultMeta"),midiRefreshBtn:$("midiRefreshBtn"),midiRoles:$("midiRoles"),midiRounds:$("midiRounds"),midiAudio:$("midiAudio"),midiNowNumber:$("midiNowNumber"),midiNowLabel:$("midiNowLabel"),midiAudioStatus:$("midiAudioStatus"),midiChannels:$("midiChannels"),
+ midiResultsCard:$("midiResultsCard"),midiResultTitle:$("midiResultTitle"),midiResultMeta:$("midiResultMeta"),midiRefreshBtn:$("midiRefreshBtn"),midiRoles:$("midiRoles"),midiRounds:$("midiRounds"),midiAudio:$("midiAudio"),midiNowNumber:$("midiNowNumber"),midiNowLabel:$("midiNowLabel"),midiAudioStatus:$("midiAudioStatus"),midiChannels:$("midiChannels"),midiEditNamesBtn:$("midiEditNamesBtn"),midiNameFields:$("midiNameFields"),midiNameActions:$("midiNameActions"),midiSaveNamesBtn:$("midiSaveNamesBtn"),midiCancelNamesBtn:$("midiCancelNamesBtn"),midiNameStatus:$("midiNameStatus"),
  midiPublishTitle:$("midiPublishTitle"),midiPublishArtist:$("midiPublishArtist"),midiPublishDate:$("midiPublishDate"),midiPublishYear:$("midiPublishYear"),midiPublishDifficulty:$("midiPublishDifficulty"),midiPublishYoutubeViews:$("midiPublishYoutubeViews"),midiPublishYoutubeUrl:$("midiPublishYoutubeUrl"),midiPublishSpotifyUrl:$("midiPublishSpotifyUrl"),midiPublishAppleMusicUrl:$("midiPublishAppleMusicUrl"),midiPublishDeezerUrl:$("midiPublishDeezerUrl"),midiPublishBtn:$("midiPublishBtn"),midiPublishStatus:$("midiPublishStatus"),
  refreshSongsBtn:$("refreshSongsBtn"),songsList:$("songsList"),songsEmpty:$("songsEmpty"),editDialog:$("editDialog"),editForm:$("editForm"),editHeading:$("editHeading"),
  editIndex:$("editIndex"),editTitle:$("editTitle"),editArtist:$("editArtist"),editReleaseYear:$("editReleaseYear"),editYoutubeViews:$("editYoutubeViews"),editDifficulty:$("editDifficulty"),
@@ -326,6 +326,90 @@ function currentMidiRoundLabels(){
  if(!E.midiRounds)return [];
  return Array.prototype.slice.call(E.midiRounds.querySelectorAll(".midi-round-name")).map(function(input){return input.value.trim()})
 }
+function midiUsedChannels(data){
+ var used={};
+ (data&&data.rounds||[]).slice(0,5).forEach(function(round){
+   (round.addedChannels||[]).forEach(function(ch){used[String(ch)]=true})
+ });
+ return (data&&data.channels||[]).filter(function(ch){return used[String(ch.channel)]})
+}
+function closeMidiNameEditor(){
+ E.midiNameFields.classList.add("hidden");
+ E.midiNameActions.classList.add("hidden");
+ E.midiEditNamesBtn.classList.remove("hidden");
+ E.midiNameStatus.textContent="";
+}
+function openMidiNameEditor(){
+ if(!latestMidiManifest)return;
+ E.midiNameFields.innerHTML="";
+ midiUsedChannels(latestMidiManifest).forEach(function(ch){
+   var label=document.createElement("label");
+   var caption=document.createElement("span");
+   caption.textContent="Canal "+(Number(ch.channel)+1);
+   var input=document.createElement("input");
+   input.type="text";
+   input.value=ch.name||("Canal "+(Number(ch.channel)+1));
+   input.setAttribute("data-midi-channel",String(ch.channel));
+   label.append(caption,input);
+   E.midiNameFields.appendChild(label);
+ });
+ E.midiNameFields.classList.remove("hidden");
+ E.midiNameActions.classList.remove("hidden");
+ E.midiEditNamesBtn.classList.add("hidden");
+}
+function applyMidiNames(data,overrides){
+ var names={};
+ data.nameOverrides=Object.assign({},overrides||{});
+ (data.channels||[]).forEach(function(ch){
+   var key=String(ch.channel);
+   if(data.nameOverrides[key])ch.name=data.nameOverrides[key];
+   names[key]=ch.name||("Canal "+(Number(ch.channel)+1));
+ });
+ if(data.roles){
+   ["drums","bass","melody"].forEach(function(role){
+     var item=data.roles[role];
+     if(item&&names[String(item.channel)])item.name=names[String(item.channel)];
+   });
+ }
+ (data.rounds||[]).forEach(function(round){
+   if(Array.isArray(round.addedChannels)){
+     round.added=round.addedChannels.map(function(ch){return names[String(ch)]||("Canal "+(Number(ch)+1))});
+   }
+ });
+ if(data.groups){
+   var r3=(data.rounds||[]).find(function(r){return Number(r.number)===3});
+   var r4=(data.rounds||[]).find(function(r){return Number(r.number)===4});
+   data.groups.instrument1=r3&&Array.isArray(r3.added)?r3.added.slice():[];
+   data.groups.instrument2=r4&&Array.isArray(r4.added)?r4.added.slice():[];
+ }
+ return data
+}
+async function saveMidiNames(){
+ if(!latestMidiManifest)return;
+ var overrides={};
+ E.midiNameFields.querySelectorAll("input[data-midi-channel]").forEach(function(input){
+   var name=input.value.trim();
+   if(name)overrides[input.getAttribute("data-midi-channel")]=name.slice(0,60);
+ });
+ var data=applyMidiNames(JSON.parse(JSON.stringify(latestMidiManifest)),overrides);
+ E.midiSaveNamesBtn.disabled=true;
+ E.midiCancelNamesBtn.disabled=true;
+ E.midiNameStatus.textContent="Salvando...";
+ try{
+   await putRepoText("midi-lab/manifest.json",data,"Rename MIDI laboratory tracks");
+   latestMidiManifest=data;
+   renderMidiResult(data);
+   toast("Nomes das pistas salvos.");
+ }catch(err){
+   console.error("rename midi",err);
+   E.midiNameStatus.textContent="Não consegui salvar.";
+   toast("Não consegui salvar os nomes.");
+ }finally{
+   E.midiSaveNamesBtn.disabled=false;
+   E.midiCancelNamesBtn.disabled=false;
+ }
+}
+
 function renderMidiResult(data){
  if(!data||!Array.isArray(data.rounds))return;latestMidiManifest=data;E.midiResultsCard.classList.remove("hidden");E.midiRerenderBtn.classList.remove("hidden");E.midiResultTitle.textContent=data.sourceName||"MIDI";
  var start=Number(data.clipStart||0),seconds=Number(data.clipSeconds||18);E.midiResultMeta.textContent="Trecho escolhido: "+start.toFixed(1)+"s–"+(start+seconds).toFixed(1)+"s · "+(data.melodyStyleName||"melodia padrão");E.midiClipStart.placeholder=start.toFixed(1)+" (automático)";
@@ -362,7 +446,8 @@ function renderMidiResult(data){
  });
  E.midiChannels.innerHTML="";(data.channels||[]).forEach(function(ch){var row=document.createElement("div"),name=document.createElement("span"),info=document.createElement("small");name.textContent="Canal "+(Number(ch.channel)+1)+" · "+(ch.name||"Instrumento");info.textContent=(ch.notesInClip||0)+" notas no trecho"+(ch.pitchBends?" · "+ch.pitchBends+" pitch bends":"");row.append(name,info);E.midiChannels.appendChild(row)});
  if(data.melodyStyle)E.midiMelodyStyle.value=data.melodyStyle;
- if(E.midiPublishDate&&!E.midiPublishDate.value)E.midiPublishDate.value=brazilDate()
+ if(E.midiPublishDate&&!E.midiPublishDate.value)E.midiPublishDate.value=brazilDate();
+ closeMidiNameEditor()
 }
 async function loadLatestMidiResult(silent){try{var r=await fetch("/midi-lab/manifest.json?_="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("manifest "+r.status);var data=await r.json();renderMidiResult(data);if(!silent)toast("Resultado MIDI atualizado.");return data}catch(err){if(!silent)toast("Ainda não há resultado MIDI publicado.");return null}}
 async function waitMidiPublicResult(after){var started=Date.now();while(Date.now()-started<180000){try{var r=await fetch("/midi-lab/manifest.json?_="+Date.now(),{cache:"no-store"});if(r.ok){var data=await r.json(),created=Date.parse(data.createdAt||"");if(!Number.isFinite(created)||created>=after-5000){renderMidiResult(data);return data}}}catch(_){}await new Promise(function(resolve){setTimeout(resolve,3500)})}return null}
@@ -573,6 +658,9 @@ E.midiRevealFile.addEventListener("change",function(){var f=E.midiRevealFile.fil
 ["dragenter","dragover"].forEach(function(n){E.midiUploadZone.addEventListener(n,function(ev){ev.preventDefault();E.midiUploadZone.classList.add("drag")});E.midiRevealUploadZone.addEventListener(n,function(ev){ev.preventDefault();E.midiRevealUploadZone.classList.add("drag")})});
 ["dragleave","drop"].forEach(function(n){E.midiUploadZone.addEventListener(n,function(){E.midiUploadZone.classList.remove("drag")});E.midiRevealUploadZone.addEventListener(n,function(){E.midiRevealUploadZone.classList.remove("drag")})});
 E.midiRefreshBtn.addEventListener("click",function(){loadLatestMidiResult(false)});
+E.midiEditNamesBtn.addEventListener("click",openMidiNameEditor);
+E.midiCancelNamesBtn.addEventListener("click",closeMidiNameEditor);
+E.midiSaveNamesBtn.addEventListener("click",saveMidiNames);
 E.midiForm.addEventListener("submit",async function(ev){
  ev.preventDefault();
  var file=E.midiFile.files&&E.midiFile.files[0],revealFile=E.midiRevealFile.files&&E.midiRevealFile.files[0];

@@ -84,6 +84,51 @@
       "deezerUrl": "",
       "midiMelodyStyle": "flute",
       "midiMelodyStyleName": "Flauta / synth suave"
+    },
+    {
+      "date": "2026-09-24",
+      "title": "Infiel",
+      "artist": "Marília Mendonça",
+      "clipStart": 55.0,
+      "source": "stem-flute",
+      "sourceName": "1790152240590-Marilia-Mendonca-Infiel-Video-Oficial-Marilia-Mendonca-youtube.mp3",
+      "version": 1,
+      "challengeRounds": 5,
+      "safeRevealRound": 5,
+      "roundLabels": [
+        "Bateria",
+        "Baixo",
+        "Violão",
+        "Piano",
+        "Melodia",
+        "Revelação"
+      ],
+      "rounds": [
+        "songs/2026-09-24/round-1.ogg",
+        "songs/2026-09-24/round-2.ogg",
+        "songs/2026-09-24/round-3.ogg",
+        "songs/2026-09-24/round-4.ogg",
+        "songs/2026-09-24/round-5.ogg",
+        "songs/2026-09-24/round-6.ogg"
+      ],
+      "releaseYear": "2015",
+      "youtubeViews": "681M",
+      "difficulty": "Fácil",
+      "youtubeUrl": "",
+      "coverUrl": "https://i.ytimg.com/vi/bfeqcnRWCbw/maxresdefault.jpg",
+      "spotifyUrl": "",
+      "appleMusicUrl": "",
+      "deezerUrl": "",
+      "stemFluteCreatedAt": "2026-09-23T09:34:07.523598+00:00",
+      "stemFluteSeparationModel": "Hybrid: htdemucs_ft (drums/bass) + BS-Roformer-SW (vocals/instruments)",
+      "stemFluteVoiceTransform": "stabilized-note flute (pYIN + note cleanup, no MIDI)",
+      "stemFluteLayers": [
+        "drums",
+        "bass",
+        "guitar",
+        "piano",
+        "flute"
+      ]
     }
   ]
 }

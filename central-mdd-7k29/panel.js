@@ -139,7 +139,7 @@ function renderSelectedChallenge(){
  var song=songForDate(selectedDate||brazilDate());
  if(!song){E.todaySongTitle.textContent="Nenhum desafio nesta data";E.todayChallenge.textContent="#—";return}
  var idx=catalog.songs.indexOf(song)+1;E.todaySongTitle.textContent=(song.artist?song.artist+" · ":"")+(song.title||"Sem título");E.todayChallenge.textContent="#"+idx;
- var stats=song.communityStats;if(stats)renderGameStats(stats)
+ var stats=song.communityStats;if(stats)renderGameStats(stats,song)
 }
 function updateDateFilterUi(){
  var today=brazilDate();
@@ -153,11 +153,18 @@ function updateDateFilterUi(){
  E.metricOnlineSub.textContent=selectedDate===today?"Últimos 90 segundos":"Disponível apenas para hoje";
  E.trafficPeriodTitle.textContent="7 dias até "+prettyDate(selectedDate);
 }
-function renderGameStats(stats){
- var rounds=Array.isArray(stats.rounds)?stats.rounds.slice(0,5).map(Number):[1,2,3,4,5].map(function(i){return Number(stats[i]!==undefined?stats[i]:stats["round"+i])||0});
- while(rounds.length<5)rounds.push(0);var failed=Number(stats.failed||stats.losses||0)||0,wins=rounds.reduce(function(a,b){return a+(Number(b)||0)},0),total=wins+failed;
+function renderGameStats(stats,songOverride){
+ var activeSong=songOverride||songForDate(selectedDate||brazilDate())||null;
+ var roundCount=Number(activeSong&&activeSong.challengeRounds);
+ if(!Number.isFinite(roundCount)){
+   var total=activeSong&&Array.isArray(activeSong.rounds)?activeSong.rounds.length:5;
+   roundCount=Math.max(1,total>1?total-1:total);
+ }
+ roundCount=Math.max(1,Math.floor(roundCount));
+ var rounds=Array.isArray(stats.rounds)?stats.rounds.slice(0,roundCount).map(Number):Array.from({length:roundCount},function(_,i){var n=i+1;return Number(stats[n]!==undefined?stats[n]:stats["round"+n])||0});
+ while(rounds.length<roundCount)rounds.push(0);var failed=Number(stats.failed||stats.losses||0)||0,wins=rounds.reduce(function(a,b){return a+(Number(b)||0)},0),total=wins+failed;
  E.todayWins.textContent=formatInt(wins);E.todayFails.textContent=formatInt(failed);E.todayRate.textContent=total?Math.round(wins/total*100)+"%":"—";
- E.roundBars.innerHTML="";var max=Math.max.apply(Math,rounds.concat([failed,1]));rounds.concat([failed]).forEach(function(v,i){var wrap=document.createElement("div");wrap.className="round-bar";var bar=document.createElement("i");bar.style.height=Math.max(4,Math.round((v/max)*90))+"%";var label=document.createElement("small");label.textContent=i<5?String(i+1):"×";wrap.append(bar,label);E.roundBars.appendChild(wrap)})
+ E.roundBars.innerHTML="";var max=Math.max.apply(Math,rounds.concat([failed,1]));rounds.concat([failed]).forEach(function(v,i){var wrap=document.createElement("div");wrap.className="round-bar";var bar=document.createElement("i");bar.style.height=Math.max(4,Math.round((v/max)*90))+"%";var label=document.createElement("small");label.textContent=i<roundCount?String(i+1):"×";wrap.append(bar,label);E.roundBars.appendChild(wrap)})
 }
 
 function previewLabels(song){
@@ -637,7 +644,7 @@ function renderAnalytics(data){
  var today=data.today||data.summary||data||{};
  E.metricPlayers.textContent=formatInt(today.players);E.metricOnline.textContent=formatInt(today.online);E.metricUnique.textContent=formatInt(today.unique);E.metricDuration.textContent=formatDuration(today.avgDurationSeconds||today.avgDuration);
  E.pageViews.textContent=formatInt(today.pageViews);E.audioErrors.textContent=formatInt(today.audioErrors);E.abandonRate.textContent=formatPercent(today.abandonmentRate);E.completionRate.textContent=formatPercent(today.completionRate);
- if(today.wins!==undefined||today.fails!==undefined||today.rounds)renderGameStats({rounds:today.rounds||[0,0,0,0,0],failed:today.fails||0});
+ if(today.wins!==undefined||today.fails!==undefined||today.rounds)renderGameStats({rounds:today.rounds||[],failed:today.fails||0},songForDate(selectedDate||brazilDate()));
  var guesses=today.commonGuesses||data.commonGuesses||[];E.commonGuesses.innerHTML="";if(!guesses.length)E.commonGuesses.innerHTML='<div class="empty-row">Sem palpites suficientes</div>';else guesses.slice(0,6).forEach(function(g,i){var row=document.createElement("div");row.className="rank-row";var n=document.createElement("b");n.textContent=i+1;var s=document.createElement("span");s.textContent=g.value||g.guess||"—";var c=document.createElement("strong");c.textContent=formatInt(g.count);row.append(n,s,c);E.commonGuesses.appendChild(row)});
  renderTraffic(data.daily||data.days||[])
 }

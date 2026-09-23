@@ -589,6 +589,7 @@ def main():
     parser.add_argument("--title", default="")
     parser.add_argument("--artist", default="")
     parser.add_argument("--release-year", default="")
+    parser.add_argument("--clip-start", default="")
     parser.add_argument("--youtube-views", default="")
     parser.add_argument("--difficulty", default="")
     parser.add_argument("--youtube-url", default="")
@@ -614,8 +615,15 @@ def main():
 
     with tempfile.TemporaryDirectory(prefix="dailysonh-") as tmp:
         work = Path(tmp)
-        start = choose_clip_start(source, work)
-        print(f"Trecho selecionado: {start:.1f}s → {start + CLIP_SECONDS:.1f}s", flush=True)
+        if args.clip_start.strip():
+            try:
+                start = max(0.0, float(args.clip_start.strip().replace(",", ".")))
+            except ValueError:
+                raise SystemExit("--clip-start precisa ser um número em segundos")
+            print(f"Trecho manual: {start:.1f}s → {start + CLIP_SECONDS:.1f}s", flush=True)
+        else:
+            start = choose_clip_start(source, work)
+            print(f"Trecho selecionado automaticamente: {start:.1f}s → {start + CLIP_SECONDS:.1f}s", flush=True)
         clip = extract_clip(source, start, work)
         stems = separate_stems(clip, work)
         karaoke = separate_vocal_instrumental(clip, work)

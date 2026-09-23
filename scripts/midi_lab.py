@@ -16,6 +16,9 @@ import mido
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "midi-lab"
 CLIP_SECONDS = 18.0
+INSTRUMENT_VOLUME_SCALE = 0.76
+MELODY_VOLUME = 112
+MELODY_EXPRESSION = 118
 
 MELODY_STYLES = {
     "bandle": {"program": 85, "name": "Lead suave (Bandle)"},
@@ -367,13 +370,20 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
         if ch != 9:
             program = melody_program if ch == melody_channel and melody_program is not None else programs.get(ch, 0)
             events.append((0, 1, mido.Message("program_change", channel=ch, program=int(program), time=0)))
+        had_volume = False
         for ctl, value in sorted(controls[ch].items()):
             if ctl in {0, 32}:
                 continue
+            if ch != melody_channel and ctl in {7, 11}:
+                value = max(1, min(127, round(value * INSTRUMENT_VOLUME_SCALE)))
+            if ctl == 7:
+                had_volume = True
             events.append((0, 2, mido.Message("control_change", channel=ch, control=ctl, value=value, time=0)))
         if ch == melody_channel:
-            events.append((0, 2, mido.Message("control_change", channel=ch, control=7, value=112, time=0)))
-            events.append((0, 2, mido.Message("control_change", channel=ch, control=11, value=118, time=0)))
+            events.append((0, 2, mido.Message("control_change", channel=ch, control=7, value=MELODY_VOLUME, time=0)))
+            events.append((0, 2, mido.Message("control_change", channel=ch, control=11, value=MELODY_EXPRESSION, time=0)))
+        elif not had_volume:
+            events.append((0, 2, mido.Message("control_change", channel=ch, control=7, value=round(100 * INSTRUMENT_VOLUME_SCALE), time=0)))
         if pitch[ch]:
             events.append((0, 2, mido.Message("pitchwheel", channel=ch, pitch=pitch[ch], time=0)))
 
@@ -402,6 +412,8 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
             continue
         tick = sec_to_tick(sec - start)
         copy = msg.copy(time=0)
+        if msg.type == "control_change" and ch != melody_channel and msg.control in {7, 11}:
+            copy = msg.copy(value=max(1, min(127, round(msg.value * INSTRUMENT_VOLUME_SCALE))), time=0)
         priority = 4
         if msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
             priority = 3

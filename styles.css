@@ -761,6 +761,17 @@ button:disabled {
   box-shadow: 0 12px 40px var(--shadow);
 }
 
+.result-status {
+  margin: 0 0 6px;
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: -.025em;
+}
+
+.result-status.success { color: var(--green); }
+.result-status.fail { color: var(--red); }
+
 .reveal-kicker {
   margin: 0;
   color: var(--muted);
@@ -898,8 +909,8 @@ button:disabled {
   .rounds { gap: 7px; }
 
   .round {
-    min-height: 52px;
-    padding: 0 16px;
+    min-height: 46px;
+    padding: 0 15px;
   }
 
   .round span {
@@ -920,22 +931,22 @@ button:disabled {
   }
 
   .player-area {
-    margin: 8px 4px 0;
+    margin: 4px 4px 0;
   }
 
   .visualizer {
-    height: 12px;
-    margin-bottom: 3px;
+    height: 8px;
+    margin-bottom: 1px;
   }
 
   .player-controls {
-    gap: 24px;
-    margin: 3px 0 5px;
+    gap: 22px;
+    margin: 1px 0 3px;
   }
 
   .play-btn {
-    width: 76px;
-    height: 76px;
+    width: 68px;
+    height: 68px;
     border-width: 3px;
     outline-width: 3px;
   }
@@ -947,26 +958,26 @@ button:disabled {
   }
 
   .seek-circle {
-    width: 52px;
-    height: 52px;
+    width: 47px;
+    height: 47px;
   }
 
   .seek-arrow-svg { width: 24px; height: 24px; }
   .seek-number { font-size: 9px; }
 
-  .audio-progress { margin-top: 8px; }
+  .audio-progress { margin-top: 4px; }
   .time-row { font-size: 10px; }
 
   .primary-actions {
-    gap: 12px;
-    margin-top: 9px;
+    gap: 10px;
+    margin-top: 5px;
   }
 
   .skip-action,
   .guess-action {
-    min-height: 48px;
+    min-height: 44px;
     border-radius: 13px;
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .message {
@@ -1249,3 +1260,11 @@ body[data-theme="noite"] .platform-apple .platform-logo{color:#f3f3f5}
 .reveal-song-copy h2{margin:0}.reveal-song-copy p{margin:4px 0 0}
 .reveal-cover{width:74px;height:74px;flex:0 0 74px;border-radius:12px;object-fit:cover;border:1px solid var(--line);box-shadow:0 4px 16px var(--shadow);background:var(--surface-2)}
 @media(max-width:600px){.reveal-cover{width:62px;height:62px;flex-basis:62px;border-radius:10px}.reveal-song{gap:10px}}
+
+
+@media (max-width: 600px) {
+  .result-status {
+    margin-bottom: 5px;
+    font-size: 22px;
+  }
+}

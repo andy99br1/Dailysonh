@@ -19,7 +19,7 @@ on:
       - ".github/workflows/pages.yml"
   workflow_dispatch:
   workflow_run:
-    workflows: ["Process uploaded audio", "MIDI laboratory"]
+    workflows: ["Process uploaded audio", "MIDI laboratory", "Publish MIDI song"]
     types: [completed]
 
 permissions:

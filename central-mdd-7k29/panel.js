@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var OWNER="andy99br1",REPO="Dailysonh",BRANCH="main",API="https://api.github.com",WORKFLOW="process-upload.yml",MIDI_WORKFLOW="midi-lab.yml",MAX_FILE_MB=45;
+var OWNER="andy99br1",REPO="Dailysonh",BRANCH="main",API="https://api.github.com",WORKFLOW="process-upload.yml",MIDI_WORKFLOW="midi-lab.yml",MIDI_PUBLISH_WORKFLOW="publish-midi.yml",MAX_FILE_MB=45;
 function $(id){return document.getElementById(id)}
 var E={
  loginView:$("loginView"),panel:$("panel"),connectForm:$("connectForm"),tokenInput:$("tokenInput"),disconnectBtn:$("disconnectBtn"),
@@ -12,6 +12,7 @@ var E={
  midiForm:$("midiForm"),midiUploadZone:$("midiUploadZone"),midiFile:$("midiFile"),midiFileLabel:$("midiFileLabel"),midiMelodyStyle:$("midiMelodyStyle"),midiClipStart:$("midiClipStart"),midiRunBtn:$("midiRunBtn"),midiRerenderBtn:$("midiRerenderBtn"),
  midiJobBox:$("midiJobBox"),midiJobTitle:$("midiJobTitle"),midiJobPercent:$("midiJobPercent"),midiJobProgress:$("midiJobProgress"),midiJobMessage:$("midiJobMessage"),midiWorkflowLink:$("midiWorkflowLink"),
  midiResultsCard:$("midiResultsCard"),midiResultTitle:$("midiResultTitle"),midiResultMeta:$("midiResultMeta"),midiRefreshBtn:$("midiRefreshBtn"),midiRoles:$("midiRoles"),midiRounds:$("midiRounds"),midiAudio:$("midiAudio"),midiNowNumber:$("midiNowNumber"),midiNowLabel:$("midiNowLabel"),midiAudioStatus:$("midiAudioStatus"),midiChannels:$("midiChannels"),
+ midiPublishTitle:$("midiPublishTitle"),midiPublishArtist:$("midiPublishArtist"),midiPublishDate:$("midiPublishDate"),midiPublishYear:$("midiPublishYear"),midiPublishDifficulty:$("midiPublishDifficulty"),midiPublishBtn:$("midiPublishBtn"),midiPublishStatus:$("midiPublishStatus"),
  refreshSongsBtn:$("refreshSongsBtn"),songsList:$("songsList"),songsEmpty:$("songsEmpty"),editDialog:$("editDialog"),editForm:$("editForm"),editHeading:$("editHeading"),
  editIndex:$("editIndex"),editTitle:$("editTitle"),editArtist:$("editArtist"),editReleaseYear:$("editReleaseYear"),editYoutubeViews:$("editYoutubeViews"),editDifficulty:$("editDifficulty"),
  editYoutubeUrl:$("editYoutubeUrl"),editSpotifyUrl:$("editSpotifyUrl"),editAppleMusicUrl:$("editAppleMusicUrl"),editDeezerUrl:$("editDeezerUrl"),saveEditBtn:$("saveEditBtn"),toast:$("toast"),
@@ -313,7 +314,8 @@ function renderMidiResult(data){
  E.midiRoles.innerHTML="";[["Bateria",data.roles&&data.roles.drums],["Baixo",data.roles&&data.roles.bass],["Melodia",data.roles&&data.roles.melody]].forEach(function(pair){var box=document.createElement("div");box.className="midi-role";var span=document.createElement("span");span.textContent=pair[0];var strong=document.createElement("strong");strong.textContent=pair[1]&&pair[1].name||"—";var small=document.createElement("small");small.textContent=pair[1]&&pair[1].confidence?pair[1].confidence+"% confiança":"";box.append(span,strong,small);E.midiRoles.appendChild(box)});
  E.midiRounds.innerHTML="";data.rounds.forEach(function(round){var btn=document.createElement("button");btn.type="button";btn.className="midi-round";var n=document.createElement("b");n.textContent=String(round.number);var copy=document.createElement("span"),title=document.createElement("strong"),desc=document.createElement("small");title.textContent=round.label||("Faixa "+round.number);desc.textContent=(round.added||[]).join(" + ")||"Arranjo completo";copy.append(title,desc);btn.append(n,copy);btn.addEventListener("click",function(){E.midiRounds.querySelectorAll(".midi-round").forEach(function(x){x.classList.remove("active")});btn.classList.add("active");E.midiNowNumber.textContent=String(round.number);E.midiNowLabel.textContent=round.label||("Faixa "+round.number);E.midiAudio.src="/"+String(round.audio||"").replace(/^\/+/, "")+"?v="+encodeURIComponent(data.createdAt||Date.now());E.midiAudio.load();E.midiAudioStatus.textContent=(round.added||[]).length?"Adiciona: "+round.added.join(" + "):"Revelação completa";var p=E.midiAudio.play();if(p&&p.catch)p.catch(function(){})});E.midiRounds.appendChild(btn)});
  E.midiChannels.innerHTML="";(data.channels||[]).forEach(function(ch){var row=document.createElement("div"),name=document.createElement("span"),info=document.createElement("small");name.textContent="Canal "+(Number(ch.channel)+1)+" · "+(ch.name||"Instrumento");info.textContent=(ch.notesInClip||0)+" notas no trecho"+(ch.pitchBends?" · "+ch.pitchBends+" pitch bends":"");row.append(name,info);E.midiChannels.appendChild(row)});
- if(data.melodyStyle)E.midiMelodyStyle.value=data.melodyStyle
+ if(data.melodyStyle)E.midiMelodyStyle.value=data.melodyStyle;
+ if(E.midiPublishDate&&!E.midiPublishDate.value)E.midiPublishDate.value=brazilDate()
 }
 async function loadLatestMidiResult(silent){try{var r=await fetch("/midi-lab/manifest.json?_="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("manifest "+r.status);var data=await r.json();renderMidiResult(data);if(!silent)toast("Resultado MIDI atualizado.");return data}catch(err){if(!silent)toast("Ainda não há resultado MIDI publicado.");return null}}
 async function waitMidiPublicResult(after){var started=Date.now();while(Date.now()-started<180000){try{var r=await fetch("/midi-lab/manifest.json?_="+Date.now(),{cache:"no-store"});if(r.ok){var data=await r.json(),created=Date.parse(data.createdAt||"");if(!Number.isFinite(created)||created>=after-5000){renderMidiResult(data);return data}}}catch(_){}await new Promise(function(resolve){setTimeout(resolve,3500)})}return null}
@@ -321,6 +323,49 @@ async function monitorMidi(run,startedAt){
  E.midiWorkflowLink.href=run.html_url;E.midiWorkflowLink.classList.remove("hidden");while(true){var latest=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);if(latest.status==="queued")setMidiJob(55,"Na fila","Preparando o renderizador MIDI.");else if(latest.status==="in_progress")setMidiJob(78,"Montando desafio","Escolhendo o trecho, classificando as pistas e renderizando somente 18 segundos.");else if(latest.status==="completed"){if(latest.conclusion==="success"){setMidiJob(94,"MIDI processado","Publicando as seis faixas no painel...");var result=await waitMidiPublicResult(startedAt);if(result){setMidiJob(100,"Pronto","As cinco etapas e a revelação estão disponíveis abaixo.");toast("Laboratório MIDI pronto.");return}setMidiJob(100,"Áudios gerados","O deploy ainda está finalizando. Use Recarregar em instantes.");return}setMidiJob(100,"Falha no MIDI","Abra a execução do GitHub para ver a etapa que falhou.");throw new Error("MIDI workflow "+latest.conclusion)}await new Promise(function(resolve){setTimeout(resolve,4500)})}
 }
 async function startMidiRequest(sourcePath){var startedAt=Date.now();setMidiJob(40,"Solicitando análise","Enviando preferências para o processador.");await requestMidiLab(sourcePath,E.midiMelodyStyle.value,E.midiClipStart.value.trim());setMidiJob(50,"Pedido enviado","Localizando a execução no GitHub.");var run=await waitMidiRun(startedAt);if(!run){setMidiJob(54,"Processamento iniciado","A execução foi enviada. Recarregue o resultado em alguns instantes.");return}await monitorMidi(run,startedAt)}
+async function dispatchMidiPublish(values){
+ return api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+MIDI_PUBLISH_WORKFLOW+"/dispatches",{
+   method:"POST",
+   headers:headers({"Content-Type":"application/json"}),
+   body:JSON.stringify({ref:BRANCH,inputs:{
+     title:values.title,
+     artist:values.artist,
+     date:values.date,
+     release_year:values.releaseYear||"",
+     difficulty:values.difficulty||""
+   }})
+ })
+}
+async function waitMidiPublishRun(after){
+ var started=Date.now();
+ while(Date.now()-started<90000){
+   var d=await api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+MIDI_PUBLISH_WORKFLOW+"/runs?event=workflow_dispatch&branch="+BRANCH+"&per_page=10");
+   var r=(d.workflow_runs||[]).find(function(x){return new Date(x.created_at).getTime()>=after-5000});
+   if(r)return r;
+   await new Promise(function(resolve){setTimeout(resolve,3000)})
+ }
+ return null
+}
+async function monitorMidiPublish(run){
+ E.midiPublishStatus.textContent="Publicando...";
+ while(true){
+   var latest=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);
+   if(latest.status==="queued")E.midiPublishStatus.textContent="Na fila...";
+   else if(latest.status==="in_progress")E.midiPublishStatus.textContent="Copiando as 6 faixas e atualizando o catálogo...";
+   else if(latest.status==="completed"){
+     if(latest.conclusion==="success"){
+       E.midiPublishStatus.textContent="Publicado. O deploy do site está finalizando.";
+       await loadCatalog();
+       toast("Música MIDI publicada no catálogo.");
+       return
+     }
+     E.midiPublishStatus.textContent="Falha ao publicar. Abra a execução do GitHub.";
+     throw new Error("Publish MIDI "+latest.conclusion)
+   }
+   await new Promise(function(resolve){setTimeout(resolve,4000)})
+ }
+}
+
 function formValues(){return{title:E.songTitle.value.trim(),artist:E.songArtist.value.trim(),date:E.songDateInput.value,releaseYear:E.releaseYearInput.value.trim(),youtubeViews:E.youtubeViewsInput.value.trim(),difficulty:E.difficultyInput.value,youtubeUrl:E.youtubeUrlInput.value.trim(),spotifyUrl:E.spotifyUrlInput.value.trim(),appleMusicUrl:E.appleMusicUrlInput.value.trim(),deezerUrl:E.deezerUrlInput.value.trim(),clipStart:E.clipStartInput.value.trim()}}
 function setDefaultDate(){E.songDateInput.value=brazilDate()}
 
@@ -479,6 +524,35 @@ E.midiForm.addEventListener("submit",async function(ev){
  E.midiRunBtn.disabled=true;E.midiRerenderBtn.disabled=true;E.midiWorkflowLink.classList.add("hidden");
  try{var path="midi-incoming/"+Date.now()+"-"+sanitizeFilename(file.name);setMidiJob(12,"Enviando MIDI","O arquivo é pequeno; o áudio só é renderizado depois da escolha dos 18s.");await uploadAudio(file,path);setMidiJob(30,"MIDI enviado","Iniciando análise automática.");await startMidiRequest(path);E.midiForm.reset();E.midiFileLabel.textContent="Escolher arquivo MIDI"}catch(err){console.error("midi lab",err);setMidiJob(100,"Não foi possível concluir",err&&err.status===403?"A key precisa de Contents em leitura e escrita.":"Confira a execução do laboratório MIDI.");toast("O laboratório MIDI encontrou um erro.")}finally{E.midiRunBtn.disabled=false;E.midiRerenderBtn.disabled=false}
 });
+E.midiPublishBtn.addEventListener("click",async function(){
+ if(!latestMidiManifest){toast("Gere e aprove um MIDI primeiro.");return}
+ var values={
+   title:E.midiPublishTitle.value.trim(),
+   artist:E.midiPublishArtist.value.trim(),
+   date:E.midiPublishDate.value,
+   releaseYear:E.midiPublishYear.value.trim(),
+   difficulty:E.midiPublishDifficulty.value
+ };
+ if(!values.title||!values.artist||!values.date){toast("Preencha título, artista e data.");return}
+ var existing=(catalog.songs||[]).find(function(song){return String(song.date||"")===values.date});
+ var question=existing
+   ?"Já existe uma música em "+prettyDate(values.date)+". Publicar o MIDI vai substituir essa data e criar uma nova versão. Continuar?"
+   :"Publicar "+values.title+" — "+values.artist+" em "+prettyDate(values.date)+"?";
+ if(!window.confirm(question))return;
+ E.midiPublishBtn.disabled=true;
+ E.midiPublishStatus.textContent="Solicitando publicação...";
+ try{
+   var started=Date.now();
+   await dispatchMidiPublish(values);
+   var run=await waitMidiPublishRun(started);
+   if(!run){E.midiPublishStatus.textContent="Publicação enviada. Confira novamente em instantes.";toast("Publicação enviada.");return}
+   await monitorMidiPublish(run)
+ }catch(err){
+   console.error("publish midi",err);
+   E.midiPublishStatus.textContent="Não consegui publicar.";
+   toast("Falha ao publicar a música MIDI.")
+ }finally{E.midiPublishBtn.disabled=false}
+});
 E.midiRerenderBtn.addEventListener("click",async function(){
  if(!latestMidiManifest||!latestMidiManifest.sourcePath){toast("Ainda não há MIDI para regenerar.");return}
  E.midiRunBtn.disabled=true;E.midiRerenderBtn.disabled=true;E.midiWorkflowLink.classList.add("hidden");
@@ -510,7 +584,7 @@ E.todayDateBtn.addEventListener("click",function(){setDashboardDate(brazilDate()
 
 async function boot(){
  loadAdminTheme();
- setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();
+ setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();if(E.midiPublishDate&&!E.midiPublishDate.value)E.midiPublishDate.value=brazilDate();
  var st=storedToken();
  if(!st)return;
 

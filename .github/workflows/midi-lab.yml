@@ -1,0 +1,116 @@
+name: MIDI laboratory
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".midi-lab/request.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dailysonh-midi-lab
+  cancel-in-progress: false
+
+jobs:
+  process-midi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install MIDI renderer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fluidsynth fluid-soundfont-gm
+          pip install "mido>=1.3,<2"
+          SF2="$(find /usr/share/sounds -type f \( -iname '*.sf2' -o -iname '*.sf3' \) | head -n 1)"
+          test -n "$SF2"
+          echo "SOUNDFONT_PATH=$SF2" >> "$GITHUB_ENV"
+          echo "SoundFont: $SF2"
+
+      - name: Read request and recover MIDI
+        id: midi
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .midi-lab/request.json
+
+          SOURCE_PATH="$(python -c 'import json; print(json.load(open(".midi-lab/request.json")).get("sourcePath",""))')"
+          STYLE="$(python -c 'import json; print(json.load(open(".midi-lab/request.json")).get("melodyStyle","bandle"))')"
+          CLIP_START="$(python -c 'import json; print(json.load(open(".midi-lab/request.json")).get("clipStart",""))')"
+
+          if [ -z "$SOURCE_PATH" ]; then
+            echo "Pedido sem sourcePath."
+            exit 1
+          fi
+
+          FILE=""
+          REMOVE_FILE=""
+
+          if [ -f "$SOURCE_PATH" ]; then
+            FILE="$SOURCE_PATH"
+            REMOVE_FILE="$SOURCE_PATH"
+          else
+            COMMIT="$(git log -n 1 --format='%H' -- "$SOURCE_PATH")"
+            if [ -z "$COMMIT" ]; then
+              echo "Não encontrei o MIDI no histórico: $SOURCE_PATH"
+              exit 1
+            fi
+            FILE="$RUNNER_TEMP/$(basename "$SOURCE_PATH")"
+            git show "$COMMIT:$SOURCE_PATH" > "$FILE"
+            echo "MIDI recuperado do histórico."
+          fi
+
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+          echo "source_path=$SOURCE_PATH" >> "$GITHUB_OUTPUT"
+          echo "style=$STYLE" >> "$GITHUB_OUTPUT"
+          echo "clip_start=$CLIP_START" >> "$GITHUB_OUTPUT"
+          echo "remove_file=$REMOVE_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Analyze and render 18-second MIDI challenge
+        env:
+          MIDI_FILE: \${{ steps.midi.outputs.file }}
+          SOURCE_PATH: \${{ steps.midi.outputs.source_path }}
+          MELODY_STYLE: \${{ steps.midi.outputs.style }}
+          CLIP_START: \${{ steps.midi.outputs.clip_start }}
+        run: |
+          python scripts/midi_lab.py \
+            --file "$MIDI_FILE" \
+            --source-path "$SOURCE_PATH" \
+            --melody-style "$MELODY_STYLE" \
+            --clip-start "$CLIP_START"
+
+      - name: Publish laboratory result
+        env:
+          REMOVE_FILE: \${{ steps.midi.outputs.remove_file }}
+        run: |
+          set -euo pipefail
+          git config user.name "dailysonh-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add midi-lab/
+          if [ -n "$REMOVE_FILE" ] && [ -f "$REMOVE_FILE" ]; then
+            git rm --ignore-unmatch "$REMOVE_FILE"
+          fi
+
+          if git diff --cached --quiet; then
+            echo "Nada para publicar."
+            exit 0
+          fi
+
+          git commit -m "Update MIDI laboratory result"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main

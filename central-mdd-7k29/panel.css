@@ -502,3 +502,58 @@ body[data-admin-theme="day"] .midi-publish-box{background:rgba(35,199,217,.045)}
 .midi-name-actions .muted{font-size:7px}
 body[data-admin-theme="day"] .midi-name-editor{background:rgba(38,55,92,.025)}
 @media(max-width:650px){.midi-name-fields{grid-template-columns:1fr}.midi-name-head{align-items:flex-start;flex-direction:column}.midi-name-head .btn{width:100%}}
+
+
+/* Prévia do catálogo = a página oficial do jogo, dentro do painel. */
+.official-preview-dialog{
+  width:100vw;
+  max-width:none;
+  height:100dvh;
+  max-height:none;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:#071632;
+  overflow:hidden
+}
+.official-preview-dialog::backdrop{background:rgba(1,5,16,.82)}
+.official-preview-shell{
+  position:relative;
+  width:100%;
+  height:100dvh;
+  overflow:hidden;
+  background:#071632
+}
+.official-preview-frame{
+  display:block;
+  width:100%;
+  height:100%;
+  border:0;
+  background:#071632
+}
+.official-preview-close{
+  position:absolute;
+  top:max(10px,env(safe-area-inset-top));
+  left:max(10px,env(safe-area-inset-left));
+  z-index:20;
+  width:38px;
+  height:38px;
+  padding:0;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:50%;
+  background:rgba(7,22,50,.86);
+  color:#fff;
+  font:700 23px/1 system-ui,sans-serif;
+  cursor:pointer;
+  box-shadow:0 8px 24px rgba(0,0,0,.28);
+  backdrop-filter:blur(10px)
+}
+.official-preview-close:hover{background:rgba(18,42,86,.96)}
+@media(max-width:600px){
+  .official-preview-close{
+    width:34px;
+    height:34px;
+    font-size:20px
+  }
+}

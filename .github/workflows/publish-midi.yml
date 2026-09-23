@@ -23,6 +23,26 @@ on:
         description: "Dificuldade (opcional)"
         required: false
         type: string
+      youtube_views:
+        description: "Views no YouTube (opcional)"
+        required: false
+        type: string
+      youtube_url:
+        description: "Link do YouTube (opcional)"
+        required: false
+        type: string
+      spotify_url:
+        description: "Link do Spotify (opcional)"
+        required: false
+        type: string
+      apple_music_url:
+        description: "Link do Apple Music (opcional)"
+        required: false
+        type: string
+      deezer_url:
+        description: "Link do Deezer (opcional)"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -57,6 +77,11 @@ jobs:
           SONG_DATE: ${{ inputs.date }}
           RELEASE_YEAR: ${{ inputs.release_year }}
           DIFFICULTY: ${{ inputs.difficulty }}
+          YOUTUBE_VIEWS: ${{ inputs.youtube_views }}
+          YOUTUBE_URL: ${{ inputs.youtube_url }}
+          SPOTIFY_URL: ${{ inputs.spotify_url }}
+          APPLE_MUSIC_URL: ${{ inputs.apple_music_url }}
+          DEEZER_URL: ${{ inputs.deezer_url }}
         run: |
           python - <<'PY'
           import json
@@ -114,12 +139,12 @@ jobs:
               ],
               "rounds": [f"songs/{date}/round-{n}.ogg" for n in range(1, 7)],
               "releaseYear": os.environ.get("RELEASE_YEAR", "").strip(),
-              "youtubeViews": (existing or {}).get("youtubeViews", ""),
+              "youtubeViews": os.environ.get("YOUTUBE_VIEWS", "").strip(),
               "difficulty": os.environ.get("DIFFICULTY", "").strip(),
-              "youtubeUrl": (existing or {}).get("youtubeUrl", ""),
-              "spotifyUrl": (existing or {}).get("spotifyUrl", ""),
-              "appleMusicUrl": (existing or {}).get("appleMusicUrl", ""),
-              "deezerUrl": (existing or {}).get("deezerUrl", ""),
+              "youtubeUrl": os.environ.get("YOUTUBE_URL", "").strip(),
+              "spotifyUrl": os.environ.get("SPOTIFY_URL", "").strip(),
+              "appleMusicUrl": os.environ.get("APPLE_MUSIC_URL", "").strip(),
+              "deezerUrl": os.environ.get("DEEZER_URL", "").strip(),
               "midiMelodyStyle": manifest.get("melodyStyle", ""),
               "midiMelodyStyleName": manifest.get("melodyStyleName", ""),
           }

@@ -55,7 +55,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=20260922-10">
+  <link rel="stylesheet" href="styles.css?v=20260922-11">
 </head>
 <body>
   <main class="shell">
@@ -184,8 +184,40 @@
         <p class="reveal-kicker">A música era</p>
         <h2 id="revealTitle"></h2>
         <p id="revealArtist"></p>
+
+        <div class="platform-section">
+          <span class="platform-label">Ouça nas plataformas</span>
+          <div class="platform-links">
+            <a class="platform-link platform-youtube" id="youtubeLink" target="_blank" rel="noopener">
+              <span class="platform-dot"></span><span>YouTube</span>
+            </a>
+            <a class="platform-link platform-spotify" id="spotifyLink" target="_blank" rel="noopener">
+              <span class="platform-dot"></span><span>Spotify</span>
+            </a>
+            <a class="platform-link platform-apple" id="appleMusicLink" target="_blank" rel="noopener">
+              <span class="platform-dot"></span><span>Apple Music</span>
+            </a>
+            <a class="platform-link platform-deezer" id="deezerLink" target="_blank" rel="noopener">
+              <span class="platform-dot"></span><span>Deezer</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="result-insights">
+          <div class="community-card" id="communityCard">
+            <span class="result-mini-label">Comunidade</span>
+            <strong id="communitySummary">Coletando resultados...</strong>
+            <div class="community-bars hidden" id="communityBars" aria-label="Distribuição dos resultados"></div>
+          </div>
+
+          <div class="next-card">
+            <span class="result-mini-label">Próxima música</span>
+            <strong id="nextChallengeTimer">00:00:00</strong>
+            <small>horário de Brasília</small>
+          </div>
+        </div>
+
         <div class="reveal-actions">
-          <a id="youtubeLink" target="_blank" rel="noopener">Abrir no YouTube</a>
           <button class="secondary" id="shareBtn" type="button">Compartilhar</button>
           <button class="secondary" id="restartBtn" type="button">Jogar novamente</button>
         </div>
@@ -198,6 +230,6 @@
     </footer>
   </main>
 
-  <script src="app.js?v=20260922-7"></script>
+  <script src="app.js?v=20260922-8"></script>
 </body>
 </html>

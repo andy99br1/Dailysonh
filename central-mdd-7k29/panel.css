@@ -431,3 +431,28 @@ body[data-admin-theme="day"] .mini-btn.delete-btn{
   background:rgba(194,56,72,.06);
   color:#b84352
 }
+
+.auto-refresh-status{
+  margin-top:3px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  color:var(--muted);
+  font-size:7px;
+  font-weight:700
+}
+.auto-refresh-status i{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 0 3px rgba(79,209,139,.08)
+}
+.auto-refresh-status.loading i{
+  background:var(--cyan);
+  animation:mdd-refresh-pulse .8s ease-in-out infinite alternate
+}
+.auto-refresh-status.error{color:#c98d98}
+.auto-refresh-status.error i{background:var(--red);box-shadow:none}
+@keyframes mdd-refresh-pulse{
+  from{opacity:.35;transform:scale(.8)}
+  to{opacity:1;transform:scale(1.15)}
+}

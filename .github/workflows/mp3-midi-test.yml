@@ -1,0 +1,96 @@
+name: MP3 to MIDI experiment
+
+on:
+  workflow_dispatch:
+    inputs:
+      audio_path:
+        description: "Arquivo de áudio dentro de mp3-midi-test/incoming/"
+        required: true
+        default: "mp3-midi-test/incoming/test.mp3"
+      demucs_model:
+        description: "Modelo Demucs"
+        required: true
+        default: "htdemucs"
+        type: choice
+        options:
+          - htdemucs
+          - htdemucs_ft
+  push:
+    branches: [main]
+    paths:
+      - "mp3-midi-test/incoming/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mp3-midi-test
+  cancel-in-progress: false
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install audio tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fluidsynth fluid-soundfont-gm
+          python -m pip install --upgrade pip
+          pip install "numpy<2" "scipy>=1.10" "librosa>=0.10,<0.12" "pretty_midi>=0.2.10" "demucs==4.0.1" "basic-pitch==0.4.0"
+          SF2="$(find /usr/share/sounds -type f \( -iname '*.sf2' -o -iname '*.sf3' \) | head -n 1)"
+          test -n "$SF2"
+          echo "SOUNDFONT_PATH=$SF2" >> "$GITHUB_ENV"
+
+      - name: Resolve audio
+        id: audio
+        shell: bash
+        env:
+          MANUAL_PATH: ${{ github.event.inputs.audio_path }}
+        run: |
+          set -euo pipefail
+          if [ -n "${MANUAL_PATH:-}" ]; then
+            AUDIO="$MANUAL_PATH"
+          else
+            AUDIO="$(find mp3-midi-test/incoming -maxdepth 1 -type f ! -name '.gitkeep' | sort | tail -n 1)"
+          fi
+          if [ -z "${AUDIO:-}" ] || [ ! -f "$AUDIO" ]; then
+            echo "Não encontrei o áudio de teste."
+            exit 1
+          fi
+          case "${AUDIO,,}" in
+            *.mp3|*.wav|*.m4a|*.flac|*.ogg|*.aac) ;;
+            *) echo "Formato não suportado: $AUDIO"; exit 1 ;;
+          esac
+          echo "path=$AUDIO" >> "$GITHUB_OUTPUT"
+          echo "Usando: $AUDIO"
+
+      - name: Convert separated stems to MIDI
+        env:
+          AUDIO: ${{ steps.audio.outputs.path }}
+          MODEL: ${{ github.event.inputs.demucs_model || 'htdemucs' }}
+        run: |
+          python mp3-midi-test/convert_audio_to_midi.py             --audio "$AUDIO"             --out-dir "$RUNNER_TEMP/mp3-midi-result"             --model "$MODEL"
+
+      - name: Show report
+        run: cat "$RUNNER_TEMP/mp3-midi-result/report.json"
+
+      - name: Upload MIDI test result
+        uses: actions/upload-artifact@v4
+        with:
+          name: mp3-midi-test-result
+          path: |
+            ${{ runner.temp }}/mp3-midi-result/*.mid
+            ${{ runner.temp }}/mp3-midi-result/*.mp3
+            ${{ runner.temp }}/mp3-midi-result/report.json
+          if-no-files-found: error
+          retention-days: 7

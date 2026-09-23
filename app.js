@@ -99,6 +99,10 @@
       referrer: document.referrer ? String(document.referrer).slice(0, 300) : ""
     });
 
+    trackEvent("heartbeat", {
+      visible: document.visibilityState === "visible"
+    });
+
     if (analyticsHeartbeat) clearInterval(analyticsHeartbeat);
     analyticsHeartbeat = setInterval(function () {
       trackEvent("heartbeat", {

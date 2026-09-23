@@ -271,7 +271,7 @@
   var allowedThemes = ["creme", "azul", "verde", "rosa", "lilas", "noite"];
 
   function applyTheme(theme) {
-    if (allowedThemes.indexOf(theme) < 0) theme = "creme";
+    if (allowedThemes.indexOf(theme) < 0) theme = "noite";
 
     document.body.classList.remove("dark");
     document.body.setAttribute("data-theme", theme);
@@ -289,7 +289,7 @@
         lilas: "#f3effa",
         noite: "#071632"
       };
-      E.themeColor.setAttribute("content", colors[theme] || colors.creme);
+      E.themeColor.setAttribute("content", colors[theme] || colors.noite);
     }
   }
 
@@ -310,7 +310,7 @@
 
     if (saved === "dark") saved = "noite";
     if (saved === "light") saved = "creme";
-    if (allowedThemes.indexOf(saved) < 0) saved = "creme";
+    if (allowedThemes.indexOf(saved) < 0) saved = "noite";
 
     applyTheme(saved);
   }

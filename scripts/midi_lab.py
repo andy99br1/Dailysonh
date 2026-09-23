@@ -460,6 +460,8 @@ def main():
     ap.add_argument("--melody-style", default="bandle")
     ap.add_argument("--clip-start", default="")
     ap.add_argument("--soundfont", default=os.environ.get("SOUNDFONT_PATH", ""))
+    ap.add_argument("--reveal-audio", default="")
+    ap.add_argument("--reveal-source-path", default="")
     args = ap.parse_args()
 
     source = Path(args.file).resolve()
@@ -527,9 +529,20 @@ def main():
     print("Grupo 1:", [names.get(s["channel"]) for s in group1])
     print("Grupo 2:", [names.get(s["channel"]) for s in group2])
 
+    reveal_audio = Path(args.reveal_audio).resolve() if str(args.reveal_audio).strip() else None
+
     for item in rounds:
         out = OUT_DIR / f"round-{item['number']}.ogg"
-        render_round(mid, records, item["channels"], clip_start, out, soundfont, melody["channel"], style["program"])
+        if item["number"] == 6 and reveal_audio and reveal_audio.exists():
+            run([
+                "ffmpeg", "-y", "-v", "error",
+                "-ss", f"{clip_start:.3f}", "-i", reveal_audio,
+                "-t", f"{CLIP_SECONDS:.3f}",
+                "-af", "alimiter=limit=0.96",
+                "-c:a", "libvorbis", "-q:a", "5", out,
+            ])
+        else:
+            render_round(mid, records, item["channels"], clip_start, out, soundfont, melody["channel"], style["program"])
         item["audio"] = f"midi-lab/round-{item['number']}.ogg"
 
     channel_rows = []
@@ -554,6 +567,8 @@ def main():
         "createdAt": datetime.now(timezone.utc).isoformat(),
         "sourceName": source.name,
         "sourcePath": args.source_path or source.name,
+        "revealSourcePath": args.reveal_source_path or "",
+        "revealMode": "original-audio" if reveal_audio and reveal_audio.exists() else "midi",
         "duration": round(duration, 2),
         "clipStart": round(clip_start, 2),
         "clipSeconds": CLIP_SECONDS,

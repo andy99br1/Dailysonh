@@ -12,7 +12,7 @@
     }
   </script>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=13">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=14">
 </head>
 <body class="auth-locked">
   <div class="app-shell">
@@ -250,13 +250,21 @@
                 <div><span class="eyebrow">NOVO MÉTODO</span><h2>Laboratório MIDI</h2></div>
                 <span class="challenge-chip">5 etapas + revelação</span>
               </div>
-              <p class="muted midi-intro">Envie um MIDI. O sistema encontra automaticamente o melhor trecho de 18 segundos, identifica bateria, baixo, instrumentos principais e melodia, e monta as seis faixas cumulativas.</p>
+              <p class="muted midi-intro">Envie o MIDI e a gravação original. O sistema encontra automaticamente o melhor trecho de 18 segundos, monta 5 etapas pelo MIDI e usa exatamente o mesmo trecho da música original na revelação.</p>
               <form id="midiForm">
-                <div class="upload-zone midi-upload-zone" id="midiUploadZone">
-                  <input id="midiFile" type="file" accept=".mid,.midi,audio/midi,audio/x-midi">
-                  <div class="upload-symbol">♬</div>
-                  <strong id="midiFileLabel">Escolher arquivo MIDI</strong>
-                  <span>MID ou MIDI · análise automática</span>
+                <div class="midi-upload-pair">
+                  <div class="upload-zone midi-upload-zone" id="midiUploadZone">
+                    <input id="midiFile" type="file" accept=".mid,.midi,audio/midi,audio/x-midi">
+                    <div class="upload-symbol">♬</div>
+                    <strong id="midiFileLabel">Escolher arquivo MIDI</strong>
+                    <span>MID ou MIDI · análise automática</span>
+                  </div>
+                  <div class="upload-zone midi-upload-zone" id="midiRevealUploadZone">
+                    <input id="midiRevealFile" type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac">
+                    <div class="upload-symbol">♪</div>
+                    <strong id="midiRevealFileLabel">Áudio original para revelação</strong>
+                    <span>A 6ª faixa usa exatamente estes mesmos 18s</span>
+                  </div>
                 </div>
                 <div class="fields two midi-fields">
                   <label>Timbre da melodia
@@ -312,7 +320,7 @@
               <div>
                 <span class="eyebrow">APROVOU?</span>
                 <h3>Publicar como música do dia</h3>
-                <p class="muted">Copia exatamente estas 6 faixas para a pasta oficial. O jogo usa 5 tentativas e a 6ª faixa vira a revelação.</p>
+                <p class="muted">Copia as 5 etapas MIDI e a revelação original para a pasta oficial. O jogo usa 5 tentativas e a 6ª faixa revela a gravação original.</p>
               </div>
               <div class="fields two">
                 <label>Título<input id="midiPublishTitle" type="text" placeholder="Ex.: Não Olhe Pra Trás"></label>
@@ -324,6 +332,15 @@
                 <label>Dificuldade
                   <select id="midiPublishDifficulty"><option value="">Não informar</option><option>Fácil</option><option>Médio</option><option>Difícil</option></select>
                 </label>
+              </div>
+              <div class="fields two">
+                <label>Views no YouTube<input id="midiPublishYoutubeViews" type="text" placeholder="Ex.: 25 milhões"></label>
+                <label>Link do YouTube<input id="midiPublishYoutubeUrl" type="url" placeholder="https://youtube.com/..."></label>
+              </div>
+              <div class="fields three">
+                <label>Spotify<input id="midiPublishSpotifyUrl" type="url" placeholder="https://open.spotify.com/..."></label>
+                <label>Apple Music<input id="midiPublishAppleMusicUrl" type="url" placeholder="https://music.apple.com/..."></label>
+                <label>Deezer<input id="midiPublishDeezerUrl" type="url" placeholder="https://deezer.com/..."></label>
               </div>
               <div class="midi-publish-actions">
                 <button class="btn primary" id="midiPublishBtn" type="button">Publicar como música do dia</button>
@@ -450,6 +467,6 @@
       } catch (_) {}
     })();
   </script>
-  <script src="/central-mdd-7k29/panel.js?v=21"></script>
+  <script src="/central-mdd-7k29/panel.js?v=22"></script>
 </body>
 </html>

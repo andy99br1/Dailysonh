@@ -679,6 +679,7 @@ def build_mix(stems, flute_path, instruments_path, out_path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", required=True)
+    parser.add_argument("--source-path", default="")
     args = parser.parse_args()
 
     source = Path(args.file)
@@ -785,7 +786,7 @@ def main():
             "version": 1,
             "createdAt": datetime.now(timezone.utc).isoformat(),
             "sourceName": safe_name(source),
-            "sourcePath": str(source).replace("\\", "/"),
+            "sourcePath": (args.source_path or str(source)).replace("\\", "/"),
             "clipStart": round(float(clip_start), 3),
             "clipSeconds": CLIP_SECONDS,
             "selection": choice,

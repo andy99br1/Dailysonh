@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var OWNER="andy99br1",REPO="Dailysonh",BRANCH="main",API="https://api.github.com",WORKFLOW="process-upload.yml",MAX_FILE_MB=45;
+var OWNER="andy99br1",REPO="Dailysonh",BRANCH="main",API="https://api.github.com",WORKFLOW="process-upload.yml",LAB_WORKFLOW="test-separation.yml",MAX_FILE_MB=45;
 function $(id){return document.getElementById(id)}
 var E={
  loginView:$("loginView"),panel:$("panel"),connectForm:$("connectForm"),tokenInput:$("tokenInput"),disconnectBtn:$("disconnectBtn"),
@@ -9,6 +9,9 @@ var E={
  releaseYearInput:$("releaseYearInput"),difficultyInput:$("difficultyInput"),youtubeViewsInput:$("youtubeViewsInput"),clipStartInput:$("clipStartInput"),
  youtubeUrlInput:$("youtubeUrlInput"),spotifyUrlInput:$("spotifyUrlInput"),appleMusicUrlInput:$("appleMusicUrlInput"),deezerUrlInput:$("deezerUrlInput"),publishBtn:$("publishBtn"),
  jobBox:$("jobBox"),jobTitle:$("jobTitle"),jobPercent:$("jobPercent"),jobProgress:$("jobProgress"),jobMessage:$("jobMessage"),workflowLink:$("workflowLink"),
+ labForm:$("labForm"),labUploadZone:$("labUploadZone"),labAudioFile:$("labAudioFile"),labFileLabel:$("labFileLabel"),labTitle:$("labTitle"),labArtist:$("labArtist"),labClipStart:$("labClipStart"),labRunBtn:$("labRunBtn"),
+ labJobBox:$("labJobBox"),labJobTitle:$("labJobTitle"),labJobPercent:$("labJobPercent"),labJobProgress:$("labJobProgress"),labJobMessage:$("labJobMessage"),labWorkflowLink:$("labWorkflowLink"),
+ labResultsCard:$("labResultsCard"),labResultTitle:$("labResultTitle"),labResultMeta:$("labResultMeta"),labResults:$("labResults"),labRefreshBtn:$("labRefreshBtn"),
  refreshSongsBtn:$("refreshSongsBtn"),songsList:$("songsList"),songsEmpty:$("songsEmpty"),editDialog:$("editDialog"),editForm:$("editForm"),editHeading:$("editHeading"),
  editIndex:$("editIndex"),editTitle:$("editTitle"),editArtist:$("editArtist"),editReleaseYear:$("editReleaseYear"),editYoutubeViews:$("editYoutubeViews"),editDifficulty:$("editDifficulty"),
  editYoutubeUrl:$("editYoutubeUrl"),editSpotifyUrl:$("editSpotifyUrl"),editAppleMusicUrl:$("editAppleMusicUrl"),editDeezerUrl:$("editDeezerUrl"),saveEditBtn:$("saveEditBtn"),toast:$("toast"),
@@ -96,6 +99,7 @@ async function openPanel(){
    toast("Painel aberto. Alguns dados demoraram para carregar.");
  }
  startDashboardAutoRefresh();
+ loadLatestLabResult(true);
 }
 async function connect(value){
  token=String(value||"").trim();
@@ -291,8 +295,122 @@ async function saveCatalog(){
 function setJob(percent,title,message){E.jobBox.classList.remove("hidden");E.jobPercent.textContent=percent+"%";E.jobProgress.style.width=percent+"%";E.jobTitle.textContent=title;E.jobMessage.textContent=message||""}
 async function uploadAudio(file,path){var b64=await fileToBase64(file);return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path),{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({message:"Upload audio from Música do Dia dashboard",content:b64,branch:BRANCH})})}
 async function dispatch(path,v){return api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+WORKFLOW+"/dispatches",{method:"POST",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({ref:BRANCH,inputs:{audio_path:path,title:v.title,artist:v.artist,date:v.date,release_year:v.releaseYear,youtube_views:v.youtubeViews,difficulty:v.difficulty,youtube_url:v.youtubeUrl,spotify_url:v.spotifyUrl,apple_music_url:v.appleMusicUrl,deezer_url:v.deezerUrl,clip_start:v.clipStart}})})}
-async function waitRun(after){var started=Date.now();while(Date.now()-started<90000){var d=await api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+WORKFLOW+"/runs?event=workflow_dispatch&branch="+BRANCH+"&per_page=10"),r=(d.workflow_runs||[]).find(function(x){return new Date(x.created_at).getTime()>=after-5000});if(r)return r;await new Promise(function(res){setTimeout(res,3500)})}return null}
+async function waitWorkflowRun(workflow,after){var started=Date.now();while(Date.now()-started<90000){var d=await api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+workflow+"/runs?event=workflow_dispatch&branch="+BRANCH+"&per_page=10"),r=(d.workflow_runs||[]).find(function(x){return new Date(x.created_at).getTime()>=after-5000});if(r)return r;await new Promise(function(res){setTimeout(res,3500)})}return null}
+async function waitRun(after){return waitWorkflowRun(WORKFLOW,after)}
 async function monitor(run){E.workflowLink.href=run.html_url;E.workflowLink.classList.remove("hidden");while(true){var l=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);if(l.status==="queued")setJob(68,"Na fila","Preparando o ambiente.");else if(l.status==="in_progress")setJob(84,"Processando áudio","Separando as camadas. Isso pode levar alguns minutos.");else if(l.status==="completed"){if(l.conclusion==="success"){setJob(100,"Música pronta","Processamento concluído.");await new Promise(function(r){setTimeout(r,2000)});await loadCatalog();E.songForm.reset();setDefaultDate();E.fileLabel.textContent="Escolher arquivo de áudio";toast("Música processada com sucesso.");switchView("catalog");return}setJob(100,"Falha no processamento","Abra a execução do GitHub para detalhes.");throw new Error("Workflow "+l.conclusion)}await new Promise(function(r){setTimeout(r,6500)})}}
+
+function setLabJob(percent,title,message){
+ E.labJobBox.classList.remove("hidden");
+ E.labJobPercent.textContent=percent+"%";
+ E.labJobProgress.style.width=percent+"%";
+ E.labJobTitle.textContent=title;
+ E.labJobMessage.textContent=message||"";
+}
+async function dispatchLab(path,values){
+ return api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+LAB_WORKFLOW+"/dispatches",{
+   method:"POST",
+   headers:headers({"Content-Type":"application/json"}),
+   body:JSON.stringify({ref:BRANCH,inputs:{audio_path:path,title:values.title||"",artist:values.artist||"",clip_start:values.clipStart||""}})
+ });
+}
+function labRoundLabels(){return["Bateria","+ Baixo","+ Instrumento","+ Melodia","Original"]}
+function translateLabInstrument(value){var map={guitar:"Guitarra",piano:"Piano",other:"Outros"};return map[value]||value||"—"}
+function stopOtherLabAudio(current){
+ if(!E.labResults)return;
+ E.labResults.querySelectorAll("audio").forEach(function(audio){if(audio!==current)audio.pause()});
+}
+function renderLabResult(data){
+ if(!data||!Array.isArray(data.methods))return;
+ E.labResultsCard.classList.remove("hidden");
+ E.labResultTitle.textContent=(data.artist?data.artist+" · ":"")+(data.title||"Teste de separação");
+ var start=Number(data.clipStart||0),seconds=Number(data.clipSeconds||18);
+ var meta="Trecho "+start.toFixed(1)+"s–"+(start+seconds).toFixed(1)+"s";
+ if(data.contextSeconds)meta+=" · contexto "+Number(data.contextSeconds).toFixed(0)+"s";
+ E.labResultMeta.textContent=meta;
+ E.labResults.innerHTML="";
+ var labels=labRoundLabels();
+
+ data.methods.forEach(function(method){
+   var card=document.createElement("section");card.className="lab-method-card";
+   var head=document.createElement("div");head.className="lab-method-head";
+   var copy=document.createElement("div");
+   var eyebrow=document.createElement("span");eyebrow.className="eyebrow";eyebrow.textContent="MÉTODO";
+   var name=document.createElement("h3");name.textContent=method.name||method.id||"Método";
+   var desc=document.createElement("p");desc.textContent=method.description||"";
+   copy.append(eyebrow,name,desc);head.appendChild(copy);
+
+   if(method.primaryInstrument){
+     var badge=document.createElement("span");badge.className="lab-primary-badge";badge.textContent="R3: "+translateLabInstrument(method.primaryInstrument);head.appendChild(badge);
+   }
+
+   var controls=document.createElement("div");controls.className="lab-round-buttons";
+   var audio=document.createElement("audio");audio.controls=true;audio.preload="none";audio.className="lab-audio";
+   audio.addEventListener("play",function(){stopOtherLabAudio(audio)});
+
+   (method.rounds||[]).slice(0,5).forEach(function(src,i){
+     var btn=document.createElement("button");btn.type="button";btn.className="lab-round-btn";
+     var num=document.createElement("b");num.textContent=String(i+1);
+     var label=document.createElement("span");label.textContent=labels[i]||("Rodada "+(i+1));
+     btn.append(num,label);
+     btn.addEventListener("click",function(){
+       stopOtherLabAudio(audio);
+       controls.querySelectorAll(".lab-round-btn").forEach(function(x){x.classList.remove("active")});
+       btn.classList.add("active");
+       audio.src="/"+String(src).replace(/^\/+/, "")+"?v="+encodeURIComponent(data.createdAt||Date.now());
+       audio.load();
+       var p=audio.play();if(p&&typeof p.catch==="function")p.catch(function(){});
+     });
+     controls.appendChild(btn);
+   });
+
+   card.append(head,controls,audio);E.labResults.appendChild(card);
+ });
+}
+async function loadLatestLabResult(silent){
+ try{
+   var r=await fetch("/separation-tests/lab/manifest.json?_="+Date.now(),{cache:"no-store"});
+   if(!r.ok)throw new Error("manifest "+r.status);
+   var data=await r.json();renderLabResult(data);
+   if(!silent)toast("Resultado do laboratório atualizado.");
+   return data;
+ }catch(err){
+   if(!silent)toast("Ainda não há resultado do laboratório.");
+   return null;
+ }
+}
+async function waitForLabResult(after){
+ var started=Date.now();
+ while(Date.now()-started<150000){
+   try{
+     var r=await fetch("/separation-tests/lab/manifest.json?_="+Date.now(),{cache:"no-store"});
+     if(r.ok){
+       var data=await r.json(),created=Date.parse(data.createdAt||"");
+       if(!Number.isFinite(created)||created>=after-5000){renderLabResult(data);return data}
+     }
+   }catch(_){}
+   await new Promise(function(resolve){setTimeout(resolve,3500)});
+ }
+ return null;
+}
+async function monitorLab(run,startedAt){
+ E.labWorkflowLink.href=run.html_url;E.labWorkflowLink.classList.remove("hidden");
+ while(true){
+   var latest=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);
+   if(latest.status==="queued")setLabJob(62,"Na fila","Preparando o laboratório.");
+   else if(latest.status==="in_progress")setLabJob(78,"Comparando métodos","Gerando Atual, 6 stems e Contexto avançado. Pode levar vários minutos.");
+   else if(latest.status==="completed"){
+     if(latest.conclusion==="success"){
+       setLabJob(94,"Processamento concluído","Publicando os players de comparação...");
+       var result=await waitForLabResult(startedAt);
+       if(result){setLabJob(100,"Comparação pronta","Ouça os três métodos abaixo.");toast("Teste de separação pronto.");return}
+       setLabJob(100,"Áudios gerados","O site ainda está terminando de publicar. Use Recarregar resultado em instantes.");return;
+     }
+     setLabJob(100,"Falha no teste","Abra a execução do GitHub para ver em qual método ocorreu o erro.");throw new Error("Lab workflow "+latest.conclusion);
+   }
+   await new Promise(function(resolve){setTimeout(resolve,6500)});
+ }
+}
+
 function formValues(){return{title:E.songTitle.value.trim(),artist:E.songArtist.value.trim(),date:E.songDateInput.value,releaseYear:E.releaseYearInput.value.trim(),youtubeViews:E.youtubeViewsInput.value.trim(),difficulty:E.difficultyInput.value,youtubeUrl:E.youtubeUrlInput.value.trim(),spotifyUrl:E.spotifyUrlInput.value.trim(),appleMusicUrl:E.appleMusicUrlInput.value.trim(),deezerUrl:E.deezerUrlInput.value.trim(),clipStart:E.clipStartInput.value.trim()}}
 function setDefaultDate(){E.songDateInput.value=brazilDate()}
 
@@ -414,10 +532,10 @@ function renderTraffic(days){
  E.trafficChart.innerHTML="";if(!Array.isArray(days)||!days.length){E.trafficChart.innerHTML='<div class="empty-chart">Sem histórico de acessos</div>';E.trafficTotal.textContent="— total";return}
  var max=Math.max.apply(Math,days.map(function(d){return Number(d.views||d.accesses||0)}).concat([1])),sum=0;days.slice(-7).forEach(function(d){var v=Number(d.views||d.accesses||0)||0;sum+=v;var col=document.createElement("div");col.className="chart-col";var bar=document.createElement("i");bar.style.height=Math.max(3,Math.round(v/max*150))+"px";var lab=document.createElement("span");lab.textContent=(d.label||String(d.date||"").slice(5)||"—");col.append(bar,lab);E.trafficChart.appendChild(col)});E.trafficTotal.textContent=formatInt(sum)+" total"
 }
-var titles={"dashboard":["PAINEL","Visão geral"],"new-song":["CONTEÚDO","Nova música"],"catalog":["BIBLIOTECA","Catálogo"],"settings":["SISTEMA","Configurações"]};
+var titles={"dashboard":["PAINEL","Visão geral"],"new-song":["CONTEÚDO","Nova música"],"catalog":["BIBLIOTECA","Catálogo"],"lab":["ÁUDIO","Laboratório"],"settings":["SISTEMA","Configurações"]};
 function switchView(name){
  document.querySelectorAll(".nav-item").forEach(function(b){b.classList.toggle("active",b.dataset.view===name)});document.querySelectorAll("[data-view-panel]").forEach(function(v){v.classList.toggle("active",v.dataset.viewPanel===name)});
- var t=titles[name]||titles.dashboard;E.sectionEyebrow.textContent=t[0];E.sectionTitle.textContent=t[1];document.querySelector(".sidebar").classList.remove("open");if(name==="dashboard")refreshDashboard()
+ var t=titles[name]||titles.dashboard;E.sectionEyebrow.textContent=t[0];E.sectionTitle.textContent=t[1];document.querySelector(".sidebar").classList.remove("open");if(name==="dashboard")refreshDashboard();if(name==="lab")loadLatestLabResult(true)
 }
 document.querySelectorAll(".nav-item").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.view)})});
 document.querySelectorAll("[data-view-jump]").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.viewJump)})});
@@ -441,6 +559,35 @@ E.previewDialog.addEventListener("cancel",function(ev){ev.preventDefault();close
 E.previewDialog.addEventListener("click",function(ev){if(ev.target===E.previewDialog)closePreview()});
 E.previewAudio.addEventListener("error",function(){E.previewStatus.textContent="Não consegui carregar esta faixa.";});
 E.previewAudio.addEventListener("ended",function(){E.previewStatus.textContent="Fim da faixa "+(previewTrackIndex+1)+".";});
+E.labAudioFile.addEventListener("change",function(){var f=E.labAudioFile.files&&E.labAudioFile.files[0];E.labFileLabel.textContent=f?f.name:"Escolher música para teste"});
+["dragenter","dragover"].forEach(function(n){E.labUploadZone.addEventListener(n,function(ev){ev.preventDefault();E.labUploadZone.classList.add("drag")})});
+["dragleave","drop"].forEach(function(n){E.labUploadZone.addEventListener(n,function(){E.labUploadZone.classList.remove("drag")})});
+E.labRefreshBtn.addEventListener("click",function(){loadLatestLabResult(false)});
+E.labForm.addEventListener("submit",async function(ev){
+ ev.preventDefault();
+ var file=E.labAudioFile.files&&E.labAudioFile.files[0];
+ if(!file){toast("Escolha uma música para testar.");return}
+ if(file.size>MAX_FILE_MB*1024*1024){toast("O áudio passa de "+MAX_FILE_MB+" MB.");return}
+ E.labRunBtn.disabled=true;E.labWorkflowLink.classList.add("hidden");
+ try{
+   var path="lab-incoming/"+Date.now()+"-"+sanitizeFilename(file.name);
+   var values={title:E.labTitle.value.trim(),artist:E.labArtist.value.trim(),clipStart:E.labClipStart.value.trim()};
+   setLabJob(12,"Enviando música","Preparando o arquivo do laboratório.");
+   await uploadAudio(file,path);
+   setLabJob(48,"Upload concluído","Iniciando os três métodos de separação.");
+   var startedAt=Date.now();
+   await dispatchLab(path,values);
+   setLabJob(55,"Teste solicitado","Localizando a execução no GitHub.");
+   var run=await waitWorkflowRun(LAB_WORKFLOW,startedAt);
+   if(!run){setLabJob(58,"Processamento iniciado","A execução foi enviada. Tente Recarregar resultado mais tarde.");toast("Teste enviado para processamento.");return}
+   await monitorLab(run,startedAt);
+ }catch(err){
+   console.error("separation lab",err);
+   setLabJob(100,"Não foi possível concluir",err&&err.status===403?"A key precisa de Contents e Actions em leitura e escrita.":"Confira a execução do laboratório no GitHub.");
+   toast("O teste de separação encontrou um erro.");
+ }finally{E.labRunBtn.disabled=false}
+});
+
 E.audioFile.addEventListener("change",function(){var f=E.audioFile.files&&E.audioFile.files[0];E.fileLabel.textContent=f?f.name:"Escolher arquivo de áudio"});
 ["dragenter","dragover"].forEach(function(n){E.uploadZone.addEventListener(n,function(ev){ev.preventDefault();E.uploadZone.classList.add("drag")})});["dragleave","drop"].forEach(function(n){E.uploadZone.addEventListener(n,function(){E.uploadZone.classList.remove("drag")})});
 E.songForm.addEventListener("submit",async function(ev){ev.preventDefault();var file=E.audioFile.files&&E.audioFile.files[0];if(!file){toast("Escolha o arquivo de áudio.");return}if(file.size>MAX_FILE_MB*1024*1024){toast("O áudio passa de "+MAX_FILE_MB+" MB.");return}var v=formValues();if(!v.date){toast("Escolha a data.");return}E.publishBtn.disabled=true;E.workflowLink.classList.add("hidden");try{var path="incoming/"+Date.now()+"-"+sanitizeFilename(file.name);setJob(15,"Enviando áudio","Preparando arquivo.");await uploadAudio(file,path);setJob(55,"Upload concluído","Iniciando processamento.");var t=Date.now();await dispatch(path,v);setJob(62,"Processamento solicitado","Localizando execução.");var run=await waitRun(t);if(!run){setJob(66,"Processamento iniciado","Atualize o catálogo em alguns minutos.");toast("Processamento enviado.");return}await monitor(run)}catch(err){console.error(err);setJob(100,"Não foi possível concluir",err.status===403?"O token precisa de Contents e Actions em leitura e escrita.":"Confira a conexão ou a execução no GitHub.");toast("Ocorreu um erro no envio.")}finally{E.publishBtn.disabled=false}});

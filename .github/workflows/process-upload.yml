@@ -23,6 +23,10 @@ on:
         description: "Ano de lançamento (ex.: 2001). Opcional"
         required: false
         type: string
+      clip_start:
+        description: "Início do trecho em segundos. Vazio = automático"
+        required: false
+        type: string
       youtube_views:
         description: "Views no YouTube (ex.: 125000000 ou 125 mi). Opcional"
         required: false
@@ -200,6 +204,7 @@ jobs:
           SONG_ARTIST: ${{ inputs.artist }}
           SONG_DATE: ${{ inputs.date }}
           RELEASE_YEAR: ${{ inputs.release_year }}
+          CLIP_START: ${{ inputs.clip_start }}
           YOUTUBE_VIEWS: ${{ inputs.youtube_views }}
           DIFFICULTY: ${{ inputs.difficulty }}
           YOUTUBE_URL: ${{ inputs.youtube_url }}
@@ -213,6 +218,7 @@ jobs:
             --artist "$SONG_ARTIST" \
             --date "$SONG_DATE" \
             --release-year "$RELEASE_YEAR" \
+            --clip-start "$CLIP_START" \
             --youtube-views "$YOUTUBE_VIEWS" \
             --difficulty "$DIFFICULTY" \
             --youtube-url "$YOUTUBE_URL" \

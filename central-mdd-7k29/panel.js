@@ -39,7 +39,7 @@ function storedToken(){return sessionStorage.getItem("musicadodia:admin-token")|
 function storeToken(value,remember){sessionStorage.setItem("musicadodia:admin-token",value);if(remember)localStorage.setItem("musicadodia:admin-token",value);else localStorage.removeItem("musicadodia:admin-token")}
 function clearToken(){sessionStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-token");token=""}
 async function validate(){var user=await api("/user");await api("/repos/"+OWNER+"/"+REPO);E.githubUser.textContent=user.login||"GitHub";E.connectionLabel.textContent="Conectado";return true}
-async function connect(value,remember){token=String(value||"").trim();if(!token)throw new Error("Token vazio");await validate();storeToken(token,remember);E.loginView.classList.add("hidden");E.panel.classList.remove("hidden");await Promise.all([loadCatalog(),loadAnalyticsConfig()]);await refreshDashboard()}
+async function connect(value,remember){token=String(value||"").trim();if(!token)throw new Error("Token vazio");await validate();storeToken(token,remember);document.body.classList.remove("auth-locked");E.loginView.classList.add("hidden");E.panel.classList.remove("hidden");await Promise.all([loadCatalog(),loadAnalyticsConfig()]);await refreshDashboard()}
 async function getRepoFile(path){return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path)+"?ref="+encodeURIComponent(BRANCH))}
 async function loadCatalog(){var data=await getRepoFile("catalog.json");catalogSha=data.sha;var decoded=decodeURIComponent(escape(atob(String(data.content||"").replace(/\n/g,""))));catalog=JSON.parse(decoded);if(!Array.isArray(catalog.songs))catalog.songs=[];renderSongs();renderSelectedChallenge()}
 function renderSongs(){
@@ -143,6 +143,6 @@ E.prevDateBtn.addEventListener("click",function(){setDashboardDate(addDays(selec
 E.nextDateBtn.addEventListener("click",function(){setDashboardDate(addDays(selectedDate||brazilDate(),1))});
 E.todayDateBtn.addEventListener("click",function(){setDashboardDate(brazilDate())});
 
-async function boot(){setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();var st=storedToken();if(!st)return;try{await connect(st,Boolean(localStorage.getItem("musicadodia:admin-token")))}catch(_){clearToken();E.loginView.classList.remove("hidden");E.panel.classList.add("hidden");E.connectionLabel.textContent="Desconectado"}}
+async function boot(){setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();var st=storedToken();if(!st)return;try{await connect(st,Boolean(localStorage.getItem("musicadodia:admin-token")))}catch(_){clearToken();document.body.classList.add("auth-locked");E.loginView.classList.remove("hidden");E.panel.classList.add("hidden");E.connectionLabel.textContent="Desconectado"}}
 boot();
 })();

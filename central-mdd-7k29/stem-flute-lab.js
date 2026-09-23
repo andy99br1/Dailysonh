@@ -9,6 +9,17 @@ var directUploadBase="";
 var token="";
 var toastTimer=null;
 var latestManifest=null;
+var selectedLayerIds=[];
+var customPreviewAudios=[];
+var LAYER_OPTIONS=[
+  {id:"drums",label:"Bateria",detail:"Base rítmica",defaultOn:true},
+  {id:"bass",label:"Baixo",detail:"Adiciona o baixo",defaultOn:true},
+  {id:"instruments",label:"Instrumentos completos",detail:"Guitarra + piano + outros juntos",defaultOn:true,group:"instruments"},
+  {id:"guitar",label:"Guitarra / violão",detail:"Camada separada e encorpada",defaultOn:false,group:"split"},
+  {id:"piano",label:"Piano / teclas",detail:"Camada separada e encorpada",defaultOn:false,group:"split"},
+  {id:"other",label:"Outros instrumentos",detail:"Demais instrumentos detectados",defaultOn:false,group:"split"},
+  {id:"flute",label:"Melodia / flauta",detail:"Melodia extraída da voz",defaultOn:true}
+];
 
 function $(id){return document.getElementById(id)}
 var E={
@@ -19,6 +30,7 @@ var E={
   labResultsCard:$("labResultsCard"),labResultTitle:$("labResultTitle"),labResultMeta:$("labResultMeta"),labRefreshBtn:$("labRefreshBtn"),
   labClipStart:$("labClipStart"),labModel:$("labModel"),labVoiced:$("labVoiced"),stemTrackList:$("stemTrackList"),labAudio:$("labAudio"),labNowLabel:$("labNowLabel"),labAudioStatus:$("labAudioStatus"),
   gamePreviewSection:$("gamePreviewSection"),gameRoundList:$("gameRoundList"),gameAudio:$("gameAudio"),gameNowLabel:$("gameNowLabel"),gameRoundLabel:$("gameRoundLabel"),
+  roundBuilder:$("roundBuilder"),roundBuilderCount:$("roundBuilderCount"),roundLayerList:$("roundLayerList"),customRoundList:$("customRoundList"),customPreviewTitle:$("customPreviewTitle"),customPreviewStatus:$("customPreviewStatus"),customStopBtn:$("customStopBtn"),
   stemPublishBox:$("stemPublishBox"),stemPublishTitle:$("stemPublishTitle"),stemPublishArtist:$("stemPublishArtist"),stemPublishDate:$("stemPublishDate"),stemPublishYear:$("stemPublishYear"),stemPublishDifficulty:$("stemPublishDifficulty"),stemPublishYoutubeViews:$("stemPublishYoutubeViews"),stemPublishYoutubeUrl:$("stemPublishYoutubeUrl"),stemPublishCoverUrl:$("stemPublishCoverUrl"),stemPublishSpotifyUrl:$("stemPublishSpotifyUrl"),stemPublishAppleMusicUrl:$("stemPublishAppleMusicUrl"),stemPublishDeezerUrl:$("stemPublishDeezerUrl"),stemPublishBtn:$("stemPublishBtn"),stemPublishStatus:$("stemPublishStatus"),
   menuBtn:$("menuBtn"),toast:$("toast")
 };
@@ -271,6 +283,169 @@ function selectTrack(track,button){
   E.labNowLabel.textContent=track.label;
   E.labAudioStatus.textContent=subtitleFor(track.id);
 }
+function trackById(id){
+  if(!latestManifest||!Array.isArray(latestManifest.tracks))return null;
+  return latestManifest.tracks.find(function(track){return track.id===id})||null;
+}
+
+function stopCustomPreview(){
+  customPreviewAudios.forEach(function(audio){
+    try{audio.pause();audio.removeAttribute("src");audio.load()}catch(_){}
+  });
+  customPreviewAudios=[];
+  if(E.customStopBtn)E.customStopBtn.classList.add("hidden");
+  if(E.customRoundList){
+    E.customRoundList.querySelectorAll(".custom-round-btn").forEach(function(btn){btn.classList.remove("active")});
+  }
+}
+
+function selectedLayers(){
+  return LAYER_OPTIONS.filter(function(item){return selectedLayerIds.indexOf(item.id)>=0});
+}
+
+function updateLayerSelection(id,checked){
+  if(checked){
+    if(selectedLayerIds.indexOf(id)<0)selectedLayerIds.push(id);
+    if(id==="instruments"){
+      selectedLayerIds=selectedLayerIds.filter(function(value){return ["guitar","piano","other"].indexOf(value)<0});
+    }else if(["guitar","piano","other"].indexOf(id)>=0){
+      selectedLayerIds=selectedLayerIds.filter(function(value){return value!=="instruments"});
+    }
+  }else{
+    selectedLayerIds=selectedLayerIds.filter(function(value){return value!==id});
+  }
+
+  selectedLayerIds=LAYER_OPTIONS.map(function(item){return item.id}).filter(function(id2){
+    return selectedLayerIds.indexOf(id2)>=0;
+  });
+
+  renderLayerBuilder(false);
+}
+
+function playCustomRound(layerIndex,button){
+  stopCustomPreview();
+
+  var chosen=selectedLayers();
+  if(layerIndex>=chosen.length){
+    var reveal=trackById("original");
+    if(!reveal)return;
+    var original=new Audio(reveal.url+"?_="+Date.now());
+    customPreviewAudios=[original];
+    if(button)button.classList.add("active");
+    if(E.customPreviewTitle)E.customPreviewTitle.textContent="Revelação";
+    if(E.customPreviewStatus)E.customPreviewStatus.textContent="Trecho original da música.";
+    if(E.customStopBtn)E.customStopBtn.classList.remove("hidden");
+    original.play().catch(function(){});
+    return;
+  }
+
+  var layers=chosen.slice(0,layerIndex+1);
+  var audios=[];
+  layers.forEach(function(layer){
+    var track=trackById(layer.id);
+    if(track){
+      var audio=new Audio(track.url+"?_="+Date.now());
+      audio.preload="auto";
+      audios.push(audio);
+    }
+  });
+
+  if(!audios.length)return;
+  customPreviewAudios=audios;
+  if(button)button.classList.add("active");
+  if(E.customPreviewTitle)E.customPreviewTitle.textContent="Faixa "+(layerIndex+1)+" · + "+chosen[layerIndex].label;
+  if(E.customPreviewStatus)E.customPreviewStatus.textContent=layers.map(function(item){return item.label}).join(" + ");
+  if(E.customStopBtn)E.customStopBtn.classList.remove("hidden");
+
+  var start=function(){
+    audios.forEach(function(audio){
+      audio.currentTime=0;
+      var p=audio.play();
+      if(p&&typeof p.catch==="function")p.catch(function(){});
+    });
+  };
+  Promise.all(audios.map(function(audio){
+    if(audio.readyState>=2)return Promise.resolve();
+    return new Promise(function(resolve){
+      var done=function(){resolve()};
+      audio.addEventListener("canplay",done,{once:true});
+      audio.addEventListener("error",done,{once:true});
+    });
+  })).then(start);
+}
+
+function renderLayerBuilder(resetSelection){
+  if(!E.roundBuilder||!E.roundLayerList||!latestManifest)return;
+  E.roundBuilder.classList.remove("hidden");
+
+  if(resetSelection||!selectedLayerIds.length){
+    selectedLayerIds=LAYER_OPTIONS.filter(function(item){return item.defaultOn}).map(function(item){return item.id});
+  }
+
+  var chosen=selectedLayers();
+  if(E.roundBuilderCount){
+    E.roundBuilderCount.textContent=(chosen.length+1)+" faixas · "+chosen.length+" tentativa"+(chosen.length===1?"":"s");
+  }
+
+  E.roundLayerList.innerHTML="";
+  LAYER_OPTIONS.forEach(function(item,index){
+    var track=trackById(item.id);
+    if(!track)return;
+
+    var row=document.createElement("label");
+    row.className="round-layer-item";
+
+    var input=document.createElement("input");
+    input.type="checkbox";
+    input.checked=selectedLayerIds.indexOf(item.id)>=0;
+    input.addEventListener("change",function(){updateLayerSelection(item.id,input.checked)});
+
+    var order=document.createElement("b");
+    var currentIndex=selectedLayerIds.indexOf(item.id);
+    order.textContent=currentIndex>=0?String(currentIndex+1):"—";
+
+    var copy=document.createElement("span");
+    var strong=document.createElement("strong");strong.textContent=item.label;
+    var small=document.createElement("small");small.textContent=item.detail;
+    copy.append(strong,small);
+
+    row.append(input,order,copy);
+    E.roundLayerList.appendChild(row);
+  });
+
+  stopCustomPreview();
+  E.customRoundList.innerHTML="";
+  chosen.forEach(function(layer,index){
+    var button=document.createElement("button");
+    button.type="button";
+    button.className="custom-round-btn";
+    var num=document.createElement("b");num.textContent=String(index+1);
+    var text=document.createElement("span");
+    var strong=document.createElement("strong");strong.textContent="Faixa "+(index+1)+" · + "+layer.label;
+    var small=document.createElement("small");
+    small.textContent=chosen.slice(0,index+1).map(function(item){return item.label}).join(" + ");
+    text.append(strong,small);
+    button.append(num,text);
+    button.addEventListener("click",function(){playCustomRound(index,button)});
+    E.customRoundList.appendChild(button);
+  });
+
+  var revealBtn=document.createElement("button");
+  revealBtn.type="button";
+  revealBtn.className="custom-round-btn reveal";
+  var revealNum=document.createElement("b");revealNum.textContent=String(chosen.length+1);
+  var revealText=document.createElement("span");
+  var revealStrong=document.createElement("strong");revealStrong.textContent="Revelação";
+  var revealSmall=document.createElement("small");revealSmall.textContent="Trecho original";
+  revealText.append(revealStrong,revealSmall);
+  revealBtn.append(revealNum,revealText);
+  revealBtn.addEventListener("click",function(){playCustomRound(chosen.length,revealBtn)});
+  E.customRoundList.appendChild(revealBtn);
+
+  if(E.stemPublishBtn)E.stemPublishBtn.disabled=chosen.length<1;
+  if(E.stemPublishStatus&&chosen.length<1)E.stemPublishStatus.textContent="Selecione pelo menos uma camada antes de publicar.";
+}
+
 function selectGameRound(round,button){
   if(!round||!E.gameAudio)return;
   E.gameRoundList.querySelectorAll(".game-preview-round").forEach(function(node){node.classList.remove("active")});
@@ -332,6 +507,7 @@ function renderResult(data){
   E.labModel.textContent=data.separationModel||"htdemucs_6s";
   E.labVoiced.textContent=data.flute&&data.flute.voicedPercent!==undefined?Number(data.flute.voicedPercent).toFixed(1)+"%":"—";
   renderGamePreview(data.gameRounds);
+  renderLayerBuilder(true);
   if(E.stemPublishBox){
     E.stemPublishBox.classList.toggle("hidden",!Array.isArray(data.gameRounds)||data.gameRounds.length!==5);
     if(E.stemPublishStatus)E.stemPublishStatus.textContent="O processamento de teste continua separado até você publicar.";
@@ -397,6 +573,7 @@ E.labAudioFile.addEventListener("change",function(){
   E.labUploadZone.addEventListener(name,function(){E.labUploadZone.classList.remove("drag")});
 });
 E.labRefreshBtn.addEventListener("click",function(){loadLatest(true)});
+if(E.customStopBtn)E.customStopBtn.addEventListener("click",stopCustomPreview);
 E.labForm.addEventListener("submit",async function(ev){
   ev.preventDefault();
   var file=E.labAudioFile.files&&E.labAudioFile.files[0];
@@ -462,6 +639,12 @@ if(E.stemPublishBtn)E.stemPublishBtn.addEventListener("click",async function(){
   E.stemPublishBtn.disabled=true;
   E.stemPublishStatus.textContent="Enviando pedido de publicação...";
 
+  var chosenLayers=selectedLayers();
+  if(!chosenLayers.length){
+    toast("Selecione pelo menos uma camada.");
+    return;
+  }
+
   var payload={
     title:title,
     artist:artist,
@@ -475,6 +658,8 @@ if(E.stemPublishBtn)E.stemPublishBtn.addEventListener("click",async function(){
     appleMusicUrl:String(E.stemPublishAppleMusicUrl.value||"").trim(),
     deezerUrl:String(E.stemPublishDeezerUrl.value||"").trim(),
     expectedCreatedAt:String(latestManifest.createdAt||""),
+    selectedLayers:chosenLayers.map(function(item){return item.id}),
+    selectedLayerLabels:chosenLayers.map(function(item){return item.label}),
     nonce:String(Date.now())
   };
 

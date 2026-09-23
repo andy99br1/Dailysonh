@@ -206,24 +206,28 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 .palette-icon {
-  position: relative;
-  width: 22px;
-  height: 22px;
-  display: block;
+  width: 21px;
+  height: 21px;
+  display: grid;
+  grid-template-columns: repeat(2, 8px);
+  grid-template-rows: repeat(2, 8px);
+  gap: 3px;
+  place-content: center;
 }
 
 .palette-icon i {
-  position: absolute;
-  width: 9px;
-  height: 9px;
+  position: static;
+  width: 8px;
+  height: 8px;
+  display: block;
   border-radius: 50%;
   border: 1px solid rgba(0,0,0,.12);
 }
 
-.palette-icon i:nth-child(1) { left: 0; top: 2px; background: #e9ad6e; }
-.palette-icon i:nth-child(2) { right: 0; top: 2px; background: #65a9d7; }
-.palette-icon i:nth-child(3) { left: 2px; bottom: 0; background: #78aa78; }
-.palette-icon i:nth-child(4) { right: 1px; bottom: 0; background: #a486d2; }
+.palette-icon i:nth-child(1) { background: #e9ad6e; }
+.palette-icon i:nth-child(2) { background: #65a9d7; }
+.palette-icon i:nth-child(3) { background: #78aa78; }
+.palette-icon i:nth-child(4) { background: #a486d2; }
 
 .theme-menu {
   position: absolute;

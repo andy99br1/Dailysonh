@@ -65,6 +65,11 @@ def choose_clip_start(source, work):
     onset = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop)
     centroid = librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop)[0]
     frame_times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop)
+    aligned = min(len(rms), len(onset), len(centroid), len(frame_times))
+    rms = rms[:aligned]
+    onset = onset[:aligned]
+    centroid = centroid[:aligned]
+    frame_times = frame_times[:aligned]
 
     min_start = max(8.0, duration * 0.12)
     max_start = min(duration - CLIP_SECONDS - 4.0, duration * 0.72)
@@ -90,7 +95,7 @@ def choose_clip_start(source, work):
             brightness.append(0.0)
         else:
             rv = rms[mask]
-            ov = onset[: len(mask)][mask[: len(onset)]] if len(onset) < len(mask) else onset[mask]
+            ov = onset[mask]
             cv = centroid[mask]
             loudness.append(float(np.mean(rv)))
             activity.append(float(np.mean(ov) + 0.35 * np.std(ov)))

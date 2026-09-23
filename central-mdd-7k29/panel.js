@@ -655,7 +655,7 @@ document.querySelectorAll("[data-view-jump]").forEach(function(b){b.addEventList
 E.menuBtn.addEventListener("click",function(){document.querySelector(".sidebar").classList.toggle("open")});
 E.themeDayBtn.addEventListener("click",function(){applyAdminTheme("day")});
 E.themeNightBtn.addEventListener("click",function(){applyAdminTheme("night")});
-E.connectForm.addEventListener("submit",async function(ev){ev.preventDefault();var btn=ev.submitter;if(btn)btn.disabled=true;try{await connect(E.tokenInput.value);E.tokenInput.value=""}catch(err){toast(err.status===401?"Token inválido ou expirado.":err.status===403?"O token não tem acesso suficiente ao Dailysonh.":"Não consegui conectar ao GitHub. A key salva não foi apagada.")}finally{if(btn)btn.disabled=false}});
+E.connectForm.addEventListener("submit",async function(ev){ev.preventDefault();var btn=ev.submitter;if(btn)btn.disabled=true;try{await connect(E.tokenInput.value);E.tokenInput.value=""}catch(err){toast(err.status===401?"Token inválido ou expirado.":err.status===403?"O token não tem acesso suficiente ao repositório do jogo.":"Não consegui conectar ao GitHub. A key salva não foi apagada.")}finally{if(btn)btn.disabled=false}});
 E.disconnectBtn.addEventListener("click",function(){
  stopDashboardAutoRefresh();
  clearToken();

@@ -90,10 +90,10 @@ jobs:
 
       - name: Analyze and render 18-second MIDI challenge
         env:
-          MIDI_FILE: \${{ steps.midi.outputs.file }}
-          SOURCE_PATH: \${{ steps.midi.outputs.source_path }}
-          MELODY_STYLE: \${{ steps.midi.outputs.style }}
-          CLIP_START: \${{ steps.midi.outputs.clip_start }}
+          MIDI_FILE: ${{ steps.midi.outputs.file }}
+          SOURCE_PATH: ${{ steps.midi.outputs.source_path }}
+          MELODY_STYLE: ${{ steps.midi.outputs.style }}
+          CLIP_START: ${{ steps.midi.outputs.clip_start }}
         run: |
           python scripts/midi_lab.py \
             --file "$MIDI_FILE" \
@@ -103,7 +103,7 @@ jobs:
 
       - name: Publish laboratory result
         env:
-          REMOVE_FILE: \${{ steps.midi.outputs.remove_file }}
+          REMOVE_FILE: ${{ steps.midi.outputs.remove_file }}
         run: |
           set -euo pipefail
           git config user.name "dailysonh-bot"

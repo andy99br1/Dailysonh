@@ -3,7 +3,7 @@
 var OWNER="andy99br1",REPO="Dailysonh",BRANCH="main",API="https://api.github.com",WORKFLOW="process-upload.yml",MAX_FILE_MB=45;
 function $(id){return document.getElementById(id)}
 var E={
- loginView:$("loginView"),panel:$("panel"),connectForm:$("connectForm"),tokenInput:$("tokenInput"),rememberToken:$("rememberToken"),disconnectBtn:$("disconnectBtn"),
+ loginView:$("loginView"),panel:$("panel"),connectForm:$("connectForm"),tokenInput:$("tokenInput"),disconnectBtn:$("disconnectBtn"),
  githubUser:$("githubUser"),connectionLabel:$("connectionLabel"),menuBtn:$("menuBtn"),sectionTitle:$("sectionTitle"),sectionEyebrow:$("sectionEyebrow"),
  songForm:$("songForm"),audioFile:$("audioFile"),uploadZone:$("uploadZone"),fileLabel:$("fileLabel"),songTitle:$("songTitle"),songArtist:$("songArtist"),songDateInput:$("songDateInput"),
  releaseYearInput:$("releaseYearInput"),difficultyInput:$("difficultyInput"),youtubeViewsInput:$("youtubeViewsInput"),clipStartInput:$("clipStartInput"),
@@ -35,11 +35,11 @@ function formatPercent(v){var n=Number(v);return Number.isFinite(n)?Math.round(n
 function formatDuration(v){var n=Number(v);if(!Number.isFinite(n))return"—";var m=Math.floor(n/60),s=Math.round(n%60);return m?m+"m "+String(s).padStart(2,"0")+"s":s+"s"}
 function sanitizeFilename(name){var dot=name.lastIndexOf("."),ext=dot>=0?name.slice(dot).toLowerCase():"",stem=dot>=0?name.slice(0,dot):name;stem=stem.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]+/g,"-").replace(/-+/g,"-").replace(/^[-.]+|[-.]+$/g,"").slice(0,90);return(stem||"audio")+ext}
 async function fileToBase64(file){var bytes=new Uint8Array(await file.arrayBuffer()),binary="",chunk=0x8000;for(var i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));return btoa(binary)}
-function storedToken(){return sessionStorage.getItem("musicadodia:admin-token")||localStorage.getItem("musicadodia:admin-token")||""}
-function storeToken(value,remember){sessionStorage.setItem("musicadodia:admin-token",value);if(remember!==false)localStorage.setItem("musicadodia:admin-token",value);else localStorage.removeItem("musicadodia:admin-token")}
+function storedToken(){return localStorage.getItem("musicadodia:admin-token")||sessionStorage.getItem("musicadodia:admin-token")||""}
+function storeToken(value){localStorage.setItem("musicadodia:admin-token",value);sessionStorage.setItem("musicadodia:admin-token",value)}
 function clearToken(){sessionStorage.removeItem("musicadodia:admin-token");localStorage.removeItem("musicadodia:admin-token");token=""}
 async function validate(){var repoInfo=await api("/repos/"+OWNER+"/"+REPO);if(!repoInfo||String(repoInfo.full_name||"").toLowerCase()!==(OWNER+"/"+REPO).toLowerCase())throw new Error("Repositório não autorizado");E.githubUser.textContent=OWNER;E.connectionLabel.textContent="Conectado";return true}
-async function connect(value,remember){token=String(value||"").trim();if(!token)throw new Error("Token vazio");await validate();storeToken(token,remember);document.body.classList.remove("auth-locked");E.loginView.classList.add("hidden");E.panel.classList.remove("hidden");await Promise.all([loadCatalog(),loadAnalyticsConfig()]);await refreshDashboard()}
+async function connect(value){token=String(value||"").trim();if(!token)throw new Error("Token vazio");await validate();storeToken(token);document.body.classList.remove("auth-locked");E.loginView.classList.add("hidden");E.panel.classList.remove("hidden");await Promise.all([loadCatalog(),loadAnalyticsConfig()]);await refreshDashboard()}
 async function getRepoFile(path){return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path)+"?ref="+encodeURIComponent(BRANCH))}
 async function loadCatalog(){var data=await getRepoFile("catalog.json");catalogSha=data.sha;var decoded=decodeURIComponent(escape(atob(String(data.content||"").replace(/\n/g,""))));catalog=JSON.parse(decoded);if(!Array.isArray(catalog.songs))catalog.songs=[];renderSongs();renderSelectedChallenge()}
 function renderSongs(){
@@ -123,7 +123,7 @@ function switchView(name){
 document.querySelectorAll(".nav-item").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.view)})});
 document.querySelectorAll("[data-view-jump]").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.viewJump)})});
 E.menuBtn.addEventListener("click",function(){document.querySelector(".sidebar").classList.toggle("open")});
-E.connectForm.addEventListener("submit",async function(ev){ev.preventDefault();var btn=ev.submitter;if(btn)btn.disabled=true;try{await connect(E.tokenInput.value,E.rememberToken.checked);E.tokenInput.value=""}catch(err){clearToken();toast(err.status===401?"Token inválido ou expirado.":err.status===403?"O token não tem acesso suficiente ao Dailysonh.":"Não consegui conectar ao GitHub. Tente novamente.")}finally{if(btn)btn.disabled=false}});
+E.connectForm.addEventListener("submit",async function(ev){ev.preventDefault();var btn=ev.submitter;if(btn)btn.disabled=true;try{await connect(E.tokenInput.value);E.tokenInput.value=""}catch(err){if(err.status===401)clearToken();toast(err.status===401?"Token inválido ou expirado.":err.status===403?"O token não tem acesso suficiente ao Dailysonh.":"Não consegui conectar ao GitHub. A key não foi apagada; tente novamente.")}finally{if(btn)btn.disabled=false}});
 E.disconnectBtn.addEventListener("click",function(){clearToken();location.reload()});
 E.audioFile.addEventListener("change",function(){var f=E.audioFile.files&&E.audioFile.files[0];E.fileLabel.textContent=f?f.name:"Escolher arquivo de áudio"});
 ["dragenter","dragover"].forEach(function(n){E.uploadZone.addEventListener(n,function(ev){ev.preventDefault();E.uploadZone.classList.add("drag")})});["dragleave","drop"].forEach(function(n){E.uploadZone.addEventListener(n,function(){E.uploadZone.classList.remove("drag")})});
@@ -143,6 +143,25 @@ E.prevDateBtn.addEventListener("click",function(){setDashboardDate(addDays(selec
 E.nextDateBtn.addEventListener("click",function(){setDashboardDate(addDays(selectedDate||brazilDate(),1))});
 E.todayDateBtn.addEventListener("click",function(){setDashboardDate(brazilDate())});
 
-async function boot(){setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();var st=storedToken();if(!st)return;try{await connect(st,true)}catch(_){clearToken();document.body.classList.add("auth-locked");E.loginView.classList.remove("hidden");E.panel.classList.add("hidden");E.connectionLabel.textContent="Desconectado"}}
+async function boot(){
+ setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();
+ var st=storedToken();if(!st)return;
+ try{
+   await connect(st);
+ }catch(firstError){
+   await new Promise(function(resolve){setTimeout(resolve,900)});
+   try{
+     await connect(st);
+   }catch(err){
+     token=st;
+     document.body.classList.add("auth-locked");
+     E.loginView.classList.remove("hidden");
+     E.panel.classList.add("hidden");
+     E.connectionLabel.textContent="Desconectado";
+     E.tokenInput.value=st;
+     toast(err.status===401?"A key salva parece inválida ou expirada.":"Não consegui validar agora, mas sua key continua salva. Tente Conectar novamente.");
+   }
+ }
+}
 boot();
 })();

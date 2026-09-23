@@ -1,0 +1,153 @@
+name: Publish Stem + Flute song
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".stem-flute-lab/publish.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dailysonh-publish-stem-flute
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Validate Stem + Flute result
+        run: |
+          set -euo pipefail
+          test -f .stem-flute-lab/publish.json
+          test -f stem-flute-lab/manifest.json
+          for N in 1 2 3 4 5; do
+            test -f "stem-flute-lab/game-round-$N.ogg"
+          done
+
+      - name: Publish official challenge
+        run: |
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+
+          root = Path(".")
+          request = json.loads((root / ".stem-flute-lab/publish.json").read_text(encoding="utf-8"))
+          manifest = json.loads((root / "stem-flute-lab/manifest.json").read_text(encoding="utf-8"))
+
+          title = str(request.get("title", "")).strip()
+          artist = str(request.get("artist", "")).strip()
+          date = str(request.get("date", "")).strip()
+
+          if not title or not artist:
+              raise SystemExit("Título e artista são obrigatórios.")
+          if len(date) != 10 or date[4] != "-" or date[7] != "-":
+              raise SystemExit("Data inválida.")
+
+          expected_created_at = str(request.get("expectedCreatedAt", "")).strip()
+          actual_created_at = str(manifest.get("createdAt", "")).strip()
+          if expected_created_at and expected_created_at != actual_created_at:
+              raise SystemExit(
+                  "O resultado do laboratório mudou depois do pedido de publicação. "
+                  "Atualize a página e confirme novamente."
+              )
+
+          catalog_path = root / "catalog.json"
+          catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+          songs = catalog.setdefault("songs", [])
+
+          existing_index = next(
+              (i for i, song in enumerate(songs) if str(song.get("date", "")) == date),
+              None,
+          )
+          existing = songs[existing_index] if existing_index is not None else None
+          try:
+              version = max(1, int((existing or {}).get("version", 0)) + 1)
+          except Exception:
+              version = 2 if existing else 1
+
+          dest = root / "songs" / date
+          dest.mkdir(parents=True, exist_ok=True)
+          for n in range(1, 6):
+              shutil.copy2(
+                  root / "stem-flute-lab" / f"game-round-{n}.ogg",
+                  dest / f"round-{n}.ogg",
+              )
+
+          entry = {
+              "date": date,
+              "title": title,
+              "artist": artist,
+              "clipStart": manifest.get("clipStart", 0),
+              "source": "stem-flute",
+              "sourceName": manifest.get("sourceName", ""),
+              "version": version,
+              "safeRevealRound": 4,
+              "roundLabels": [
+                  "Bateria",
+                  "Baixo",
+                  "Instrumentos",
+                  "Melodia",
+                  "Revelação",
+              ],
+              "rounds": [f"songs/{date}/round-{n}.ogg" for n in range(1, 6)],
+              "releaseYear": str(request.get("releaseYear", "")).strip(),
+              "youtubeViews": str(request.get("youtubeViews", "")).strip(),
+              "difficulty": str(request.get("difficulty", "")).strip(),
+              "youtubeUrl": str(request.get("youtubeUrl", "")).strip(),
+              "coverUrl": str(request.get("coverUrl", "")).strip(),
+              "spotifyUrl": str(request.get("spotifyUrl", "")).strip(),
+              "appleMusicUrl": str(request.get("appleMusicUrl", "")).strip(),
+              "deezerUrl": str(request.get("deezerUrl", "")).strip(),
+              "stemFluteCreatedAt": actual_created_at,
+              "stemFluteSeparationModel": manifest.get("separationModel", ""),
+              "stemFluteVoiceTransform": manifest.get("voiceTransform", ""),
+          }
+
+          if existing:
+              if "communityStats" in existing:
+                  entry["communityStats"] = existing["communityStats"]
+              if "statsEndpoint" in existing:
+                  entry["statsEndpoint"] = existing["statsEndpoint"]
+
+          if existing_index is None:
+              songs.append(entry)
+          else:
+              songs[existing_index] = entry
+
+          songs.sort(key=lambda item: str(item.get("date", "")))
+          catalog_path.write_text(
+              json.dumps(catalog, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(entry, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Commit official song
+        run: |
+          set -euo pipefail
+          SONG_DATE="$(python -c 'import json; print(json.load(open(".stem-flute-lab/publish.json"))["date"])')"
+
+          git config user.name "dailysonh-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add catalog.json "songs/$SONG_DATE/"
+
+          if git diff --cached --quiet; then
+            echo "Nada para publicar."
+            exit 0
+          fi
+
+          git commit -m "Publish Stem + Flute song for $SONG_DATE"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main

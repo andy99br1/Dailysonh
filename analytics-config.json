@@ -1,4 +1,4 @@
 {
-  "endpoint": "",
-  "dashboardEndpoint": ""
+  "endpoint": "https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-analytics",
+  "dashboardEndpoint": "https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-dashboard"
 }

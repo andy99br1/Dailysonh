@@ -53,6 +53,109 @@
   var catalogIndex = -1;
   var countdownInterval = null;
   var countdownDate = "";
+  var analyticsConfig = null;
+  var analyticsHeartbeat = null;
+  var analyticsStartedAt = Date.now();
+  var analyticsSessionId = "";
+  var analyticsVisitorId = "";
+
+
+  function randomId(prefix) {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return prefix + window.crypto.randomUUID();
+    }
+    return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  function getAnalyticsIds() {
+    analyticsSessionId = sessionStorage.getItem("musicadodia:session-id") || "";
+    if (!analyticsSessionId) {
+      analyticsSessionId = randomId("s_");
+      sessionStorage.setItem("musicadodia:session-id", analyticsSessionId);
+    }
+
+    analyticsVisitorId = localStorage.getItem("musicadodia:visitor-id") || "";
+    if (!analyticsVisitorId) {
+      analyticsVisitorId = randomId("v_");
+      localStorage.setItem("musicadodia:visitor-id", analyticsVisitorId);
+    }
+  }
+
+  async function loadAnalyticsConfig() {
+    getAnalyticsIds();
+
+    try {
+      var response = await fetch("/analytics-config.json?v=" + Date.now(), { cache: "no-store" });
+      if (!response.ok) return;
+      analyticsConfig = await response.json();
+    } catch (_) {
+      analyticsConfig = null;
+    }
+
+    if (!analyticsConfig || !analyticsConfig.endpoint) return;
+
+    trackEvent("page_view", {
+      path: location.pathname,
+      referrer: document.referrer ? String(document.referrer).slice(0, 300) : ""
+    });
+
+    if (analyticsHeartbeat) clearInterval(analyticsHeartbeat);
+    analyticsHeartbeat = setInterval(function () {
+      trackEvent("heartbeat", {
+        visible: document.visibilityState === "visible"
+      });
+    }, 30000);
+  }
+
+  function analyticsPayload(type, data) {
+    return Object.assign({
+      event: type,
+      timestamp: new Date().toISOString(),
+      date: brazilDate(),
+      sessionId: analyticsSessionId,
+      visitorId: analyticsVisitorId,
+      challengeDate: song ? song.date : "",
+      challenge: catalogIndex >= 0 ? catalogIndex + 1 : null,
+      round: roundIndex + 1,
+      path: location.pathname
+    }, data || {});
+  }
+
+  function trackEvent(type, data, keepalive) {
+    if (!analyticsConfig || !analyticsConfig.endpoint) return;
+
+    try {
+      fetch(analyticsConfig.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(analyticsPayload(type, data)),
+        keepalive: Boolean(keepalive)
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
+  function trackFinishOnce() {
+    if (!song || !finished) return;
+
+    var finishKey = "musicadodia:analytics-finish:" + song.date + ":v" + songVersion();
+    if (localStorage.getItem(finishKey)) return;
+
+    localStorage.setItem(finishKey, "1");
+    trackEvent("game_finish", {
+      won: won,
+      solvedRound: won && solvedRound ? solvedRound : null,
+      attempts: guesses.length
+    });
+  }
+
+  function trackSessionEnd() {
+    var seconds = Math.max(0, Math.round((Date.now() - analyticsStartedAt) / 1000));
+    trackEvent("session_end", {
+      durationSeconds: seconds,
+      finished: finished,
+      won: won
+    }, true);
+  }
 
   function brazilDate() {
     var parts = new Intl.DateTimeFormat("en", {
@@ -569,6 +672,7 @@
       if (!isCurrentAudio()) return;
       setPlaybackState(false);
       E.message.textContent = "Não consegui carregar esta faixa.";
+      trackEvent("audio_error", { source: src });
     });
   }
 
@@ -646,6 +750,7 @@
     prepareAudio();
     save();
     submitCommunityResult();
+    trackFinishOnce();
 
     if (autoplay) await playCurrent();
   }
@@ -777,6 +882,7 @@
 
   async function init() {
     loadTheme();
+    await loadAnalyticsConfig();
 
     try {
       var response = await fetch("catalog.json?v=" + Date.now(), { cache: "no-store" });
@@ -796,6 +902,11 @@
 
       song = eligible[eligible.length - 1];
       catalogIndex = songs.findIndex(function (item) { return item.date === song.date; });
+
+      trackEvent("game_loaded", {
+        title: cleanedSongTitle(),
+        artist: song.artist || ""
+      });
 
       E.dayChip.textContent = "#" + (catalogIndex + 1);
       if (E.challengeNumber) E.challengeNumber.textContent = "#" + (catalogIndex + 1);
@@ -872,6 +983,11 @@
 
     E.guessInput.value = "";
 
+    trackEvent("guess", {
+      guess: guess.slice(0, 100),
+      correct: isCorrect(guess, song.title)
+    });
+
     if (isCorrect(guess, song.title)) {
       solvedRound = roundIndex + 1;
       reveal(true, true);
@@ -886,6 +1002,13 @@
 
   E.shareBtn.addEventListener("click", share);
   E.restartBtn.addEventListener("click", restartGame);
+
+  window.addEventListener("pagehide", trackSessionEnd);
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") {
+      trackEvent("heartbeat", { visible: true });
+    }
+  });
 
   init();
 })();

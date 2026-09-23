@@ -67,7 +67,14 @@
   try {
     var previewParams = new URLSearchParams(window.location.search);
     adminPreviewDate = String(previewParams.get("previewDate") || "").trim();
-    adminPreviewMode = previewParams.get("adminPreview") === "1" && /^\d{4}-\d{2}-\d{2}$/.test(adminPreviewDate);
+    var previewAdminToken =
+      localStorage.getItem("musicadodia:admin-token") ||
+      sessionStorage.getItem("musicadodia:admin-token") ||
+      "";
+    adminPreviewMode =
+      previewParams.get("adminPreview") === "1" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(adminPreviewDate) &&
+      Boolean(previewAdminToken);
   } catch (_) {}
 
 

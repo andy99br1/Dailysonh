@@ -120,8 +120,9 @@ function renderSongs(){
  var actions=document.createElement("div");actions.className="song-actions";
  var test=document.createElement("button");test.className="mini-btn test-btn";test.type="button";test.textContent="Testar";test.onclick=function(){openPreview(idx)};
  var edit=document.createElement("button");edit.className="mini-btn";edit.type="button";edit.textContent="Editar";edit.onclick=function(){openEdit(idx)};
+ var del=document.createElement("button");del.className="mini-btn delete-btn";del.type="button";del.textContent="Excluir";del.onclick=function(){deleteSong(idx,del)};
  var open=document.createElement("a");open.className="mini-btn";open.textContent="Abrir";open.href="/";open.target="_blank";open.rel="noopener";
- actions.append(test,edit,open);row.append(d,main,actions);E.songsList.appendChild(row)
+ actions.append(test,edit,del,open);row.append(d,main,actions);E.songsList.appendChild(row)
  })
 }
 function songForDate(date){var eligible=catalog.songs.filter(function(s){return String(s.date||"")<=String(date||"")});return eligible.length?eligible[eligible.length-1]:null}
@@ -200,6 +201,80 @@ function closePreview(){
  try{E.previewAudio.pause();E.previewAudio.removeAttribute("src");E.previewAudio.load()}catch(_){}
  previewSong=null;
  if(E.previewDialog.open)E.previewDialog.close();
+}
+
+
+function decodeRepoContent(data){
+ return JSON.parse(decodeURIComponent(escape(atob(String(data.content||"").replace(/\n/g,"")))));
+}
+async function deleteRepoFile(path,message){
+ try{
+   var info=await getRepoFile(path);
+   if(!info||!info.sha)return;
+   await api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path),{
+     method:"DELETE",
+     headers:headers({"Content-Type":"application/json"}),
+     body:JSON.stringify({message:message,sha:info.sha,branch:BRANCH})
+   });
+ }catch(err){
+   if(err&&err.status===404)return;
+   throw err;
+ }
+}
+async function deleteSong(index,button){
+ var song=catalog.songs[index];
+ if(!song)return;
+
+ var label=(song.artist?song.artist+" · ":"")+(song.title||"Sem título");
+ var day=String(song.date||"");
+ var ok=window.confirm('Excluir "'+label+'" de '+prettyDate(day)+'?\n\nIsso remove a música do catálogo e as 5 faixas processadas. Esta ação não pode ser desfeita.');
+ if(!ok)return;
+
+ if(button)button.disabled=true;
+ try{
+   // Lê o catálogo atual do GitHub para não sobrescrever mudanças recentes.
+   var current=await getRepoFile("catalog.json");
+   var fresh=decodeRepoContent(current);
+   if(!Array.isArray(fresh.songs))fresh.songs=[];
+
+   var existing=fresh.songs.find(function(s){return String(s.date||"")===day});
+   if(!existing){
+     await loadCatalog();
+     toast("Essa música já não está mais no catálogo.");
+     return;
+   }
+
+   var rounds=Array.isArray(existing.rounds)?existing.rounds.slice():[];
+   for(var i=0;i<rounds.length;i++){
+     await deleteRepoFile(String(rounds[i]),"Delete processed track "+day);
+   }
+
+   fresh.songs=fresh.songs.filter(function(s){return String(s.date||"")!==day});
+   var json=JSON.stringify(fresh,null,2)+"\n";
+   var bytes=new TextEncoder().encode(json),binary="";
+   for(var j=0;j<bytes.length;j+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(j,Math.min(j+0x8000,bytes.length)));
+
+   await api("/repos/"+OWNER+"/"+REPO+"/contents/catalog.json",{
+     method:"PUT",
+     headers:headers({"Content-Type":"application/json"}),
+     body:JSON.stringify({
+       message:"Delete song "+day+" from admin dashboard",
+       content:btoa(binary),
+       sha:current.sha,
+       branch:BRANCH
+     })
+   });
+
+   catalog=fresh;
+   renderSongs();
+   renderSelectedChallenge();
+   toast("Música excluída. A data "+prettyDate(day)+" está livre.");
+ }catch(err){
+   console.error("delete song",err);
+   toast(err&&err.status===401?"Sua key expirou.":err&&err.status===403?"A key não tem permissão para excluir arquivos.":"Não consegui excluir a música.");
+ }finally{
+   if(button)button.disabled=false;
+ }
 }
 
 function openEdit(index){var s=catalog.songs[index];if(!s)return;E.editIndex.value=String(index);E.editHeading.textContent=s.title||"Música";E.editTitle.value=s.title||"";E.editArtist.value=s.artist||"";E.editReleaseYear.value=s.releaseYear||"";E.editYoutubeViews.value=s.youtubeViews||"";E.editDifficulty.value=s.difficulty||"";E.editYoutubeUrl.value=s.youtubeUrl||"";E.editSpotifyUrl.value=s.spotifyUrl||"";E.editAppleMusicUrl.value=s.appleMusicUrl||"";E.editDeezerUrl.value=s.deezerUrl||"";E.editDialog.showModal()}

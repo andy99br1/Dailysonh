@@ -9,10 +9,10 @@ var E={
  releaseYearInput:$("releaseYearInput"),difficultyInput:$("difficultyInput"),youtubeViewsInput:$("youtubeViewsInput"),clipStartInput:$("clipStartInput"),
  youtubeUrlInput:$("youtubeUrlInput"),spotifyUrlInput:$("spotifyUrlInput"),appleMusicUrlInput:$("appleMusicUrlInput"),deezerUrlInput:$("deezerUrlInput"),publishBtn:$("publishBtn"),
  jobBox:$("jobBox"),jobTitle:$("jobTitle"),jobPercent:$("jobPercent"),jobProgress:$("jobProgress"),jobMessage:$("jobMessage"),workflowLink:$("workflowLink"),
- midiForm:$("midiForm"),midiUploadZone:$("midiUploadZone"),midiFile:$("midiFile"),midiFileLabel:$("midiFileLabel"),midiMelodyStyle:$("midiMelodyStyle"),midiClipStart:$("midiClipStart"),midiRunBtn:$("midiRunBtn"),midiRerenderBtn:$("midiRerenderBtn"),
+ midiForm:$("midiForm"),midiUploadZone:$("midiUploadZone"),midiFile:$("midiFile"),midiFileLabel:$("midiFileLabel"),midiRevealUploadZone:$("midiRevealUploadZone"),midiRevealFile:$("midiRevealFile"),midiRevealFileLabel:$("midiRevealFileLabel"),midiMelodyStyle:$("midiMelodyStyle"),midiClipStart:$("midiClipStart"),midiRunBtn:$("midiRunBtn"),midiRerenderBtn:$("midiRerenderBtn"),
  midiJobBox:$("midiJobBox"),midiJobTitle:$("midiJobTitle"),midiJobPercent:$("midiJobPercent"),midiJobProgress:$("midiJobProgress"),midiJobMessage:$("midiJobMessage"),midiWorkflowLink:$("midiWorkflowLink"),
  midiResultsCard:$("midiResultsCard"),midiResultTitle:$("midiResultTitle"),midiResultMeta:$("midiResultMeta"),midiRefreshBtn:$("midiRefreshBtn"),midiRoles:$("midiRoles"),midiRounds:$("midiRounds"),midiAudio:$("midiAudio"),midiNowNumber:$("midiNowNumber"),midiNowLabel:$("midiNowLabel"),midiAudioStatus:$("midiAudioStatus"),midiChannels:$("midiChannels"),
- midiPublishTitle:$("midiPublishTitle"),midiPublishArtist:$("midiPublishArtist"),midiPublishDate:$("midiPublishDate"),midiPublishYear:$("midiPublishYear"),midiPublishDifficulty:$("midiPublishDifficulty"),midiPublishBtn:$("midiPublishBtn"),midiPublishStatus:$("midiPublishStatus"),
+ midiPublishTitle:$("midiPublishTitle"),midiPublishArtist:$("midiPublishArtist"),midiPublishDate:$("midiPublishDate"),midiPublishYear:$("midiPublishYear"),midiPublishDifficulty:$("midiPublishDifficulty"),midiPublishYoutubeViews:$("midiPublishYoutubeViews"),midiPublishYoutubeUrl:$("midiPublishYoutubeUrl"),midiPublishSpotifyUrl:$("midiPublishSpotifyUrl"),midiPublishAppleMusicUrl:$("midiPublishAppleMusicUrl"),midiPublishDeezerUrl:$("midiPublishDeezerUrl"),midiPublishBtn:$("midiPublishBtn"),midiPublishStatus:$("midiPublishStatus"),
  refreshSongsBtn:$("refreshSongsBtn"),songsList:$("songsList"),songsEmpty:$("songsEmpty"),editDialog:$("editDialog"),editForm:$("editForm"),editHeading:$("editHeading"),
  editIndex:$("editIndex"),editTitle:$("editTitle"),editArtist:$("editArtist"),editReleaseYear:$("editReleaseYear"),editYoutubeViews:$("editYoutubeViews"),editDifficulty:$("editDifficulty"),
  editYoutubeUrl:$("editYoutubeUrl"),editSpotifyUrl:$("editSpotifyUrl"),editAppleMusicUrl:$("editAppleMusicUrl"),editDeezerUrl:$("editDeezerUrl"),saveEditBtn:$("saveEditBtn"),toast:$("toast"),
@@ -306,7 +306,7 @@ async function putRepoText(path,obj,message){
  var body={message:message||"Update request",content:btoa(binary),branch:BRANCH};if(current&&current.sha)body.sha=current.sha;
  return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path),{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify(body)})
 }
-async function requestMidiLab(sourcePath,style,clipStart){return putRepoText(".midi-lab/request.json",{sourcePath:sourcePath,melodyStyle:style||"bandle",clipStart:clipStart||"",nonce:String(Date.now())},"Run MIDI laboratory")}
+async function requestMidiLab(sourcePath,style,clipStart,revealSourcePath){return putRepoText(".midi-lab/request.json",{sourcePath:sourcePath,revealSourcePath:revealSourcePath||"",melodyStyle:style||"bandle",clipStart:clipStart||"",nonce:String(Date.now())},"Run MIDI laboratory")}
 async function waitMidiRun(after){var started=Date.now();while(Date.now()-started<90000){var d=await api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+MIDI_WORKFLOW+"/runs?branch="+BRANCH+"&per_page=10"),r=(d.workflow_runs||[]).find(function(x){return new Date(x.created_at).getTime()>=after-5000});if(r)return r;await new Promise(function(resolve){setTimeout(resolve,3000)})}return null}
 function renderMidiResult(data){
  if(!data||!Array.isArray(data.rounds))return;latestMidiManifest=data;E.midiResultsCard.classList.remove("hidden");E.midiRerenderBtn.classList.remove("hidden");E.midiResultTitle.textContent=data.sourceName||"MIDI";
@@ -322,7 +322,7 @@ async function waitMidiPublicResult(after){var started=Date.now();while(Date.now
 async function monitorMidi(run,startedAt){
  E.midiWorkflowLink.href=run.html_url;E.midiWorkflowLink.classList.remove("hidden");while(true){var latest=await api("/repos/"+OWNER+"/"+REPO+"/actions/runs/"+run.id);if(latest.status==="queued")setMidiJob(55,"Na fila","Preparando o renderizador MIDI.");else if(latest.status==="in_progress")setMidiJob(78,"Montando desafio","Escolhendo o trecho, classificando as pistas e renderizando somente 18 segundos.");else if(latest.status==="completed"){if(latest.conclusion==="success"){setMidiJob(94,"MIDI processado","Publicando as seis faixas no painel...");var result=await waitMidiPublicResult(startedAt);if(result){setMidiJob(100,"Pronto","As cinco etapas e a revelação estão disponíveis abaixo.");toast("Laboratório MIDI pronto.");return}setMidiJob(100,"Áudios gerados","O deploy ainda está finalizando. Use Recarregar em instantes.");return}setMidiJob(100,"Falha no MIDI","Abra a execução do GitHub para ver a etapa que falhou.");throw new Error("MIDI workflow "+latest.conclusion)}await new Promise(function(resolve){setTimeout(resolve,4500)})}
 }
-async function startMidiRequest(sourcePath){var startedAt=Date.now();setMidiJob(40,"Solicitando análise","Enviando preferências para o processador.");await requestMidiLab(sourcePath,E.midiMelodyStyle.value,E.midiClipStart.value.trim());setMidiJob(50,"Pedido enviado","Localizando a execução no GitHub.");var run=await waitMidiRun(startedAt);if(!run){setMidiJob(54,"Processamento iniciado","A execução foi enviada. Recarregue o resultado em alguns instantes.");return}await monitorMidi(run,startedAt)}
+async function startMidiRequest(sourcePath,revealSourcePath){var startedAt=Date.now();setMidiJob(40,"Solicitando análise","Enviando preferências para o processador.");await requestMidiLab(sourcePath,E.midiMelodyStyle.value,E.midiClipStart.value.trim(),revealSourcePath);setMidiJob(50,"Pedido enviado","Localizando a execução no GitHub.");var run=await waitMidiRun(startedAt);if(!run){setMidiJob(54,"Processamento iniciado","A execução foi enviada. Recarregue o resultado em alguns instantes.");return}await monitorMidi(run,startedAt)}
 async function dispatchMidiPublish(values){
  return api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+MIDI_PUBLISH_WORKFLOW+"/dispatches",{
    method:"POST",
@@ -332,7 +332,12 @@ async function dispatchMidiPublish(values){
      artist:values.artist,
      date:values.date,
      release_year:values.releaseYear||"",
-     difficulty:values.difficulty||""
+     difficulty:values.difficulty||"",
+     youtube_views:values.youtubeViews||"",
+     youtube_url:values.youtubeUrl||"",
+     spotify_url:values.spotifyUrl||"",
+     apple_music_url:values.appleMusicUrl||"",
+     deezer_url:values.deezerUrl||""
    }})
  })
 }
@@ -516,13 +521,27 @@ E.previewAudio.addEventListener("error",function(){E.previewStatus.textContent="
 E.previewAudio.addEventListener("ended",function(){E.previewStatus.textContent="Fim da faixa "+(previewTrackIndex+1)+".";});
 
 E.midiFile.addEventListener("change",function(){var f=E.midiFile.files&&E.midiFile.files[0];E.midiFileLabel.textContent=f?f.name:"Escolher arquivo MIDI"});
-["dragenter","dragover"].forEach(function(n){E.midiUploadZone.addEventListener(n,function(ev){ev.preventDefault();E.midiUploadZone.classList.add("drag")})});
-["dragleave","drop"].forEach(function(n){E.midiUploadZone.addEventListener(n,function(){E.midiUploadZone.classList.remove("drag")})});
+E.midiRevealFile.addEventListener("change",function(){var f=E.midiRevealFile.files&&E.midiRevealFile.files[0];E.midiRevealFileLabel.textContent=f?f.name:"Áudio original para revelação"});
+["dragenter","dragover"].forEach(function(n){E.midiUploadZone.addEventListener(n,function(ev){ev.preventDefault();E.midiUploadZone.classList.add("drag")});E.midiRevealUploadZone.addEventListener(n,function(ev){ev.preventDefault();E.midiRevealUploadZone.classList.add("drag")})});
+["dragleave","drop"].forEach(function(n){E.midiUploadZone.addEventListener(n,function(){E.midiUploadZone.classList.remove("drag")});E.midiRevealUploadZone.addEventListener(n,function(){E.midiRevealUploadZone.classList.remove("drag")})});
 E.midiRefreshBtn.addEventListener("click",function(){loadLatestMidiResult(false)});
 E.midiForm.addEventListener("submit",async function(ev){
- ev.preventDefault();var file=E.midiFile.files&&E.midiFile.files[0];if(!file){toast("Escolha um arquivo MIDI.");return}if(!/\.(mid|midi)$/i.test(file.name)){toast("Envie um arquivo .mid ou .midi.");return}
+ ev.preventDefault();
+ var file=E.midiFile.files&&E.midiFile.files[0],revealFile=E.midiRevealFile.files&&E.midiRevealFile.files[0];
+ if(!file){toast("Escolha um arquivo MIDI.");return}
+ if(!/\.(mid|midi)$/i.test(file.name)){toast("Envie um arquivo .mid ou .midi.");return}
+ if(!revealFile){toast("Escolha também o áudio original para a revelação.");return}
+ if(revealFile.size>MAX_FILE_MB*1024*1024){toast("O áudio original passa de "+MAX_FILE_MB+" MB.");return}
  E.midiRunBtn.disabled=true;E.midiRerenderBtn.disabled=true;E.midiWorkflowLink.classList.add("hidden");
- try{var path="midi-incoming/"+Date.now()+"-"+sanitizeFilename(file.name);setMidiJob(12,"Enviando MIDI","O arquivo é pequeno; o áudio só é renderizado depois da escolha dos 18s.");await uploadAudio(file,path);setMidiJob(30,"MIDI enviado","Iniciando análise automática.");await startMidiRequest(path);E.midiForm.reset();E.midiFileLabel.textContent="Escolher arquivo MIDI"}catch(err){console.error("midi lab",err);setMidiJob(100,"Não foi possível concluir",err&&err.status===403?"A key precisa de Contents em leitura e escrita.":"Confira a execução do laboratório MIDI.");toast("O laboratório MIDI encontrou um erro.")}finally{E.midiRunBtn.disabled=false;E.midiRerenderBtn.disabled=false}
+ try{
+   var stamp=Date.now(),path="midi-incoming/"+stamp+"-"+sanitizeFilename(file.name),revealPath="midi-reveal-incoming/"+stamp+"-"+sanitizeFilename(revealFile.name);
+   setMidiJob(10,"Enviando MIDI","Preparando a análise automática.");await uploadAudio(file,path);
+   setMidiJob(20,"Enviando áudio original","A revelação usará o mesmo trecho de 18 segundos.");await uploadAudio(revealFile,revealPath);
+   setMidiJob(30,"Arquivos enviados","Iniciando análise automática.");await startMidiRequest(path,revealPath);
+   E.midiForm.reset();E.midiFileLabel.textContent="Escolher arquivo MIDI";E.midiRevealFileLabel.textContent="Áudio original para revelação";
+ }catch(err){
+   console.error("midi lab",err);setMidiJob(100,"Não foi possível concluir",err&&err.status===403?"A key precisa de Contents em leitura e escrita.":"Confira a execução do laboratório MIDI.");toast("O laboratório MIDI encontrou um erro.")
+ }finally{E.midiRunBtn.disabled=false;E.midiRerenderBtn.disabled=false}
 });
 E.midiPublishBtn.addEventListener("click",async function(){
  if(!latestMidiManifest){toast("Gere e aprove um MIDI primeiro.");return}
@@ -531,7 +550,12 @@ E.midiPublishBtn.addEventListener("click",async function(){
    artist:E.midiPublishArtist.value.trim(),
    date:E.midiPublishDate.value,
    releaseYear:E.midiPublishYear.value.trim(),
-   difficulty:E.midiPublishDifficulty.value
+   difficulty:E.midiPublishDifficulty.value,
+   youtubeViews:E.midiPublishYoutubeViews.value.trim(),
+   youtubeUrl:E.midiPublishYoutubeUrl.value.trim(),
+   spotifyUrl:E.midiPublishSpotifyUrl.value.trim(),
+   appleMusicUrl:E.midiPublishAppleMusicUrl.value.trim(),
+   deezerUrl:E.midiPublishDeezerUrl.value.trim()
  };
  if(!values.title||!values.artist||!values.date){toast("Preencha título, artista e data.");return}
  var existing=(catalog.songs||[]).find(function(song){return String(song.date||"")===values.date});
@@ -556,7 +580,7 @@ E.midiPublishBtn.addEventListener("click",async function(){
 E.midiRerenderBtn.addEventListener("click",async function(){
  if(!latestMidiManifest||!latestMidiManifest.sourcePath){toast("Ainda não há MIDI para regenerar.");return}
  E.midiRunBtn.disabled=true;E.midiRerenderBtn.disabled=true;E.midiWorkflowLink.classList.add("hidden");
- try{setMidiJob(25,"Regenerando","Reutilizando o mesmo MIDI e o trecho já escolhido.");if(!E.midiClipStart.value.trim())E.midiClipStart.value=String(latestMidiManifest.clipStart||"");await startMidiRequest(latestMidiManifest.sourcePath)}catch(err){console.error("midi rerender",err);setMidiJob(100,"Não foi possível regenerar","Confira a execução do laboratório MIDI.");toast("Falha ao trocar o timbre.")}finally{E.midiRunBtn.disabled=false;E.midiRerenderBtn.disabled=false}
+ try{setMidiJob(25,"Regenerando","Reutilizando o mesmo MIDI e o trecho já escolhido.");if(!E.midiClipStart.value.trim())E.midiClipStart.value=String(latestMidiManifest.clipStart||"");await startMidiRequest(latestMidiManifest.sourcePath,latestMidiManifest.revealSourcePath||"")}catch(err){console.error("midi rerender",err);setMidiJob(100,"Não foi possível regenerar","Confira a execução do laboratório MIDI.");toast("Falha ao trocar o timbre.")}finally{E.midiRunBtn.disabled=false;E.midiRerenderBtn.disabled=false}
 });
 E.audioFile.addEventListener("change",function(){var f=E.audioFile.files&&E.audioFile.files[0];E.fileLabel.textContent=f?f.name:"Escolher arquivo de áudio"});
 ["dragenter","dragover"].forEach(function(n){E.uploadZone.addEventListener(n,function(ev){ev.preventDefault();E.uploadZone.classList.add("drag")})});["dragleave","drop"].forEach(function(n){E.uploadZone.addEventListener(n,function(){E.uploadZone.classList.remove("drag")})});

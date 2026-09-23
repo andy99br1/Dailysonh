@@ -564,6 +564,13 @@ def update_catalog(day, title, artist, start, source_name, release_year="", yout
         "rounds": [f"songs/{day}/round-{i}.ogg" for i in range(1, 6)],
     }
 
+    # Preserva estatísticas comunitárias caso elas sejam preenchidas por
+    # uma camada externa de coleta, sem apagá-las ao reprocessar o áudio.
+    if "communityStats" in previous:
+        entry["communityStats"] = previous["communityStats"]
+    if "statsEndpoint" in previous:
+        entry["statsEndpoint"] = previous["statsEndpoint"]
+
     songs = [s for s in catalog.get("songs", []) if s.get("date") != day]
     songs.append(entry)
     songs.sort(key=lambda s: s.get("date", ""))

@@ -43,6 +43,10 @@ on:
         description: "Link do Deezer (opcional)"
         required: false
         type: string
+      round_labels:
+        description: "Nomes das seis faixas em JSON"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -82,6 +86,7 @@ jobs:
           SPOTIFY_URL: ${{ inputs.spotify_url }}
           APPLE_MUSIC_URL: ${{ inputs.apple_music_url }}
           DEEZER_URL: ${{ inputs.deezer_url }}
+          ROUND_LABELS: ${{ inputs.round_labels }}
         run: |
           python - <<'PY'
           import json
@@ -119,6 +124,18 @@ jobs:
               except Exception:
                   version = 2
 
+          default_round_labels = ["Bateria", "Baixo", "Instrumentos 1", "Instrumentos 2", "Melodia", "Revelação"]
+          try:
+              incoming_round_labels = json.loads(os.environ.get("ROUND_LABELS", "") or "[]")
+          except Exception:
+              incoming_round_labels = []
+          round_labels = []
+          for i, default_label in enumerate(default_round_labels):
+              value = ""
+              if isinstance(incoming_round_labels, list) and i < len(incoming_round_labels):
+                  value = str(incoming_round_labels[i] or "").strip()
+              round_labels.append(value[:42] or default_label)
+
           entry = {
               "date": date,
               "title": title,
@@ -129,14 +146,7 @@ jobs:
               "version": version,
               "challengeRounds": 5,
               "safeRevealRound": 5,
-              "roundLabels": [
-                  "Bateria",
-                  "Baixo",
-                  "Instrumentos 1",
-                  "Instrumentos 2",
-                  "Melodia",
-                  "Revelação",
-              ],
+              "roundLabels": round_labels,
               "rounds": [f"songs/{date}/round-{n}.ogg" for n in range(1, 7)],
               "releaseYear": os.environ.get("RELEASE_YEAR", "").strip(),
               "youtubeViews": os.environ.get("YOUTUBE_VIEWS", "").strip(),

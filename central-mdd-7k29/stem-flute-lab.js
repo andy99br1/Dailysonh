@@ -18,6 +18,7 @@ var E={
   labJobBox:$("labJobBox"),labJobTitle:$("labJobTitle"),labJobPercent:$("labJobPercent"),labJobProgress:$("labJobProgress"),labJobMessage:$("labJobMessage"),labWorkflowLink:$("labWorkflowLink"),
   labResultsCard:$("labResultsCard"),labResultTitle:$("labResultTitle"),labResultMeta:$("labResultMeta"),labRefreshBtn:$("labRefreshBtn"),
   labClipStart:$("labClipStart"),labModel:$("labModel"),labVoiced:$("labVoiced"),stemTrackList:$("stemTrackList"),labAudio:$("labAudio"),labNowLabel:$("labNowLabel"),labAudioStatus:$("labAudioStatus"),
+  gamePreviewSection:$("gamePreviewSection"),gameRoundList:$("gameRoundList"),gameAudio:$("gameAudio"),gameNowLabel:$("gameNowLabel"),gameRoundLabel:$("gameRoundLabel"),
   menuBtn:$("menuBtn"),toast:$("toast")
 };
 
@@ -210,7 +211,7 @@ async function monitor(run,sourcePath){
   }
 }
 function iconFor(id){
-  return {preview:"★",flute:"♩",drums:"●",bass:"≈",guitar:"⌁",piano:"♬",other:"+",vocals:"V",original:"O"}[id]||"♪";
+  return {preview:"★",flute:"♩",drums:"●",bass:"≈",instruments:"I",guitar:"⌁",piano:"♬",other:"+",vocals:"V",original:"O"}[id]||"♪";
 }
 function subtitleFor(id){
   return {
@@ -218,8 +219,9 @@ function subtitleFor(id){
     flute:"Pitch contínuo da voz; sem MIDI",
     drums:"Stem separado",
     bass:"Stem separado",
-    guitar:"Stem separado",
-    piano:"Stem separado",
+    instruments:"Guitarra + piano + outros recombinados para recuperar corpo",
+    guitar:"Stem com reforço controlado de corpo",
+    piano:"Stem com reforço controlado de corpo",
     other:"Stem separado",
     vocals:"Só para comparar a transformação",
     original:"Os mesmos 18 segundos"
@@ -234,6 +236,55 @@ function selectTrack(track,button){
   E.labNowLabel.textContent=track.label;
   E.labAudioStatus.textContent=subtitleFor(track.id);
 }
+function selectGameRound(round,button){
+  if(!round||!E.gameAudio)return;
+  E.gameRoundList.querySelectorAll(".game-preview-round").forEach(function(node){node.classList.remove("active")});
+  if(button)button.classList.add("active");
+  E.gameAudio.pause();
+  E.gameAudio.src=round.url+"?_="+Date.now();
+  E.gameAudio.load();
+  E.gameNowLabel.textContent=round.label||("Faixa "+round.index);
+  E.gameRoundLabel.textContent="Faixa "+round.index+" de 5";
+}
+
+function renderGamePreview(rounds){
+  if(!E.gamePreviewSection||!E.gameRoundList)return;
+  if(!Array.isArray(rounds)||rounds.length!==5){
+    E.gamePreviewSection.classList.add("hidden");
+    return;
+  }
+
+  E.gamePreviewSection.classList.remove("hidden");
+  E.gameRoundList.innerHTML="";
+
+  rounds.forEach(function(round,index){
+    var button=document.createElement("button");
+    button.type="button";
+    button.className="game-preview-round";
+
+    var num=document.createElement("span");
+    num.textContent=String(round.index||index+1);
+
+    var label=document.createElement("strong");
+    label.textContent=round.label||("Faixa "+(index+1));
+
+    var detail=document.createElement("small");
+    detail.textContent=[
+      "Bateria",
+      "Bateria + baixo",
+      "Bateria + baixo + instrumentos",
+      "Bateria + baixo + instrumentos + flauta",
+      "Trecho original"
+    ][index]||"";
+
+    button.append(num,label,detail);
+    button.addEventListener("click",function(){selectGameRound(round,button)});
+    E.gameRoundList.appendChild(button);
+
+    if(index===0)selectGameRound(round,button);
+  });
+}
+
 function renderResult(data){
   if(!data||!Array.isArray(data.tracks))return;
   latestManifest=data;
@@ -244,6 +295,7 @@ function renderResult(data){
   E.labClipStart.textContent=start.toFixed(1)+"s";
   E.labModel.textContent=data.separationModel||"htdemucs_6s";
   E.labVoiced.textContent=data.flute&&data.flute.voicedPercent!==undefined?Number(data.flute.voicedPercent).toFixed(1)+"%":"—";
+  renderGamePreview(data.gameRounds);
 
   E.stemTrackList.innerHTML="";
   data.tracks.forEach(function(track,index){

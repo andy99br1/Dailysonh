@@ -175,7 +175,17 @@ jobs:
           reveal_index = len(selected_layers) + 1
           shutil.copy2(reveal, dest / f"round-{reveal_index}.ogg")
 
-          round_labels = [layer_labels[item] for item in selected_layers] + ["Revelação"]
+          incoming_labels = request.get("selectedLayerLabels")
+          if not isinstance(incoming_labels, list):
+              incoming_labels = []
+
+          round_labels = []
+          for index, layer in enumerate(selected_layers):
+              custom = ""
+              if index < len(incoming_labels):
+                  custom = str(incoming_labels[index] or "").strip()[:42]
+              round_labels.append(custom or layer_labels[layer])
+          round_labels.append("Revelação")
           total_rounds = len(selected_layers) + 1
 
           entry = {

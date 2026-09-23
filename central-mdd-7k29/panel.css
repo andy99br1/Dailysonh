@@ -483,3 +483,6 @@ body[data-admin-theme="day"] .midi-player-card{background:rgba(38,55,92,.035)}
 .midi-publish-actions .muted{font-size:7.5px}
 body[data-admin-theme="day"] .midi-publish-box{background:rgba(35,199,217,.045)}
 @media(max-width:600px){.midi-publish-actions .btn{width:100%}}
+
+.midi-upload-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:700px){.midi-upload-pair{grid-template-columns:1fr}}

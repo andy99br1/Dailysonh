@@ -16,7 +16,7 @@ var E={
  refreshSongsBtn:$("refreshSongsBtn"),songsList:$("songsList"),songsEmpty:$("songsEmpty"),editDialog:$("editDialog"),editForm:$("editForm"),editHeading:$("editHeading"),
  editIndex:$("editIndex"),editTitle:$("editTitle"),editArtist:$("editArtist"),editReleaseYear:$("editReleaseYear"),editYoutubeViews:$("editYoutubeViews"),editDifficulty:$("editDifficulty"),
  editYoutubeUrl:$("editYoutubeUrl"),editSpotifyUrl:$("editSpotifyUrl"),editAppleMusicUrl:$("editAppleMusicUrl"),editDeezerUrl:$("editDeezerUrl"),editCoverUrl:$("editCoverUrl"),saveEditBtn:$("saveEditBtn"),toast:$("toast"),
- previewDialog:$("previewDialog"),previewCloseBtn:$("previewCloseBtn"),previewTitle:$("previewTitle"),previewMeta:$("previewMeta"),previewTrackList:$("previewTrackList"),previewAudio:$("previewAudio"),previewNumber:$("previewNumber"),previewTrackName:$("previewTrackName"),previewStatus:$("previewStatus"),
+ previewDialog:$("previewDialog"),previewCloseBtn:$("previewCloseBtn"),previewFrame:$("previewFrame"),
  metricPlayers:$("metricPlayers"),metricPlayersSub:$("metricPlayersSub"),metricOnline:$("metricOnline"),metricOnlineSub:$("metricOnlineSub"),metricUnique:$("metricUnique"),metricUniqueSub:$("metricUniqueSub"),metricDuration:$("metricDuration"),metricDurationSub:$("metricDurationSub"),trafficTotal:$("trafficTotal"),
  trafficChart:$("trafficChart"),todaySongTitle:$("todaySongTitle"),todayChallenge:$("todayChallenge"),todayWins:$("todayWins"),todayFails:$("todayFails"),todayRate:$("todayRate"),
  roundBars:$("roundBars"),commonGuesses:$("commonGuesses"),audioErrors:$("audioErrors"),abandonRate:$("abandonRate"),completionRate:$("completionRate"),pageViews:$("pageViews"),
@@ -172,64 +172,20 @@ function renderGameStats(stats,songOverride){
  E.roundBars.innerHTML="";var max=Math.max.apply(Math,rounds.concat([failed,1]));rounds.concat([failed]).forEach(function(v,i){var wrap=document.createElement("div");wrap.className="round-bar";var bar=document.createElement("i");bar.style.height=Math.max(4,Math.round((v/max)*90))+"%";var label=document.createElement("small");label.textContent=i<roundCount?String(i+1):"×";wrap.append(bar,label);E.roundBars.appendChild(wrap)})
 }
 
-function previewLabels(song){
- var total=song&&Array.isArray(song.rounds)&&song.rounds.length?song.rounds.length:5;
- var custom=song&&Array.isArray(song.roundLabels)?song.roundLabels.slice(0,total):[];
- var defaults=total>=6?["Bateria","Baixo","Instrumentos 1","Instrumentos 2","Melodia","Revelação"]:["Bateria","Baixo","Instrumentos","Melodia","Revelação"];
- while(custom.length<total)custom.push(defaults[custom.length]||("Faixa "+(custom.length+1)));
- return custom.map(function(label,i){return String(label||defaults[i]||("Faixa "+(i+1)))})
-}
-function previewSource(song,index){
- if(!song||!Array.isArray(song.rounds)||!song.rounds[index])return"";
- var src=String(song.rounds[index]);
- return "/"+src.replace(/^\/+/, "")+(src.indexOf("?")>=0?"&":"?")+"v="+(song.version||1);
-}
-function selectPreviewTrack(index,autoplay){
- if(!previewSong)return;
- var labels=previewLabels(previewSong);
- index=Math.max(0,Math.min(Math.max(0,labels.length-1),Number(index)||0));
- previewTrackIndex=index;
- E.previewTrackList.querySelectorAll(".preview-track-btn").forEach(function(btn,i){btn.classList.toggle("active",i===index)});
- E.previewNumber.textContent=String(index+1);
- E.previewTrackName.textContent=labels[index];
- var src=previewSource(previewSong,index);
- E.previewAudio.pause();
- E.previewAudio.src=src;
- E.previewAudio.load();
- E.previewStatus.textContent="Faixa "+(index+1)+" · "+labels[index];
- if(autoplay){
-   var p=E.previewAudio.play();
-   if(p&&typeof p.catch==="function")p.catch(function(){});
- }
-}
 function openPreview(index){
  var song=catalog.songs[index];
- if(!song)return;
+ if(!song||!E.previewFrame)return;
  previewSong=song;
  previewTrackIndex=0;
- E.previewTitle.textContent=(song.artist?song.artist+" · ":"")+(song.title||"Sem título");
- E.previewMeta.textContent=prettyDate(song.date)+(String(song.date||"")>brazilDate()?" · Agendada":" · Publicada");
- E.previewTrackList.innerHTML="";
- var labels=previewLabels(song);
- labels.forEach(function(label,i){
-   var btn=document.createElement("button");
-   btn.type="button";
-   btn.className="preview-track-btn";
-   var num=document.createElement("b");num.textContent=String(i+1);
-   var name=document.createElement("span");name.textContent=label;
-   btn.append(num,name);
-   btn.addEventListener("click",function(){selectPreviewTrack(i,true)});
-   E.previewTrackList.appendChild(btn);
- });
- selectPreviewTrack(0,false);
+ E.previewFrame.src="/?adminPreview=1&previewDate="+encodeURIComponent(song.date)+"&_="+Date.now();
  E.previewDialog.showModal();
 }
 function closePreview(){
- try{E.previewAudio.pause();E.previewAudio.removeAttribute("src");E.previewAudio.load()}catch(_){}
+ if(E.previewFrame)E.previewFrame.src="about:blank";
  previewSong=null;
+ previewTrackIndex=0;
  if(E.previewDialog.open)E.previewDialog.close();
 }
-
 
 function decodeRepoContent(data){
  return JSON.parse(decodeURIComponent(escape(atob(String(data.content||"").replace(/\n/g,"")))));
@@ -682,8 +638,6 @@ E.disconnectBtn.addEventListener("click",function(){
 E.previewCloseBtn.addEventListener("click",closePreview);
 E.previewDialog.addEventListener("cancel",function(ev){ev.preventDefault();closePreview()});
 E.previewDialog.addEventListener("click",function(ev){if(ev.target===E.previewDialog)closePreview()});
-E.previewAudio.addEventListener("error",function(){E.previewStatus.textContent="Não consegui carregar esta faixa.";});
-E.previewAudio.addEventListener("ended",function(){E.previewStatus.textContent="Fim da faixa "+(previewTrackIndex+1)+".";});
 
 E.midiFile.addEventListener("change",function(){var f=E.midiFile.files&&E.midiFile.files[0];E.midiFileLabel.textContent=f?f.name:"Escolher arquivo MIDI"});
 E.midiRevealFile.addEventListener("change",function(){var f=E.midiRevealFile.files&&E.midiRevealFile.files[0];E.midiRevealFileLabel.textContent=f?f.name:"Áudio original para revelação"});

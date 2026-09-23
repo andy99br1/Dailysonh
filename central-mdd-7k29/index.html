@@ -12,7 +12,7 @@
     }
   </script>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=10">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=11">
 </head>
 <body class="auth-locked">
   <div class="app-shell">
@@ -306,6 +306,35 @@
             </div>
             <div class="lab-results-grid" id="labResults"></div>
           </article>
+
+          <article class="dash-card melody-lab-card">
+            <div class="card-title-row">
+              <div>
+                <span class="eyebrow">MELODIA</span>
+                <h2>Expressão da voz</h2>
+                <p class="lab-result-meta">Compara a melodia atual com duas versões que preservam slides, vibrato e dinâmica da voz.</p>
+              </div>
+              <button class="btn secondary small" id="melodyRunBtn" type="button">Gerar teste de melodia</button>
+            </div>
+
+            <div class="job-box hidden" id="melodyJobBox">
+              <div class="job-line"><strong id="melodyJobTitle">Preparando...</strong><span id="melodyJobPercent">0%</span></div>
+              <div class="progress-track"><span id="melodyJobProgress"></span></div>
+              <p id="melodyJobMessage"></p>
+              <a class="hidden" id="melodyWorkflowLink" target="_blank" rel="noopener">Ver execução no GitHub</a>
+            </div>
+
+            <div class="hidden melody-result-shell" id="melodyResultsCard">
+              <div class="melody-result-head">
+                <div>
+                  <strong id="melodyResultTitle">Último teste</strong>
+                  <span id="melodyResultMeta"></span>
+                </div>
+                <button class="btn secondary small" id="melodyRefreshBtn" type="button">Recarregar</button>
+              </div>
+              <div class="melody-results-grid" id="melodyResults"></div>
+            </div>
+          </article>
         </section>
 
         <section class="view" data-view-panel="settings">
@@ -425,6 +454,6 @@
       } catch (_) {}
     })();
   </script>
-  <script src="/central-mdd-7k29/panel.js?v=18"></script>
+  <script src="/central-mdd-7k29/panel.js?v=19"></script>
 </body>
 </html>

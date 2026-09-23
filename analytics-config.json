@@ -1,4 +1,5 @@
 {
   "endpoint": "https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-analytics",
-  "dashboardEndpoint": "https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-analytics?mode=dashboard"
+  "supabaseUrl": "https://kxoxlgiktwumooixedgu.supabase.co",
+  "supabasePublishableKey": "sb_publishable_-It1y0ZrgHKjEtPGgt6DYQ_m631G-u2"
 }

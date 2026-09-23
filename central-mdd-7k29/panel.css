@@ -323,23 +323,23 @@ body.auth-locked .login-card{
 
 /* Modo dia */
 body[data-admin-theme="day"]{
-  --bg:#f3f6fb;
-  --bg-2:#eef2f8;
-  --panel:#ffffff;
-  --panel-2:#f7f9fc;
-  --panel-3:#edf2f9;
-  --line:rgba(28,42,74,.10);
-  --text:#172038;
-  --muted:#71809d;
-  --shadow:0 14px 38px rgba(42,58,91,.09);
+  --bg:#dfe5ee;
+  --bg-2:#d7dee8;
+  --panel:#edf1f6;
+  --panel-2:#e6ebf1;
+  --panel-3:#dce3eb;
+  --line:rgba(28,42,74,.14);
+  --text:#1b2437;
+  --muted:#64728a;
+  --shadow:0 14px 38px rgba(42,58,91,.11);
   background:
-    radial-gradient(circle at 82% 5%,rgba(109,133,255,.10),transparent 28rem),
-    radial-gradient(circle at 22% 85%,rgba(35,199,217,.06),transparent 24rem),
+    radial-gradient(circle at 82% 5%,rgba(91,112,214,.10),transparent 28rem),
+    radial-gradient(circle at 22% 85%,rgba(35,160,175,.05),transparent 24rem),
     var(--bg)
 }
 body[data-admin-theme="day"] .sidebar{
-  background:linear-gradient(180deg,#ffffff 0%,#f5f8fc 100%);
-  border-right-color:rgba(28,42,74,.09)
+  background:linear-gradient(180deg,#e8edf3 0%,#dde4ec 100%);
+  border-right-color:rgba(28,42,74,.12)
 }
 body[data-admin-theme="day"] .nav-item{color:#687895}
 body[data-admin-theme="day"] .nav-item:hover{background:rgba(70,91,140,.06);color:#1d2943}
@@ -364,13 +364,13 @@ body[data-admin-theme="day"] .metric-card,
 body[data-admin-theme="day"] .dash-card,
 body[data-admin-theme="day"] .date-filter,
 body[data-admin-theme="day"] .login-card{
-  background:linear-gradient(145deg,#ffffff,#f9fbfe)
+  background:linear-gradient(145deg,#eef2f6,#e5eaf0)
 }
 body[data-admin-theme="day"] input,
 body[data-admin-theme="day"] select{
-  background:#f8faff;
+  background:#e3e8ee;
   color:#1a2540;
-  border-color:rgba(28,42,74,.12);
+  border-color:rgba(28,42,74,.15);
   color-scheme:light
 }
 body[data-admin-theme="day"] input:focus,
@@ -391,7 +391,7 @@ body[data-admin-theme="day"] .preview-player-card{
 }
 body[data-admin-theme="day"] .edit-dialog,
 body[data-admin-theme="day"] .preview-dialog{
-  background:#ffffff;
+  background:#e9eef3;
   color:#172038
 }
 body[data-admin-theme="day"] .close-btn{
@@ -404,7 +404,7 @@ body[data-admin-theme="day"] .upload-zone{
 body[data-admin-theme="day"] .empty-chart,
 body[data-admin-theme="day"] .empty-row{color:#94a0b7}
 body[data-admin-theme="day"] .theme-switch button.active{
-  background:#ffffff;
+  background:#d4dce6;
   color:#34466f;
   box-shadow:0 2px 8px rgba(42,58,91,.12)
 }

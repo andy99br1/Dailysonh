@@ -491,3 +491,14 @@ body[data-admin-theme="day"] .midi-publish-box{background:rgba(35,199,217,.045)}
 .midi-round-name:hover{border-bottom-color:var(--line)}
 .midi-round-name:focus{border-bottom-color:rgba(35,199,217,.75);background:rgba(35,199,217,.045)}
 .midi-round.active .midi-round-name{color:inherit}
+
+.midi-name-editor{margin:10px 0 12px;padding:10px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.02)}
+.midi-name-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.midi-name-head>div{display:grid;gap:2px}.midi-name-head strong{font-size:9px}
+.midi-name-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.midi-name-fields label{display:grid;gap:4px;font-size:7px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.midi-name-fields input{width:100%;min-width:0}
+.midi-name-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px}
+.midi-name-actions .muted{font-size:7px}
+body[data-admin-theme="day"] .midi-name-editor{background:rgba(38,55,92,.025)}
+@media(max-width:650px){.midi-name-fields{grid-template-columns:1fr}.midi-name-head{align-items:flex-start;flex-direction:column}.midi-name-head .btn{width:100%}}

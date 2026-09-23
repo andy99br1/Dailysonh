@@ -1,14 +1,14 @@
 {
-  "createdAt": "2026-09-23T06:47:30.364525+00:00",
-  "sourceName": "1790146003665-Marilia-Mendonca-Infiel___WWW.MIDISFREE.COM.mid",
-  "sourcePath": "midi-incoming/1790146003665-Marilia-Mendonca-Infiel___WWW.MIDISFREE.COM.mid",
-  "revealSourcePath": "midi-reveal-incoming/1790146003665-Marilia-Mendonca-Infiel-Video-Oficial-Marilia-Mendonca-youtube.mp3",
+  "createdAt": "2026-09-23T07:02:58.472408+00:00",
+  "sourceName": "1790146929558-Capital_InicialNao_Olhe_Pra_Tras_2.mid",
+  "sourcePath": "midi-incoming/1790146929558-Capital_InicialNao_Olhe_Pra_Tras_2.mid",
+  "revealSourcePath": "midi-reveal-incoming/1790146929558-YTDown.com_YouTube_Capital-Inicial-Nao-Olhe-Pra-Tras-Videoc_Media_pMGPz8x8wMU_007_128k.mp3",
   "revealMode": "original-audio",
-  "duration": 203.34,
-  "clipStart": 6.5,
+  "duration": 260.13,
+  "clipStart": 128.5,
   "clipSeconds": 18.0,
   "midiType": 0,
-  "ticksPerBeat": 480,
+  "ticksPerBeat": 120,
   "melodyStyle": "flute",
   "melodyStyleName": "Flauta / synth suave",
   "nameOverrides": {},
@@ -26,17 +26,19 @@
     "melody": {
       "channel": 3,
       "name": "Melodia da voz",
-      "sourceInstrument": "Piano",
-      "confidence": 95,
+      "sourceInstrument": "Lead square",
+      "confidence": 99,
       "lyricAlignment": 1.0
     }
   },
   "groups": {
     "instrument1": [
-      "Guitarra limpa"
+      "Guitarra jazz",
+      "Guitarra distorcida 1"
     ],
     "instrument2": [
-      "Violão nylon"
+      "Guitarra distorcida 2",
+      "Guitarra limpa"
     ]
   },
   "rounds": [
@@ -73,15 +75,18 @@
       "number": 3,
       "label": "+ Instrumentos 1",
       "addedChannels": [
-        4
+        0,
+        2
       ],
       "added": [
-        "Guitarra limpa"
+        "Guitarra jazz",
+        "Guitarra distorcida 1"
       ],
       "channels": [
         9,
         1,
-        4
+        0,
+        2
       ],
       "audio": "midi-lab/round-3.ogg"
     },
@@ -89,16 +94,20 @@
       "number": 4,
       "label": "+ Instrumentos 2",
       "addedChannels": [
-        10
+        4,
+        6
       ],
       "added": [
-        "Violão nylon"
+        "Guitarra distorcida 2",
+        "Guitarra limpa"
       ],
       "channels": [
         9,
         1,
+        0,
+        2,
         4,
-        10
+        6
       ],
       "audio": "midi-lab/round-4.ogg"
     },
@@ -114,8 +123,10 @@
       "channels": [
         9,
         1,
+        0,
+        2,
         4,
-        10,
+        6,
         3
       ],
       "audio": "midi-lab/round-5.ogg"
@@ -124,87 +135,126 @@
       "number": 6,
       "label": "Revelação",
       "addedChannels": [
+        0,
         1,
+        2,
         3,
         4,
-        9,
-        10
+        6,
+        9
       ],
       "added": [
+        "Guitarra jazz",
         "Baixo elétrico",
+        "Guitarra distorcida 1",
         "Melodia da voz",
+        "Guitarra distorcida 2",
         "Guitarra limpa",
-        "Bateria",
-        "Violão nylon"
+        "Bateria"
       ],
       "channels": [
+        0,
         1,
+        2,
         3,
         4,
-        9,
-        10
+        6,
+        9
       ],
       "audio": "midi-lab/round-6.ogg"
     }
   ],
   "channels": [
     {
+      "channel": 0,
+      "name": "Guitarra jazz",
+      "program": 26,
+      "family": "Guitarra",
+      "notes": 1367,
+      "notesInClip": 76,
+      "activeInClip": 18.0,
+      "monophony": 0.249,
+      "pitchBends": 0
+    },
+    {
       "channel": 1,
       "name": "Baixo elétrico",
       "program": 33,
       "family": "Baixo",
-      "notes": 317,
-      "notesInClip": 28,
-      "activeInClip": 15.01,
-      "monophony": 0.996,
-      "pitchBends": 292
+      "notes": 568,
+      "notesInClip": 37,
+      "activeInClip": 14.82,
+      "monophony": 0.993,
+      "pitchBends": 0
+    },
+    {
+      "channel": 2,
+      "name": "Guitarra distorcida 1",
+      "program": 30,
+      "family": "Guitarra",
+      "notes": 309,
+      "notesInClip": 19,
+      "activeInClip": 14.43,
+      "monophony": 0.069,
+      "pitchBends": 434
     },
     {
       "channel": 3,
       "name": "Melodia da voz",
-      "program": 0,
-      "family": "Piano",
-      "notes": 314,
-      "notesInClip": 20,
-      "activeInClip": 5.11,
-      "monophony": 1.0,
+      "program": 80,
+      "family": "Synth lead",
+      "notes": 317,
+      "notesInClip": 32,
+      "activeInClip": 10.17,
+      "monophony": 0.993,
       "pitchBends": 0
     },
     {
       "channel": 4,
+      "name": "Guitarra distorcida 2",
+      "program": 30,
+      "family": "Guitarra",
+      "notes": 466,
+      "notesInClip": 17,
+      "activeInClip": 11.72,
+      "monophony": 0.158,
+      "pitchBends": 801
+    },
+    {
+      "channel": 5,
+      "name": "Guitarra distorcida",
+      "program": 30,
+      "family": "Guitarra",
+      "notes": 185,
+      "notesInClip": 0,
+      "activeInClip": 0.0,
+      "monophony": 0.958,
+      "pitchBends": 1206
+    },
+    {
+      "channel": 6,
       "name": "Guitarra limpa",
       "program": 27,
       "family": "Guitarra",
-      "notes": 2677,
-      "notesInClip": 253,
-      "activeInClip": 18.0,
-      "monophony": 0.017,
-      "pitchBends": 0
+      "notes": 72,
+      "notesInClip": 21,
+      "activeInClip": 4.71,
+      "monophony": 0.49,
+      "pitchBends": 48
     },
     {
       "channel": 9,
       "name": "Bateria",
-      "program": 0,
+      "program": null,
       "family": "Bateria",
-      "notes": 3265,
-      "notesInClip": 293,
+      "notes": 2246,
+      "notesInClip": 188,
       "activeInClip": 18.0,
-      "monophony": 0.192,
+      "monophony": 0.495,
       "pitchBends": 0
-    },
-    {
-      "channel": 10,
-      "name": "Violão nylon",
-      "program": 24,
-      "family": "Guitarra",
-      "notes": 108,
-      "notesInClip": 32,
-      "activeInClip": 16.39,
-      "monophony": 0.598,
-      "pitchBends": 134
     }
   ],
-  "lyricsDetected": 312,
+  "lyricsDetected": 317,
   "availableMelodyStyles": [
     {
       "id": "bandle",

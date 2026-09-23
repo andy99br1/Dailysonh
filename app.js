@@ -404,12 +404,16 @@
   async function refreshCommunityStats() {
     renderCommunityStats();
 
-    if (!song || !song.statsEndpoint) return;
+    var statsUrl = song && song.statsEndpoint
+      ? song.statsEndpoint
+      : (analyticsConfig && analyticsConfig.endpoint ? analyticsConfig.endpoint : "");
+
+    if (!song || !statsUrl) return;
 
     try {
-      var separator = song.statsEndpoint.indexOf("?") >= 0 ? "&" : "?";
+      var separator = statsUrl.indexOf("?") >= 0 ? "&" : "?";
       var response = await fetch(
-        song.statsEndpoint + separator + "date=" + encodeURIComponent(song.date),
+        statsUrl + separator + "date=" + encodeURIComponent(song.date),
         { cache: "no-store" }
       );
 

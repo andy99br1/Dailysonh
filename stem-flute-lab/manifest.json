@@ -1,23 +1,24 @@
 {
   "version": 1,
-  "createdAt": "2026-09-23T09:19:09.845887+00:00",
+  "createdAt": "2026-09-23T09:34:07.523598+00:00",
   "sourceName": "1790152240590-Marilia-Mendonca-Infiel-Video-Oficial-Marilia-Mendonca-youtube.mp3",
   "sourcePath": "stem-flute-incoming/1790152240590-Marilia-Mendonca-Infiel-Video-Oficial-Marilia-Mendonca-youtube.mp3",
-  "clipStart": 102.0,
+  "clipStart": 55.0,
   "clipSeconds": 18.0,
   "selection": {
     "duration": 209.189,
-    "candidates": 126,
-    "score": 0.8386
+    "candidates": 1,
+    "score": null,
+    "mode": "manual"
   },
   "separationModel": "Hybrid: htdemucs_ft (drums/bass) + BS-Roformer-SW (vocals/instruments)",
   "voiceTransform": "stabilized-note flute (pYIN + note cleanup, no MIDI)",
   "instrumentBody": "recombined accompaniment + filtered residual body restoration",
   "webAudioEncoding": "Ogg Vorbis q8",
   "flute": {
-    "voicedPercent": 79.1,
-    "medianHz": 387.32,
-    "noteSegments": 49
+    "voicedPercent": 81.1,
+    "medianHz": 248.26,
+    "noteSegments": 60
   },
   "tracks": [
     {

@@ -112,12 +112,31 @@ async function uploadAudio(file,path){
   }
   return response.status===204?null:response.json();
 }
-async function dispatch(path){
-  return api("/actions/workflows/"+WORKFLOW+"/dispatches",{
-    method:"POST",
+async function putRepoText(path,obj,message){
+  var current=null;
+  try{
+    current=await api("/contents/"+encodeURI(path));
+  }catch(err){
+    if(!err||err.status!==404)throw err;
+  }
+  var json=JSON.stringify(obj,null,2)+"\n";
+  var bytes=new TextEncoder().encode(json),binary="";
+  for(var i=0;i<bytes.length;i+=0x8000){
+    binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+  }
+  var body={message:message||"Update Stem + Flute Lab request",content:btoa(binary),branch:BRANCH};
+  if(current&&current.sha)body.sha=current.sha;
+  return api("/contents/"+encodeURI(path),{
+    method:"PUT",
     headers:headers({"Content-Type":"application/json"}),
-    body:JSON.stringify({ref:BRANCH,inputs:{audio_path:path}})
+    body:JSON.stringify(body)
   });
+}
+async function requestLab(path){
+  return putRepoText(".stem-flute-lab/request.json",{
+    sourcePath:path,
+    nonce:String(Date.now())
+  },"Run isolated Stem + Flute Lab");
 }
 async function waitRun(after){
   var started=Date.now();
@@ -145,7 +164,7 @@ async function fetchManifest(){
 }
 async function waitPublishedResult(sourcePath){
   var started=Date.now();
-  while(Date.now()-started<180000){
+  while(Date.now()-started<900000){
     try{
       var data=await fetchManifest();
       if(data&&String(data.sourcePath||"")===String(sourcePath||"")){
@@ -298,20 +317,21 @@ E.labForm.addEventListener("submit",async function(ev){
     var path="stem-flute-incoming/"+stamp+"-"+sanitizeFilename(file.name);
     setJob(8,"Enviando música","Salvando o arquivo no ambiente de teste.");
     await uploadAudio(file,path);
-    setJob(24,"Upload concluído","Iniciando o laboratório no GitHub.");
-    var startedAt=Date.now();
-    await dispatch(path);
-    var run=await waitRun(startedAt);
-    if(!run){
-      setJob(34,"Teste iniciado","A execução foi enviada. Recarregue o resultado em alguns minutos.");
-      return;
+    setJob(24,"Upload concluído","Criando o pedido do laboratório.");
+    await requestLab(path);
+    setJob(38,"Teste iniciado","O GitHub está escolhendo os 18s, separando os stems e criando a flauta. Pode levar alguns minutos.");
+    var result=await waitPublishedResult(path);
+    if(result){
+      setJob(100,"Teste pronto","Ouça o mix sem voz + flauta e compare as faixas abaixo.");
+      toast("Stem + Flauta pronto.");
+    }else{
+      setJob(100,"Ainda processando","O GitHub pode estar terminando. Use Recarregar em alguns instantes.");
     }
-    await monitor(run,path);
     E.labForm.reset();
     E.labFileLabel.textContent="Escolher MP3 ou áudio";
   }catch(err){
     console.error("stem flute lab",err);
-    setJob(100,"Não foi possível concluir",err&&err.status===403?"O token precisa de Contents e Actions.":"Confira a execução do laboratório.");
+    setJob(100,"Não foi possível concluir",err&&err.status===403?"O token do painel precisa de permissão de Contents em leitura e escrita.":"Confira o upload e tente novamente.");
     toast("O teste encontrou um erro.");
   }finally{
     E.labRunBtn.disabled=false;

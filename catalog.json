@@ -28,7 +28,7 @@
       "date": "2026-09-22",
       "title": "Filha",
       "artist": "Rick e Renner",
-      "clipStart": 163.0,
+      "clipStart": 163,
       "source": "upload",
       "sourceName": "1790128434136-Rick-Renner-Filha-Warner-Music-Brasil-youtube.mp3",
       "version": 1,
@@ -47,31 +47,6 @@
         "songs/2026-09-22/round-4.ogg",
         "songs/2026-09-22/round-5.ogg"
       ]
-    },
-    {
-      "date": "2026-09-23",
-      "title": "Por Onde Andei",
-      "artist": "Nando Reis e Os Infernais",
-      "clipStart": 137.0,
-      "source": "upload",
-      "sourceName": "1790129697892-Por-Onde-Andei-Videoclipe-oficial-Nando-Reis-e-Os-Infernais-Nando-Reis-youtube.mp3",
-      "version": 1,
-      "releaseYear": "2004",
-      "youtubeViews": "29 milhões",
-      "difficulty": "Médio",
-      "youtubeUrl": "",
-      "spotifyUrl": "",
-      "appleMusicUrl": "",
-      "deezerUrl": "",
-      "safeRevealRound": 4,
-      "rounds": [
-        "songs/2026-09-23/round-1.ogg",
-        "songs/2026-09-23/round-2.ogg",
-        "songs/2026-09-23/round-3.ogg",
-        "songs/2026-09-23/round-4.ogg",
-        "songs/2026-09-23/round-5.ogg"
-      ]
     }
   ]
 }
-

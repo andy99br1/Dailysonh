@@ -88,7 +88,14 @@ async function connect(value){
  return true;
 }
 async function getRepoFile(path){return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path)+"?ref="+encodeURIComponent(BRANCH))}
-async function loadCatalog(){var data=await getRepoFile("catalog.json");catalogSha=data.sha;var decoded=decodeURIComponent(escape(atob(String(data.content||"").replace(/\n/g,""))));catalog=JSON.parse(decoded);if(!Array.isArray(catalog.songs))catalog.songs=[];renderSongs();renderSelectedChallenge()}
+async function loadCatalog(){
+ var r=await fetch("/catalog.json?_="+Date.now(),{cache:"no-store"});
+ if(!r.ok)throw new Error("catalog "+r.status);
+ catalog=await r.json();
+ if(!Array.isArray(catalog.songs))catalog.songs=[];
+ renderSongs();
+ renderSelectedChallenge();
+}
 function renderSongs(){
  E.songsList.innerHTML="";var songs=catalog.songs.slice().sort(function(a,b){return String(b.date||"").localeCompare(String(a.date||""))});E.songsEmpty.classList.toggle("hidden",songs.length>0);
  songs.forEach(function(song){var idx=catalog.songs.indexOf(song),row=document.createElement("div");row.className="song-row";
@@ -123,7 +130,14 @@ function renderGameStats(stats){
  E.roundBars.innerHTML="";var max=Math.max.apply(Math,rounds.concat([failed,1]));rounds.concat([failed]).forEach(function(v,i){var wrap=document.createElement("div");wrap.className="round-bar";var bar=document.createElement("i");bar.style.height=Math.max(4,Math.round((v/max)*90))+"%";var label=document.createElement("small");label.textContent=i<5?String(i+1):"×";wrap.append(bar,label);E.roundBars.appendChild(wrap)})
 }
 function openEdit(index){var s=catalog.songs[index];if(!s)return;E.editIndex.value=String(index);E.editHeading.textContent=s.title||"Música";E.editTitle.value=s.title||"";E.editArtist.value=s.artist||"";E.editReleaseYear.value=s.releaseYear||"";E.editYoutubeViews.value=s.youtubeViews||"";E.editDifficulty.value=s.difficulty||"";E.editYoutubeUrl.value=s.youtubeUrl||"";E.editSpotifyUrl.value=s.spotifyUrl||"";E.editAppleMusicUrl.value=s.appleMusicUrl||"";E.editDeezerUrl.value=s.deezerUrl||"";E.editDialog.showModal()}
-async function saveCatalog(){var json=JSON.stringify(catalog,null,2)+"\n",bytes=new TextEncoder().encode(json),binary="";for(var i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));var r=await api("/repos/"+OWNER+"/"+REPO+"/contents/catalog.json",{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({message:"Update song metadata from admin dashboard",content:btoa(binary),sha:catalogSha,branch:BRANCH})});catalogSha=r.content.sha}
+async function saveCatalog(){
+ var current=await getRepoFile("catalog.json");
+ catalogSha=current.sha;
+ var json=JSON.stringify(catalog,null,2)+"\n",bytes=new TextEncoder().encode(json),binary="";
+ for(var i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ var r=await api("/repos/"+OWNER+"/"+REPO+"/contents/catalog.json",{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({message:"Update song metadata from admin dashboard",content:btoa(binary),sha:catalogSha,branch:BRANCH})});
+ catalogSha=r.content.sha
+}
 function setJob(percent,title,message){E.jobBox.classList.remove("hidden");E.jobPercent.textContent=percent+"%";E.jobProgress.style.width=percent+"%";E.jobTitle.textContent=title;E.jobMessage.textContent=message||""}
 async function uploadAudio(file,path){var b64=await fileToBase64(file);return api("/repos/"+OWNER+"/"+REPO+"/contents/"+encodeURI(path),{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({message:"Upload audio from Música do Dia dashboard",content:b64,branch:BRANCH})})}
 async function dispatch(path,v){return api("/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+WORKFLOW+"/dispatches",{method:"POST",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({ref:BRANCH,inputs:{audio_path:path,title:v.title,artist:v.artist,date:v.date,release_year:v.releaseYear,youtube_views:v.youtubeViews,difficulty:v.difficulty,youtube_url:v.youtubeUrl,spotify_url:v.spotifyUrl,apple_music_url:v.appleMusicUrl,deezer_url:v.deezerUrl,clip_start:v.clipStart}})})}
@@ -164,33 +178,30 @@ async function refreshDashboard(){
  updateDateFilterUi();
  renderSelectedChallenge();
 
- var base=analyticsConfig&&analyticsConfig.supabaseUrl;
- var key=analyticsConfig&&analyticsConfig.supabasePublishableKey;
- if(!base||!key){
+ var endpoint=analyticsConfig&&analyticsConfig.endpoint;
+ if(!endpoint){
    E.analyticsWarning.classList.remove("hidden");
    return;
  }
 
  try{
-   var r=await fetch(base+"/rest/v1/rpc/musicadodia_dashboard_stats",{
-     method:"POST",
-     headers:{
-       "Content-Type":"application/json",
-       "apikey":key
-     },
-     body:JSON.stringify({p_date:selectedDate,p_days:7}),
-     cache:"no-store"
-   });
-   if(!r.ok)throw new Error("analytics "+r.status);
+   var sep=endpoint.indexOf("?")>=0?"&":"?";
+   var url=endpoint+sep+"mode=dashboard&range=7d&date="+encodeURIComponent(selectedDate)+"&_="+Date.now();
+   var r=await fetch(url,{cache:"no-store"});
+   if(!r.ok){
+     var body="";
+     try{body=await r.text()}catch(_){}
+     throw new Error("analytics "+r.status+" "+body);
+   }
    var data=await r.json();
    renderAnalytics(data);
    if(selectedDate!==brazilDate())E.metricOnline.textContent="—";
    E.analyticsWarning.classList.add("hidden");
  }catch(err){
-   console.error("analytics rpc",err);
+   console.error("analytics edge",err);
    E.analyticsWarning.classList.remove("hidden");
    E.analyticsWarning.querySelector("strong").textContent="Não consegui carregar as estatísticas";
-   E.analyticsWarning.querySelector("span").textContent="Os dados continuam salvos no Supabase. Tente atualizar o painel.";
+   E.analyticsWarning.querySelector("span").textContent="Os dados continuam salvos no Supabase. Atualize o painel para tentar novamente.";
  }
 }
 function renderAnalytics(data){

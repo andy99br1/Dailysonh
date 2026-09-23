@@ -4,7 +4,7 @@
       "date": "2026-09-21",
       "title": "Secretária (2001) - Amado Batista (youtube)",
       "artist": "Amado Batista",
-      "clipStart": 129.0,
+      "clipStart": 129,
       "source": "upload",
       "sourceName": "Amado Batista - Secretária (2001) - Amado Batista (youtube).mp3",
       "version": 9,
@@ -15,7 +15,14 @@
         "songs/2026-09-21/round-3.ogg",
         "songs/2026-09-21/round-4.ogg",
         "songs/2026-09-21/round-5.ogg"
-      ]
+      ],
+      "releaseYear": "",
+      "youtubeViews": "",
+      "difficulty": "",
+      "youtubeUrl": "",
+      "spotifyUrl": "",
+      "appleMusicUrl": "",
+      "deezerUrl": ""
     }
   ]
 }

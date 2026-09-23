@@ -24,6 +24,9 @@
     guessForm: el("guessForm"),
     guessInput: el("guessInput"),
     guessBtn: el("guessBtn"),
+    closeGuessBtn: el("closeGuessBtn"),
+    cancelGuessBtn: el("cancelGuessBtn"),
+    guessSkipBtn: el("guessSkipBtn"),
     attempts: el("attempts"),
     message: el("message"),
     reveal: el("reveal"),
@@ -943,16 +946,22 @@
     }
   }
 
+  function closeGuessForm() {
+    E.guessForm.classList.add("hidden");
+    if (E.guessInput) E.guessInput.blur();
+  }
+
   function toggleGuessForm() {
     if (!song || finished) return;
 
     var opening = E.guessForm.classList.contains("hidden");
-    E.guessForm.classList.toggle("hidden");
-
     if (opening) {
+      E.guessForm.classList.remove("hidden");
       setTimeout(function () {
         E.guessInput.focus();
       }, 0);
+    } else {
+      closeGuessForm();
     }
   }
 
@@ -1086,6 +1095,12 @@
   E.forwardBtn.addEventListener("click", function () { seekBy(5); });
   E.skipBtn.addEventListener("click", nextOrSkip);
   E.openGuessBtn.addEventListener("click", toggleGuessForm);
+  E.closeGuessBtn.addEventListener("click", closeGuessForm);
+  E.cancelGuessBtn.addEventListener("click", closeGuessForm);
+  E.guessSkipBtn.addEventListener("click", function () {
+    closeGuessForm();
+    nextOrSkip();
+  });
   E.themeToggle.addEventListener("click", function (event) {
     event.stopPropagation();
     toggleThemeMenu();
@@ -1104,7 +1119,10 @@
   });
 
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") closeThemeMenu();
+    if (event.key === "Escape") {
+      closeThemeMenu();
+      closeGuessForm();
+    }
   });
 
   E.seekBar.addEventListener("input", function () {

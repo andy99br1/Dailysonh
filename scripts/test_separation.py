@@ -198,7 +198,9 @@ def main():
             except ValueError:
                 raise SystemExit("--clip-start precisa ser um número em segundos")
         else:
-            start = pu.choose_clip_start(source, work / "selection")
+            selection_work = work / "selection"
+            selection_work.mkdir(parents=True, exist_ok=True)
+            start = pu.choose_clip_start(source, selection_work)
 
         duration = audio_duration(source)
         if duration > 0:

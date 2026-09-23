@@ -4,7 +4,7 @@ var OWNER="andy99br1",REPO="Dailysonh",BRANCH="main",API="https://api.github.com
 function $(id){return document.getElementById(id)}
 var E={
  loginView:$("loginView"),panel:$("panel"),connectForm:$("connectForm"),tokenInput:$("tokenInput"),disconnectBtn:$("disconnectBtn"),
- githubUser:$("githubUser"),connectionLabel:$("connectionLabel"),menuBtn:$("menuBtn"),sectionTitle:$("sectionTitle"),sectionEyebrow:$("sectionEyebrow"),
+ githubUser:$("githubUser"),connectionLabel:$("connectionLabel"),menuBtn:$("menuBtn"),themeDayBtn:$("themeDayBtn"),themeNightBtn:$("themeNightBtn"),adminThemeColor:$("adminThemeColor"),sectionTitle:$("sectionTitle"),sectionEyebrow:$("sectionEyebrow"),
  songForm:$("songForm"),audioFile:$("audioFile"),uploadZone:$("uploadZone"),fileLabel:$("fileLabel"),songTitle:$("songTitle"),songArtist:$("songArtist"),songDateInput:$("songDateInput"),
  releaseYearInput:$("releaseYearInput"),difficultyInput:$("difficultyInput"),youtubeViewsInput:$("youtubeViewsInput"),clipStartInput:$("clipStartInput"),
  youtubeUrlInput:$("youtubeUrlInput"),spotifyUrlInput:$("spotifyUrlInput"),appleMusicUrlInput:$("appleMusicUrlInput"),deezerUrlInput:$("deezerUrlInput"),publishBtn:$("publishBtn"),
@@ -32,6 +32,21 @@ async function api(path,options){
  if(response.status===204)return null;return response.json()
 }
 function toast(message){E.toast.textContent=message;E.toast.classList.remove("hidden");clearTimeout(toastTimer);toastTimer=setTimeout(function(){E.toast.classList.add("hidden")},3000)}
+
+function applyAdminTheme(theme){
+ theme=theme==="day"?"day":"night";
+ document.body.setAttribute("data-admin-theme",theme);
+ localStorage.setItem("musicadodia:admin-theme",theme);
+ if(E.themeDayBtn)E.themeDayBtn.classList.toggle("active",theme==="day");
+ if(E.themeNightBtn)E.themeNightBtn.classList.toggle("active",theme==="night");
+ if(E.adminThemeColor)E.adminThemeColor.setAttribute("content",theme==="day"?"#f3f6fb":"#0b1230");
+}
+function loadAdminTheme(){
+ var saved=localStorage.getItem("musicadodia:admin-theme");
+ if(saved!=="day"&&saved!=="night")saved="night";
+ applyAdminTheme(saved);
+}
+
 function brazilDate(){var p=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),v={};p.forEach(function(x){if(x.type!=="literal")v[x.type]=x.value});return v.year+"-"+v.month+"-"+v.day}
 function addDays(date,days){var p=String(date||"").split("-").map(Number);if(p.length!==3||!p[0])return brazilDate();var d=new Date(Date.UTC(p[0],p[1]-1,p[2]));d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
 function longDate(date){if(!date)return"—";var p=date.split("-").map(Number);return new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",weekday:"short",day:"2-digit",month:"short",year:"numeric"}).format(new Date(Date.UTC(p[0],p[1]-1,p[2]))).replace(/\./g,"")}
@@ -282,6 +297,8 @@ function switchView(name){
 document.querySelectorAll(".nav-item").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.view)})});
 document.querySelectorAll("[data-view-jump]").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.viewJump)})});
 E.menuBtn.addEventListener("click",function(){document.querySelector(".sidebar").classList.toggle("open")});
+E.themeDayBtn.addEventListener("click",function(){applyAdminTheme("day")});
+E.themeNightBtn.addEventListener("click",function(){applyAdminTheme("night")});
 E.connectForm.addEventListener("submit",async function(ev){ev.preventDefault();var btn=ev.submitter;if(btn)btn.disabled=true;try{await connect(E.tokenInput.value);E.tokenInput.value=""}catch(err){toast(err.status===401?"Token inválido ou expirado.":err.status===403?"O token não tem acesso suficiente ao Dailysonh.":"Não consegui conectar ao GitHub. A key salva não foi apagada.")}finally{if(btn)btn.disabled=false}});
 E.disconnectBtn.addEventListener("click",function(){
  clearToken();
@@ -317,6 +334,7 @@ E.nextDateBtn.addEventListener("click",function(){setDashboardDate(addDays(selec
 E.todayDateBtn.addEventListener("click",function(){setDashboardDate(brazilDate())});
 
 async function boot(){
+ loadAdminTheme();
  setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();
  var st=storedToken();
  if(!st)return;
@@ -331,5 +349,6 @@ async function boot(){
    }
  });
 }
+loadAdminTheme();
 boot();
 })();

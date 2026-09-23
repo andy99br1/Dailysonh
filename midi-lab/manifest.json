@@ -1,0 +1,277 @@
+{
+  "createdAt": "2026-09-23T05:00:25.388976+00:00",
+  "sourceName": "1790139450121-Capital_InicialNao_Olhe_Pra_Tras_2.mid",
+  "sourcePath": "midi-incoming/1790139450121-Capital_InicialNao_Olhe_Pra_Tras_2.mid",
+  "duration": 260.13,
+  "clipStart": 128.5,
+  "clipSeconds": 18.0,
+  "midiType": 0,
+  "ticksPerBeat": 120,
+  "melodyStyle": "flute",
+  "melodyStyleName": "Flauta / synth suave",
+  "roles": {
+    "drums": {
+      "channel": 9,
+      "name": "Bateria",
+      "confidence": 99
+    },
+    "bass": {
+      "channel": 1,
+      "name": "Baixo elétrico",
+      "confidence": 99
+    },
+    "melody": {
+      "channel": 3,
+      "name": "Melodia da voz",
+      "sourceInstrument": "Lead square",
+      "confidence": 99,
+      "lyricAlignment": 1.0
+    }
+  },
+  "groups": {
+    "instrument1": [
+      "Guitarra jazz",
+      "Guitarra distorcida 1"
+    ],
+    "instrument2": [
+      "Guitarra distorcida 2",
+      "Guitarra limpa"
+    ]
+  },
+  "rounds": [
+    {
+      "number": 1,
+      "label": "Bateria",
+      "addedChannels": [
+        9
+      ],
+      "added": [
+        "Bateria"
+      ],
+      "channels": [
+        9
+      ],
+      "audio": "midi-lab/round-1.ogg"
+    },
+    {
+      "number": 2,
+      "label": "+ Baixo",
+      "addedChannels": [
+        1
+      ],
+      "added": [
+        "Baixo elétrico"
+      ],
+      "channels": [
+        9,
+        1
+      ],
+      "audio": "midi-lab/round-2.ogg"
+    },
+    {
+      "number": 3,
+      "label": "+ Instrumentos 1",
+      "addedChannels": [
+        0,
+        2
+      ],
+      "added": [
+        "Guitarra jazz",
+        "Guitarra distorcida 1"
+      ],
+      "channels": [
+        9,
+        1,
+        0,
+        2
+      ],
+      "audio": "midi-lab/round-3.ogg"
+    },
+    {
+      "number": 4,
+      "label": "+ Instrumentos 2",
+      "addedChannels": [
+        4,
+        6
+      ],
+      "added": [
+        "Guitarra distorcida 2",
+        "Guitarra limpa"
+      ],
+      "channels": [
+        9,
+        1,
+        0,
+        2,
+        4,
+        6
+      ],
+      "audio": "midi-lab/round-4.ogg"
+    },
+    {
+      "number": 5,
+      "label": "+ Melodia",
+      "addedChannels": [
+        3
+      ],
+      "added": [
+        "Melodia da voz"
+      ],
+      "channels": [
+        9,
+        1,
+        0,
+        2,
+        4,
+        6,
+        3
+      ],
+      "audio": "midi-lab/round-5.ogg"
+    },
+    {
+      "number": 6,
+      "label": "Revelação",
+      "addedChannels": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        6,
+        9
+      ],
+      "added": [
+        "Guitarra jazz",
+        "Baixo elétrico",
+        "Guitarra distorcida 1",
+        "Melodia da voz",
+        "Guitarra distorcida 2",
+        "Guitarra limpa",
+        "Bateria"
+      ],
+      "channels": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        6,
+        9
+      ],
+      "audio": "midi-lab/round-6.ogg"
+    }
+  ],
+  "channels": [
+    {
+      "channel": 0,
+      "name": "Guitarra jazz",
+      "program": 26,
+      "family": "Guitarra",
+      "notes": 1367,
+      "notesInClip": 76,
+      "activeInClip": 18.0,
+      "monophony": 0.249,
+      "pitchBends": 0
+    },
+    {
+      "channel": 1,
+      "name": "Baixo elétrico",
+      "program": 33,
+      "family": "Baixo",
+      "notes": 568,
+      "notesInClip": 37,
+      "activeInClip": 14.82,
+      "monophony": 0.993,
+      "pitchBends": 0
+    },
+    {
+      "channel": 2,
+      "name": "Guitarra distorcida 1",
+      "program": 30,
+      "family": "Guitarra",
+      "notes": 309,
+      "notesInClip": 19,
+      "activeInClip": 14.43,
+      "monophony": 0.069,
+      "pitchBends": 434
+    },
+    {
+      "channel": 3,
+      "name": "Melodia da voz",
+      "program": 80,
+      "family": "Synth lead",
+      "notes": 317,
+      "notesInClip": 32,
+      "activeInClip": 10.17,
+      "monophony": 0.993,
+      "pitchBends": 0
+    },
+    {
+      "channel": 4,
+      "name": "Guitarra distorcida 2",
+      "program": 30,
+      "family": "Guitarra",
+      "notes": 466,
+      "notesInClip": 17,
+      "activeInClip": 11.72,
+      "monophony": 0.158,
+      "pitchBends": 801
+    },
+    {
+      "channel": 5,
+      "name": "Guitarra distorcida",
+      "program": 30,
+      "family": "Guitarra",
+      "notes": 185,
+      "notesInClip": 0,
+      "activeInClip": 0.0,
+      "monophony": 0.958,
+      "pitchBends": 1206
+    },
+    {
+      "channel": 6,
+      "name": "Guitarra limpa",
+      "program": 27,
+      "family": "Guitarra",
+      "notes": 72,
+      "notesInClip": 21,
+      "activeInClip": 4.71,
+      "monophony": 0.49,
+      "pitchBends": 48
+    },
+    {
+      "channel": 9,
+      "name": "Bateria",
+      "program": null,
+      "family": "Bateria",
+      "notes": 2246,
+      "notesInClip": 188,
+      "activeInClip": 18.0,
+      "monophony": 0.495,
+      "pitchBends": 0
+    }
+  ],
+  "lyricsDetected": 317,
+  "availableMelodyStyles": [
+    {
+      "id": "bandle",
+      "name": "Lead suave (Bandle)"
+    },
+    {
+      "id": "flute",
+      "name": "Flauta / synth suave"
+    },
+    {
+      "id": "epiano",
+      "name": "Piano elétrico"
+    },
+    {
+      "id": "bells",
+      "name": "Sinos / keys"
+    },
+    {
+      "id": "bright",
+      "name": "Lead brilhante"
+    }
+  ]
+}

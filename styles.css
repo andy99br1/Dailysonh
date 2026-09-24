@@ -1303,3 +1303,22 @@ body[data-theme="noite"] .platform-apple .platform-logo{color:#f3f3f5}
     margin-bottom: 7px;
   }
 }
+
+
+.round.unlocked {
+  cursor: pointer;
+}
+
+.round.unlocked:hover {
+  border-color: color-mix(in srgb, var(--green) 42%, var(--line));
+  transform: translateY(-1px);
+}
+
+.round.unlocked:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.round:not(.unlocked) {
+  cursor: default;
+}

@@ -49,6 +49,7 @@
 
   var song = null;
   var roundIndex = 0;
+  var highestUnlockedRound = 0;
   var audio = null;
   var guesses = [];
   var finished = false;
@@ -614,6 +615,7 @@
     if (!song || adminPreviewMode) return;
     localStorage.setItem(key(), JSON.stringify({
       roundIndex: roundIndex,
+      highestUnlockedRound: highestUnlockedRound,
       guesses: guesses,
       finished: finished,
       won: won,
@@ -644,6 +646,10 @@
 
       var state = JSON.parse(raw);
       roundIndex = Math.max(0, Math.min(revealRoundIndex(), Number(state.roundIndex) || 0));
+      var storedHighest = Number(state.highestUnlockedRound);
+      highestUnlockedRound = Number.isFinite(storedHighest)
+        ? Math.max(roundIndex, Math.min(revealRoundIndex(), storedHighest))
+        : roundIndex;
       guesses = Array.isArray(state.guesses) ? state.guesses.slice(0, playableRoundCount()) : [];
       finished = Boolean(state.finished);
       won = Boolean(state.won);
@@ -861,8 +867,24 @@
     var playable = playableRoundCount();
 
     E.rounds.forEach(function (node, i) {
+      var unlocked = finished ? i <= revealIndex : i <= highestUnlockedRound;
       node.classList.toggle("active", i === roundIndex);
-      node.classList.toggle("done", finished ? i <= revealIndex : i < roundIndex);
+      node.classList.toggle("done", finished ? i <= revealIndex : i < highestUnlockedRound);
+      node.classList.toggle("unlocked", unlocked);
+      node.setAttribute("aria-disabled", unlocked ? "false" : "true");
+      node.tabIndex = unlocked ? 0 : -1;
+
+      node.onclick = unlocked ? function () {
+        if (i === roundIndex) return;
+        switchRound(i, "Ouvindo a faixa " + (i + 1) + " novamente.");
+      } : null;
+
+      node.onkeydown = unlocked ? function (event) {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        if (i === roundIndex) return;
+        switchRound(i, "Ouvindo a faixa " + (i + 1) + " novamente.");
+      } : null;
     });
 
     if (finished && roundIndex === revealIndex) {
@@ -898,6 +920,7 @@
     won = Boolean(success);
     if (!won) solvedRound = null;
     roundIndex = revealRoundIndex();
+    highestUnlockedRound = roundIndex;
 
     E.reveal.classList.remove("hidden");
     E.guessForm.classList.add("hidden");
@@ -945,12 +968,13 @@
   }
 
   function advance(message) {
-    if (roundIndex >= playableRoundCount() - 1) {
+    if (highestUnlockedRound >= playableRoundCount() - 1) {
       reveal(false, true);
       return;
     }
 
-    switchRound(roundIndex + 1, message || "Nova camada liberada.");
+    highestUnlockedRound += 1;
+    switchRound(highestUnlockedRound, message || "Nova camada liberada.");
   }
 
   function nextOrSkip() {
@@ -1002,6 +1026,7 @@
     }
 
     roundIndex = 0;
+    highestUnlockedRound = 0;
     guesses = [];
     finished = false;
     won = false;
@@ -1104,6 +1129,7 @@
 
       ensureRoundNodes();
       load();
+      highestUnlockedRound = Math.max(highestUnlockedRound, roundIndex);
       renderAttempts();
 
       E.playBtn.disabled = false;
@@ -1181,7 +1207,7 @@
     });
 
     if (isCorrect(guess, song.title)) {
-      solvedRound = roundIndex + 1;
+      solvedRound = highestUnlockedRound + 1;
       reveal(true, true);
       return;
     }

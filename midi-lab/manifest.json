@@ -1,14 +1,14 @@
 {
-  "createdAt": "2026-09-23T07:02:58.472408+00:00",
-  "sourceName": "1790146929558-Capital_InicialNao_Olhe_Pra_Tras_2.mid",
-  "sourcePath": "midi-incoming/1790146929558-Capital_InicialNao_Olhe_Pra_Tras_2.mid",
-  "revealSourcePath": "midi-reveal-incoming/1790146929558-YTDown.com_YouTube_Capital-Inicial-Nao-Olhe-Pra-Tras-Videoc_Media_pMGPz8x8wMU_007_128k.mp3",
+  "createdAt": "2026-09-24T02:50:00.278281+00:00",
+  "sourceName": "1790218134845-Cleiton_e_CamargoNa_Hora_de_Amar.mid",
+  "sourcePath": "midi-incoming/1790218134845-Cleiton_e_CamargoNa_Hora_de_Amar.mid",
+  "revealSourcePath": "midi-reveal-incoming/1790218134845-Cleiton-e-Camargo-Na-Hora-De-Amar.mp3",
   "revealMode": "original-audio",
-  "duration": 260.13,
-  "clipStart": 128.5,
+  "duration": 941.61,
+  "clipStart": 187.5,
   "clipSeconds": 18.0,
-  "midiType": 0,
-  "ticksPerBeat": 120,
+  "midiType": 1,
+  "ticksPerBeat": 192,
   "melodyStyle": "flute",
   "melodyStyleName": "Flauta / synth suave",
   "nameOverrides": {},
@@ -19,26 +19,26 @@
       "confidence": 99
     },
     "bass": {
-      "channel": 1,
-      "name": "Baixo elétrico",
+      "channel": 6,
+      "name": "Baixo fretless",
       "confidence": 99
     },
     "melody": {
-      "channel": 3,
+      "channel": 0,
       "name": "Melodia da voz",
-      "sourceInstrument": "Lead square",
-      "confidence": 99,
-      "lyricAlignment": 1.0
+      "sourceInstrument": "Voz Oohs",
+      "confidence": 73,
+      "lyricAlignment": 0.0
     }
   },
   "groups": {
     "instrument1": [
-      "Guitarra jazz",
-      "Guitarra distorcida 1"
+      "Guitarra limpa",
+      "Órgão"
     ],
     "instrument2": [
-      "Guitarra distorcida 2",
-      "Guitarra limpa"
+      "Synth strings 1",
+      "Guitarra overdrive"
     ]
   },
   "rounds": [
@@ -60,14 +60,14 @@
       "number": 2,
       "label": "+ Baixo",
       "addedChannels": [
-        1
+        6
       ],
       "added": [
-        "Baixo elétrico"
+        "Baixo fretless"
       ],
       "channels": [
         9,
-        1
+        6
       ],
       "audio": "midi-lab/round-2.ogg"
     },
@@ -75,18 +75,18 @@
       "number": 3,
       "label": "+ Instrumentos 1",
       "addedChannels": [
-        0,
-        2
+        3,
+        5
       ],
       "added": [
-        "Guitarra jazz",
-        "Guitarra distorcida 1"
+        "Guitarra limpa",
+        "Órgão"
       ],
       "channels": [
         9,
-        1,
-        0,
-        2
+        6,
+        3,
+        5
       ],
       "audio": "midi-lab/round-3.ogg"
     },
@@ -94,20 +94,20 @@
       "number": 4,
       "label": "+ Instrumentos 2",
       "addedChannels": [
-        4,
-        6
+        1,
+        2
       ],
       "added": [
-        "Guitarra distorcida 2",
-        "Guitarra limpa"
+        "Synth strings 1",
+        "Guitarra overdrive"
       ],
       "channels": [
         9,
+        6,
+        3,
+        5,
         1,
-        0,
-        2,
-        4,
-        6
+        2
       ],
       "audio": "midi-lab/round-4.ogg"
     },
@@ -115,19 +115,19 @@
       "number": 5,
       "label": "+ Melodia",
       "addedChannels": [
-        3
+        0
       ],
       "added": [
         "Melodia da voz"
       ],
       "channels": [
         9,
-        1,
-        0,
-        2,
-        4,
         6,
-        3
+        3,
+        5,
+        1,
+        2,
+        0
       ],
       "audio": "midi-lab/round-5.ogg"
     },
@@ -139,17 +139,17 @@
         1,
         2,
         3,
-        4,
+        5,
         6,
         9
       ],
       "added": [
-        "Guitarra jazz",
-        "Baixo elétrico",
-        "Guitarra distorcida 1",
         "Melodia da voz",
-        "Guitarra distorcida 2",
+        "Synth strings 1",
+        "Guitarra overdrive",
         "Guitarra limpa",
+        "Órgão",
+        "Baixo fretless",
         "Bateria"
       ],
       "channels": [
@@ -157,7 +157,7 @@
         1,
         2,
         3,
-        4,
+        5,
         6,
         9
       ],
@@ -167,94 +167,83 @@
   "channels": [
     {
       "channel": 0,
-      "name": "Guitarra jazz",
-      "program": 26,
-      "family": "Guitarra",
-      "notes": 1367,
-      "notesInClip": 76,
-      "activeInClip": 18.0,
-      "monophony": 0.249,
+      "name": "Melodia da voz",
+      "program": 53,
+      "family": "Ensemble",
+      "notes": 312,
+      "notesInClip": 24,
+      "activeInClip": 13.23,
+      "monophony": 0.994,
       "pitchBends": 0
     },
     {
       "channel": 1,
-      "name": "Baixo elétrico",
-      "program": 33,
-      "family": "Baixo",
-      "notes": 568,
-      "notesInClip": 37,
-      "activeInClip": 14.82,
-      "monophony": 0.993,
+      "name": "Synth strings 1",
+      "program": 50,
+      "family": "Ensemble",
+      "notes": 188,
+      "notesInClip": 20,
+      "activeInClip": 18.0,
+      "monophony": 0.009,
       "pitchBends": 0
     },
     {
       "channel": 2,
-      "name": "Guitarra distorcida 1",
-      "program": 30,
+      "name": "Guitarra overdrive",
+      "program": 29,
       "family": "Guitarra",
-      "notes": 309,
-      "notesInClip": 19,
-      "activeInClip": 14.43,
-      "monophony": 0.069,
-      "pitchBends": 434
+      "notes": 86,
+      "notesInClip": 12,
+      "activeInClip": 18.0,
+      "monophony": 0.052,
+      "pitchBends": 44
     },
     {
       "channel": 3,
-      "name": "Melodia da voz",
-      "program": 80,
-      "family": "Synth lead",
-      "notes": 317,
-      "notesInClip": 32,
-      "activeInClip": 10.17,
-      "monophony": 0.993,
-      "pitchBends": 0
-    },
-    {
-      "channel": 4,
-      "name": "Guitarra distorcida 2",
-      "program": 30,
-      "family": "Guitarra",
-      "notes": 466,
-      "notesInClip": 17,
-      "activeInClip": 11.72,
-      "monophony": 0.158,
-      "pitchBends": 801
-    },
-    {
-      "channel": 5,
-      "name": "Guitarra distorcida",
-      "program": 30,
-      "family": "Guitarra",
-      "notes": 185,
-      "notesInClip": 0,
-      "activeInClip": 0.0,
-      "monophony": 0.958,
-      "pitchBends": 1206
-    },
-    {
-      "channel": 6,
       "name": "Guitarra limpa",
       "program": 27,
       "family": "Guitarra",
-      "notes": 72,
-      "notesInClip": 21,
-      "activeInClip": 4.71,
-      "monophony": 0.49,
-      "pitchBends": 48
+      "notes": 1009,
+      "notesInClip": 96,
+      "activeInClip": 18.0,
+      "monophony": 0.32,
+      "pitchBends": 0
+    },
+    {
+      "channel": 5,
+      "name": "Órgão",
+      "program": 18,
+      "family": "Órgão",
+      "notes": 163,
+      "notesInClip": 23,
+      "activeInClip": 18.0,
+      "monophony": 0.046,
+      "pitchBends": 0
+    },
+    {
+      "channel": 6,
+      "name": "Baixo fretless",
+      "program": 35,
+      "family": "Baixo",
+      "notes": 133,
+      "notesInClip": 16,
+      "activeInClip": 15.57,
+      "monophony": 0.999,
+      "pitchBends": 0
     },
     {
       "channel": 9,
       "name": "Bateria",
-      "program": null,
+      "program": 17,
       "family": "Bateria",
-      "notes": 2246,
-      "notesInClip": 188,
-      "activeInClip": 18.0,
-      "monophony": 0.495,
+      "notes": 1025,
+      "notesInClip": 136,
+      "activeInClip": 16.96,
+      "monophony": 0.525,
       "pitchBends": 0
     }
   ],
-  "lyricsDetected": 317,
+  "lyricsDetected": 0,
   "availableMelodyStyles": [
     {
       "id": "bandle",

@@ -129,6 +129,43 @@
         "piano",
         "flute"
       ]
+    },
+    {
+      "date": "2026-09-25",
+      "title": "Na Hora de Amar",
+      "artist": "Cleiton e Camargo",
+      "clipStart": 187.5,
+      "source": "midi",
+      "sourceName": "1790218134845-Cleiton_e_CamargoNa_Hora_de_Amar.mid",
+      "version": 1,
+      "challengeRounds": 5,
+      "safeRevealRound": 5,
+      "roundLabels": [
+        "Bateria",
+        "Baixo",
+        "Guitarra + Órgão",
+        "Sintetizador+ Guitarra 2",
+        "Voz",
+        "Revelação"
+      ],
+      "rounds": [
+        "songs/2026-09-25/round-1.ogg",
+        "songs/2026-09-25/round-2.ogg",
+        "songs/2026-09-25/round-3.ogg",
+        "songs/2026-09-25/round-4.ogg",
+        "songs/2026-09-25/round-5.ogg",
+        "songs/2026-09-25/round-6.ogg"
+      ],
+      "releaseYear": "1998",
+      "youtubeViews": "8M",
+      "difficulty": "Médio",
+      "youtubeUrl": "https://www.youtube.com/watch?v=shk34djzjBk&list=RDshk34djzjBk&start_radio=1",
+      "coverUrl": "https://i.scdn.co/image/ab67616d0000b2735d1c854e6fa932c95f054e91",
+      "spotifyUrl": "",
+      "appleMusicUrl": "",
+      "deezerUrl": "",
+      "midiMelodyStyle": "flute",
+      "midiMelodyStyleName": "Flauta / synth suave"
     }
   ]
 }

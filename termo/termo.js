@@ -13,7 +13,7 @@ var E={
 };
 
 var challenge=null,catalogIndex=-1,row=0,current="",guesses=[],evaluations=[],finished=false,won=false,editIndex=null;
-var keyStates={};
+var keyStates={},validWords=null;
 var allowedThemes=["creme","azul","verde","rosa","lilas","noite","grafite"];
 var previewDate="",adminPreview=false;
 
@@ -195,9 +195,22 @@ function submit(){
   if(finished)return;
   editIndex=null;
   if(current.length!==5){setMessage("A palavra precisa ter 5 letras.","error");shake();return}
+  if(!validWords){setMessage("O dicionário ainda está carregando.","error");shake();return}
   var answer=normalizeWord(challenge.word);
-  var guess=current,result=evaluateGuess(guess,answer),cells=cellsFor(row);
-  cells.forEach(function(cell,i){cell.classList.remove("filled");cell.classList.add(result[i]);updateKey(guess[i],result[i])});
+  var guess=current;
+  if(guess!==answer&&!validWords.has(guess)){
+    setMessage("Essa palavra não existe em português.","error");
+    shake();
+    return
+  }
+  var result=evaluateGuess(guess,answer),cells=cellsFor(row);
+  cells.forEach(function(cell,i){
+    cell.classList.remove("filled","editable","editing");
+    cell.classList.add(result[i]);
+    cell.tabIndex=-1;
+    cell.setAttribute("aria-label","Letra "+guess[i]+" da tentativa anterior");
+    updateKey(guess[i],result[i])
+  });
   guesses.push(guess);evaluations.push(result);current="";
   if(guess===answer){row+=1;finish(true);return}
   row+=1;if(row>=6){finish(false);return}
@@ -260,8 +273,16 @@ function resetGameForTesting(){
 async function init(){
   loadTheme();buildBoard();buildKeyboard();
   try{
-    var res=await fetch("/termo/catalog.json?v="+Date.now(),{cache:"no-store"});if(!res.ok)throw new Error("catalog");
-    var data=await res.json(),words=Array.isArray(data.words)?data.words:[];
+    var responses=await Promise.all([
+      fetch("/termo/catalog.json?v="+Date.now(),{cache:"no-store"}),
+      fetch("/termo/palavras-ptbr.txt?v=1",{cache:"force-cache"})
+    ]);
+    if(!responses[0].ok)throw new Error("catalog");
+    if(!responses[1].ok)throw new Error("dictionary");
+    var data=await responses[0].json(),words=Array.isArray(data.words)?data.words:[];
+    var dictionaryText=await responses[1].text();
+    validWords=new Set(dictionaryText.split(/\r?\n/).map(function(word){return normalizeWord(word)}).filter(function(word){return word.length===5}));
+
     if(adminPreview){
       challenge=words.find(function(item){return String(item.date||"")===previewDate})||null;
     }else{

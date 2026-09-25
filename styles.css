@@ -121,8 +121,8 @@ body[data-theme="grafite"] {
   --skip-bg: #31383f;
   --guess-bg: #538d4e;
   --shadow: rgba(0,0,0,.30);
-  --texture-dot: transparent;
-  --texture-accent: transparent;
+  --texture-dot: rgba(255,255,255,.040);
+  --texture-accent: rgba(255,255,255,.012);
 }
 
 body[data-theme="noite"] {
@@ -175,9 +175,11 @@ body::before { display: none; }
 body[data-theme="grafite"] {
   background-color: var(--bg);
   background-image:
+    radial-gradient(circle at 1px 1px, var(--texture-dot) 1px, transparent 1.15px),
+    repeating-linear-gradient(135deg, var(--texture-accent) 0, var(--texture-accent) .7px, transparent .7px, transparent 12px),
     radial-gradient(circle at 50% -12%, rgba(255,255,255,.045), transparent 35rem),
     linear-gradient(180deg,#22272c 0%,#202428 100%);
-  background-size:auto;
+  background-size:17px 17px,18px 18px,auto,auto;
 }
 
 body[data-theme="noite"] {

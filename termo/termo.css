@@ -979,3 +979,72 @@ body[data-theme] .termo-cell.editable:focus-visible{
   height:8px;
   margin:0;
 }
+
+
+/* Mobile: evita o conteúdo subir e ser recortado quando o conjunto fica alto. */
+@media(max-width:600px){
+  .termo-card{
+    justify-content:flex-start;
+    padding-top:5px;
+  }
+
+  .termo-board{
+    --mobile-board-size:min(
+      58px,
+      calc((100vw - 34px)/5),
+      calc((100dvh - 395px)/6)
+    );
+    margin:4px auto 0;
+  }
+
+  .termo-message{
+    margin:6px 0 8px;
+  }
+
+  .termo-keyboard{
+    margin:10px auto 0;
+  }
+}
+
+/* Em celulares com pouca altura, comprime só o necessário sem cortar o topo. */
+@media(max-width:600px) and (max-height:720px){
+  .termo-shell .game-switcher{
+    min-height:22px;
+    margin-bottom:0;
+  }
+
+  .termo-shell .game-switcher-link{
+    min-height:22px;
+  }
+
+  .termo-shell .topbar{
+    min-height:38px;
+    margin-bottom:0;
+  }
+
+  .termo-board{
+    --mobile-board-size:min(
+      52px,
+      calc((100vw - 34px)/5),
+      calc((100dvh - 345px)/6)
+    );
+  }
+
+  .termo-key{
+    height:50px;
+    min-height:50px;
+  }
+
+  .termo-submit{
+    height:46px;
+    min-height:46px;
+  }
+
+  .termo-message{
+    margin:4px 0 6px;
+  }
+
+  .termo-keyboard{
+    margin-top:7px;
+  }
+}

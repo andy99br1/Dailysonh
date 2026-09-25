@@ -557,3 +557,27 @@ body[data-admin-theme="day"] .midi-name-editor{background:rgba(38,55,92,.025)}
     font-size:20px
   }
 }
+
+
+/* Administração do Termo do Dia */
+.termo-admin-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px;margin-bottom:12px}
+.termo-admin-intro{margin:0 0 14px;font-size:9px;line-height:1.55}
+.termo-admin-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:4px}
+.termo-admin-actions .muted{font-size:8px;line-height:1.45}
+.termo-open-link{text-decoration:none;display:inline-grid;place-items:center}
+.termo-word-list{display:grid;gap:7px}
+.termo-word-row{
+  min-height:61px;padding:9px 10px;border:1px solid rgba(255,255,255,.05);border-radius:11px;
+  background:rgba(255,255,255,.02);display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:10px;align-items:center
+}
+.termo-word-date{font-size:9px;font-weight:900;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.termo-word-main{display:grid;gap:2px;min-width:0}
+.termo-word-main strong{font-size:15px;letter-spacing:.12em}
+.termo-word-main span{color:var(--muted);font-size:7px}
+@media(max-width:780px){
+  .termo-admin-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .termo-word-row{grid-template-columns:1fr auto}
+  .termo-word-date{grid-column:1/-1}
+}

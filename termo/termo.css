@@ -1,0 +1,82 @@
+
+.termo-shell{width:min(600px,100%)}
+.termo-brand-mark{
+  width:42px;height:42px;flex:0 0 42px;border-radius:11px;
+  display:grid;place-items:center;background:var(--green);color:#fff;
+  font-size:24px;font-weight:1000;box-shadow:0 2px 0 var(--shadow)
+}
+.termo-card{padding-bottom:8px}
+.termo-info{margin-bottom:8px}
+.termo-legend{
+  display:flex;justify-content:center;gap:13px;flex-wrap:wrap;
+  margin:3px 0 10px;color:var(--muted);font-size:9px;font-weight:800
+}
+.termo-legend span{display:flex;align-items:center;gap:5px}
+.termo-legend i{width:12px;height:12px;border-radius:3px;border:1px solid var(--line)}
+.legend-correct{background:#3f9a54}.legend-present{background:#c89a39}.legend-absent{background:#657187}
+body[data-theme="noite"] .legend-correct{background:#3d9b58}
+body[data-theme="noite"] .legend-present{background:#bd8d31}
+body[data-theme="noite"] .legend-absent{background:#43516d}
+
+.termo-board{
+  width:min(360px,92vw);margin:0 auto 10px;
+  display:grid;grid-template-rows:repeat(6,1fr);gap:6px
+}
+.termo-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.termo-cell{
+  aspect-ratio:1/1;border:2px solid var(--line);border-radius:9px;
+  display:grid;place-items:center;background:var(--surface-2);
+  color:var(--text);font-size:clamp(22px,6vw,34px);font-weight:1000;
+  text-transform:uppercase;transition:transform .15s ease,background .2s ease,border-color .2s ease
+}
+.termo-cell.filled{border-color:color-mix(in srgb,var(--text) 34%,var(--line));transform:scale(1.025)}
+.termo-cell.correct{background:#3f9a54;border-color:#3f9a54;color:#fff}
+.termo-cell.present{background:#c89a39;border-color:#c89a39;color:#fff}
+.termo-cell.absent{background:#657187;border-color:#657187;color:#fff}
+body[data-theme="noite"] .termo-cell.correct{background:#3d9b58;border-color:#3d9b58}
+body[data-theme="noite"] .termo-cell.present{background:#bd8d31;border-color:#bd8d31}
+body[data-theme="noite"] .termo-cell.absent{background:#43516d;border-color:#43516d}
+.termo-row.shake{animation:termShake .32s ease}
+@keyframes termShake{25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.termo-message{
+  min-height:19px;margin:2px 0 9px;text-align:center;color:var(--muted);
+  font-size:11px;font-weight:800
+}
+.termo-message.error{color:var(--red)}
+.termo-message.success{color:var(--green)}
+
+.termo-keyboard{display:grid;gap:6px;margin:0 auto;width:min(520px,100%)}
+.termo-key-row{display:flex;justify-content:center;gap:5px}
+.termo-key{
+  height:44px;min-width:0;flex:1;padding:0 4px;border:1px solid var(--line);border-radius:8px;
+  background:var(--pill);color:var(--text);font-size:13px;font-weight:1000;cursor:pointer;
+  box-shadow:0 2px 0 var(--shadow)
+}
+.termo-key.wide{flex:1.5;font-size:10px}
+.termo-key.correct{background:#3f9a54;border-color:#3f9a54;color:#fff}
+.termo-key.present{background:#c89a39;border-color:#c89a39;color:#fff}
+.termo-key.absent{background:#657187;border-color:#657187;color:#fff}
+body[data-theme="noite"] .termo-key.correct{background:#3d9b58;border-color:#3d9b58}
+body[data-theme="noite"] .termo-key.present{background:#bd8d31;border-color:#bd8d31}
+body[data-theme="noite"] .termo-key.absent{background:#43516d;border-color:#43516d}
+.termo-key:active{transform:translateY(1px)}
+
+.termo-result{
+  margin-top:13px;padding:16px 14px;text-align:center;border:1px solid var(--line);
+  border-radius:17px;background:var(--surface);box-shadow:0 12px 40px var(--shadow)
+}
+.termo-result h2{margin:4px 0 14px;font-size:30px;letter-spacing:.12em}
+.termo-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 13px}
+.termo-stats div{padding:9px 4px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.termo-stats strong{display:block;font-size:18px}
+.termo-stats span{display:block;margin-top:3px;color:var(--muted);font-size:8px;font-weight:800}
+@media(max-width:420px){
+  .termo-board{width:min(330px,94vw);gap:5px}
+  .termo-row{gap:5px}
+  .termo-cell{border-radius:8px}
+  .termo-keyboard{gap:5px}
+  .termo-key-row{gap:3px}
+  .termo-key{height:42px;padding:0 2px;font-size:12px;border-radius:7px}
+  .termo-key.wide{font-size:9px}
+  .termo-legend{gap:8px}
+}

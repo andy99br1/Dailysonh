@@ -865,3 +865,87 @@ body[data-theme] .termo-cell.editable:focus-visible{
   .termo-card{padding-top:4px}
   .termo-board{margin-top:5px}
 }
+
+
+/* Centraliza o jogo e aumenta um pouco o tabuleiro, sem empurrar o teclado para o rodapé. */
+@media(max-width:600px){
+  .termo-card{
+    justify-content:center;
+    gap:0;
+    padding-top:0;
+  }
+
+  .termo-board{
+    --mobile-board-size:min(
+      58px,
+      calc((100vw - 34px)/5),
+      calc((100dvh - 390px)/6)
+    );
+    width:calc(var(--mobile-board-size)*5 + 16px);
+    margin:0 auto;
+    gap:4px;
+  }
+
+  .termo-row{
+    grid-template-columns:repeat(5,var(--mobile-board-size));
+    gap:4px;
+  }
+
+  .termo-cell{
+    width:var(--mobile-board-size);
+    height:var(--mobile-board-size);
+    font-size:clamp(22px,calc(var(--mobile-board-size)*.52),34px);
+  }
+
+  .termo-message{
+    margin:7px 0 10px;
+  }
+
+  .termo-keyboard{
+    margin:12px auto 0;
+  }
+
+  .termo-submit{
+    margin-top:6px;
+  }
+
+  .termo-reset-test{
+    margin-top:5px;
+  }
+}
+
+@media(min-width:601px){
+  .termo-card{
+    justify-content:center;
+  }
+
+  .termo-board{
+    --desktop-board-size:min(
+      66px,
+      calc((100vw - 60px)/5),
+      calc((100dvh - 430px)/6)
+    );
+    width:calc(var(--desktop-board-size)*5 + 20px);
+    margin:4px auto 0;
+    gap:5px;
+  }
+
+  .termo-row{
+    grid-template-columns:repeat(5,var(--desktop-board-size));
+    gap:5px;
+  }
+
+  .termo-cell{
+    width:var(--desktop-board-size);
+    height:var(--desktop-board-size);
+    font-size:clamp(24px,calc(var(--desktop-board-size)*.52),36px);
+  }
+
+  .termo-message{
+    margin:7px 0 12px;
+  }
+
+  .termo-keyboard{
+    margin:12px auto 0;
+  }
+}

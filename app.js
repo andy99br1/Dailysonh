@@ -889,9 +889,9 @@
     });
 
     if (finished && roundIndex === revealIndex) {
-      E.roundLabel.textContent = "Revelação";
+      if (E.roundLabel) E.roundLabel.textContent = "Revelação";
     } else {
-      E.roundLabel.textContent = "Faixa " + (roundIndex + 1) + " de " + playable;
+      if (E.roundLabel) E.roundLabel.textContent = "Faixa " + (roundIndex + 1) + " de " + playable;
     }
 
     E.skipBtn.textContent = finished ? "PRÓXIMA FAIXA" : "PULAR";
@@ -1095,8 +1095,8 @@
       if (adminPreviewMode) {
         song = songs.find(function (item) { return String(item.date || "") === adminPreviewDate; }) || null;
         if (!song) {
-          E.songDate.textContent = "Música não encontrada";
-          E.roundLabel.textContent = "Prévia";
+          if (E.songDate) E.songDate.textContent = "Música não encontrada";
+          if (E.roundLabel) E.roundLabel.textContent = "Prévia";
           E.message.textContent = "Essa data ainda não está disponível no site publicado.";
           return;
         }
@@ -1105,8 +1105,8 @@
         var eligible = songs.filter(function (item) { return item.date <= today; });
 
         if (!eligible.length) {
-          E.songDate.textContent = "Nenhuma música publicada ainda";
-          E.roundLabel.textContent = "Aguardando";
+          if (E.songDate) E.songDate.textContent = "Nenhuma música publicada ainda";
+          if (E.roundLabel) E.roundLabel.textContent = "Aguardando";
           E.message.textContent = "Adicione a primeira música pelo GitHub Actions.";
           return;
         }
@@ -1123,7 +1123,7 @@
 
       E.dayChip.textContent = "#" + (catalogIndex + 1);
       if (E.challengeNumber) E.challengeNumber.textContent = "#" + (catalogIndex + 1);
-      E.songDate.textContent = formatDate(song.date);
+      if (E.songDate) E.songDate.textContent = formatDate(song.date);
       if (E.releaseInfo) E.releaseInfo.textContent = detectReleaseYear();
       if (E.viewsInfo) E.viewsInfo.textContent = formatYoutubeViews(song.youtubeViews);
       if (E.difficultyInfo) E.difficultyInfo.textContent = song.difficulty || "—";
@@ -1149,7 +1149,7 @@
         prepareAudio();
       }
     } catch (_) {
-      E.songDate.textContent = "Erro ao carregar";
+      if (E.songDate) E.songDate.textContent = "Erro ao carregar";
       E.message.textContent = "Não consegui carregar o catálogo do jogo.";
     }
   }

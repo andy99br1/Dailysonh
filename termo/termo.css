@@ -80,3 +80,17 @@ body[data-theme="noite"] .termo-key.absent{background:#43516d;border-color:#4351
   .termo-key.wide{font-size:9px}
   .termo-legend{gap:8px}
 }
+
+.termo-cell.editable{cursor:pointer}
+.termo-cell.editable:hover{
+  border-color:color-mix(in srgb,var(--green) 55%,var(--line));
+}
+.termo-cell.editing{
+  border-color:var(--green);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 20%,transparent);
+  transform:scale(1.045)
+}
+.termo-cell.editable:focus-visible{
+  outline:2px solid var(--green);
+  outline-offset:2px
+}

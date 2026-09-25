@@ -185,7 +185,7 @@ function renderSaved(){
   updateAttemptLabel();
 }
 function updateAttemptLabel(){
-  E.attemptLabel.textContent=finished?(won?"Concluído":"Fim"):(Math.min(row+1,6)+" de 6");
+  if(E.attemptLabel)E.attemptLabel.textContent=finished?(won?"Concluído":"Fim"):(Math.min(row+1,6)+" de 6");
 }
 function updateStats(win){
   if(adminPreview)return;
@@ -314,15 +314,19 @@ async function init(){
       challenge=eligible.length?eligible[eligible.length-1]:null;
     }
     if(!challenge){
-      E.termDate.textContent="Nenhuma palavra publicada";
-      E.attemptLabel.textContent="Aguardando";setMessage("Cadastre a primeira palavra no painel administrativo.");return;
+      if(E.termDate)E.termDate.textContent="Nenhuma palavra publicada";
+      if(E.attemptLabel)E.attemptLabel.textContent="Aguardando";
+      setMessage("Cadastre a primeira palavra no painel administrativo.");return;
     }
     if(normalizeWord(challenge.word).length!==5)throw new Error("invalid word");
     catalogIndex=words.indexOf(challenge);
-    E.dayChip.textContent="#"+(catalogIndex+1);E.challengeNumber.textContent="#"+(catalogIndex+1);E.termDate.textContent=prettyDate(challenge.date);
+    E.dayChip.textContent="#"+(catalogIndex+1);
+    if(E.challengeNumber)E.challengeNumber.textContent="#"+(catalogIndex+1);
+    if(E.termDate)E.termDate.textContent=prettyDate(challenge.date);
     load();renderSaved();if(finished)finish(won);
   }catch(_){
-    E.termDate.textContent="Erro ao carregar";setMessage("Não consegui carregar o desafio de hoje.","error");
+    if(E.termDate)E.termDate.textContent="Erro ao carregar";
+    setMessage("Não consegui carregar o desafio de hoje.","error");
   }
 }
 

@@ -17,6 +17,7 @@ on:
       - "songs/**"
       - "midi-lab/**"
       - "stem-flute-lab/**"
+      - "termo/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
   workflow_run:
@@ -54,6 +55,7 @@ jobs:
           if [ -d songs ]; then cp -R songs _site/; fi
           if [ -d midi-lab ]; then cp -R midi-lab _site/; fi
           if [ -d stem-flute-lab ]; then cp -R stem-flute-lab _site/; fi
+          if [ -d termo ]; then cp -R termo _site/; fi
           touch _site/.nojekyll
 
       - name: Configure Pages

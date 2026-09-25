@@ -245,7 +245,7 @@ function handleKey(key){
     for(var i=start;i>=0;i--){
       if(current[i]){
         current[i]="";
-        editIndex=i>0?i-1:0;
+        editIndex=i;
         renderCurrent();
         setMessage("Letra removida.");
         return

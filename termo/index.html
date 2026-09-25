@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071632" id="themeColor">
+  <meta name="description" content="Termo do Dia: descubra a palavra de 5 letras em até 6 tentativas. Um novo desafio todos os dias.">
+  <meta name="robots" content="index,follow,max-snippet:-1">
+  <meta name="application-name" content="Termo do Dia">
+  <meta name="apple-mobile-web-app-title" content="Termo do Dia">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Música do Dia">
+  <meta property="og:title" content="Termo do Dia — jogo de palavras diário">
+  <meta property="og:description" content="Descubra a palavra de 5 letras em até 6 tentativas.">
+  <meta property="og:url" content="https://musicadodia.com/termo/">
+  <link rel="canonical" href="https://musicadodia.com/termo/">
+  <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css?v=20260925-1">
+  <link rel="stylesheet" href="/termo/termo.css?v=1">
+  <title>Termo do Dia — jogo de palavras diário</title>
+</head>
+<body data-theme="noite">
+  <main class="shell termo-shell">
+    <nav class="game-switcher" aria-label="Jogos do site">
+      <a class="game-switcher-link" href="/">♫ Música</a>
+      <a class="game-switcher-link active" href="/termo/" aria-current="page">▦ Termo</a>
+    </nav>
+
+    <header class="topbar">
+      <div class="theme-picker">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Escolher paleta de cores" title="Escolher cores" aria-expanded="false">
+          <span class="palette-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        </button>
+        <div class="theme-menu hidden" id="themeMenu" aria-label="Paletas de cores">
+          <button class="theme-option" type="button" data-theme-choice="creme"><span class="theme-swatch swatch-creme"></span><span>Creme</span></button>
+          <button class="theme-option" type="button" data-theme-choice="azul"><span class="theme-swatch swatch-azul"></span><span>Azul</span></button>
+          <button class="theme-option" type="button" data-theme-choice="verde"><span class="theme-swatch swatch-verde"></span><span>Verde</span></button>
+          <button class="theme-option" type="button" data-theme-choice="rosa"><span class="theme-swatch swatch-rosa"></span><span>Rosa</span></button>
+          <button class="theme-option" type="button" data-theme-choice="lilas"><span class="theme-swatch swatch-lilas"></span><span>Lilás</span></button>
+          <button class="theme-option" type="button" data-theme-choice="noite"><span class="theme-swatch swatch-noite"></span><span>Noite</span></button>
+        </div>
+      </div>
+
+      <div class="brand">
+        <div class="termo-brand-mark" aria-hidden="true">T</div>
+        <div class="brand-copy">
+          <h1>Termo do Dia</h1>
+          <p>Jogo de palavras diário · 6 tentativas</p>
+        </div>
+      </div>
+
+      <div class="day-chip" id="dayChip" aria-label="Número do desafio">#—</div>
+    </header>
+
+    <section class="game-card termo-card" aria-live="polite">
+      <h2 class="game-title">Descubra a palavra de 5 letras</h2>
+
+      <div class="info-card termo-info">
+        <div class="info-item">
+          <span>Desafio</span>
+          <strong id="challengeNumber">#—</strong>
+        </div>
+        <div class="info-item info-item-wide">
+          <span>Data</span>
+          <strong id="termDate">Carregando…</strong>
+        </div>
+        <div class="info-item">
+          <span>Tentativa</span>
+          <strong id="attemptLabel">1 de 6</strong>
+        </div>
+      </div>
+
+      <div class="termo-legend" aria-label="Como jogar">
+        <span><i class="legend-correct"></i> lugar certo</span>
+        <span><i class="legend-present"></i> lugar errado</span>
+        <span><i class="legend-absent"></i> não tem</span>
+      </div>
+
+      <div class="termo-board" id="termBoard" aria-label="Tabuleiro do Termo"></div>
+      <p class="termo-message" id="termMessage">Digite uma palavra de 5 letras.</p>
+
+      <div class="termo-keyboard" id="termKeyboard" aria-label="Teclado virtual"></div>
+
+      <section class="termo-result hidden" id="termResult">
+        <p class="result-status" id="termResultStatus"></p>
+        <span class="reveal-kicker">A palavra era</span>
+        <h2 id="termAnswer">—</h2>
+
+        <div class="termo-stats">
+          <div><strong id="statPlayed">0</strong><span>jogos</span></div>
+          <div><strong id="statWinRate">0%</strong><span>vitórias</span></div>
+          <div><strong id="statStreak">0</strong><span>sequência</span></div>
+          <div><strong id="statBest">0</strong><span>melhor</span></div>
+        </div>
+
+        <div class="reveal-actions">
+          <button class="secondary" id="termShareBtn" type="button">Compartilhar</button>
+          <button class="secondary hidden" id="termResetPreviewBtn" type="button">Reiniciar prévia</button>
+        </div>
+      </section>
+    </section>
+
+    <footer class="footer-note">
+      <span>Termo do Dia · jogo diário grátis</span>
+      <span>Uma palavra nova por dia</span>
+    </footer>
+  </main>
+
+  <script src="/termo/termo.js?v=1"></script>
+</body>
+</html>

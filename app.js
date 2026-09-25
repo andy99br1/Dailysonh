@@ -1160,8 +1160,16 @@
   E.skipBtn.addEventListener("click", nextOrSkip);
   E.openGuessBtn.addEventListener("click", toggleGuessForm);
   E.closeGuessBtn.addEventListener("click", closeGuessForm);
+  var gameMenu = document.querySelector(".game-menu");
+  if (gameMenu) {
+    gameMenu.addEventListener("toggle", function () {
+      if (gameMenu.open) closeThemeMenu();
+    });
+  }
+
   E.themeToggle.addEventListener("click", function (event) {
     event.stopPropagation();
+    if (gameMenu) gameMenu.open = false;
     toggleThemeMenu();
   });
 
@@ -1177,9 +1185,16 @@
     closeThemeMenu();
   });
 
+  document.addEventListener("click", function (event) {
+    if (!gameMenu || !gameMenu.open) return;
+    if (event.target.closest && event.target.closest(".game-menu")) return;
+    gameMenu.open = false;
+  });
+
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
       closeThemeMenu();
+      if (gameMenu) gameMenu.open = false;
       closeGuessForm();
     }
   });

@@ -104,6 +104,27 @@ body[data-theme="lilas"] {
   --texture-accent: rgba(68,50,105,.018);
 }
 
+body[data-theme="grafite"] {
+  --bg: #202428;
+  --surface: #202428;
+  --surface-2: #181c20;
+  --peach: #2b3035;
+  --pill: #171b1f;
+  --pill-active: #242a2f;
+  --text: #f7f7f7;
+  --muted: #a7adb3;
+  --line: #343a40;
+  --green: #538d4e;
+  --red: #d3625b;
+  --play-border: #5a626a;
+  --control-bg: #f4f4f4;
+  --skip-bg: #31383f;
+  --guess-bg: #538d4e;
+  --shadow: rgba(0,0,0,.30);
+  --texture-dot: transparent;
+  --texture-accent: transparent;
+}
+
 body[data-theme="noite"] {
   --bg: #071632;
   --surface: #0c2148;
@@ -150,6 +171,14 @@ body {
 }
 
 body::before { display: none; }
+
+body[data-theme="grafite"] {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 50% -12%, rgba(255,255,255,.045), transparent 35rem),
+    linear-gradient(180deg,#22272c 0%,#202428 100%);
+  background-size:auto;
+}
 
 body[data-theme="noite"] {
   background-color: var(--bg);
@@ -279,6 +308,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .swatch-rosa { background: #d88499; }
 .swatch-lilas { background: #9a7bc9; }
 .swatch-noite { background: #0d244a; }
+.swatch-grafite { background: linear-gradient(135deg,#353b41,#15191d); }
 
 
 .brand {
@@ -1369,3 +1399,5 @@ body[data-theme="noite"] .platform-apple .platform-logo{color:#f3f3f5}
 @media(max-width:420px){
   .game-switcher-link{padding:0 9px;font-size:10px}
 }
+
+body[data-theme="grafite"] .platform-apple .platform-logo{color:#f3f3f5}

@@ -17,13 +17,14 @@ var E={
  editIndex:$("editIndex"),editTitle:$("editTitle"),editArtist:$("editArtist"),editReleaseYear:$("editReleaseYear"),editYoutubeViews:$("editYoutubeViews"),editDifficulty:$("editDifficulty"),
  editYoutubeUrl:$("editYoutubeUrl"),editSpotifyUrl:$("editSpotifyUrl"),editAppleMusicUrl:$("editAppleMusicUrl"),editDeezerUrl:$("editDeezerUrl"),editCoverUrl:$("editCoverUrl"),saveEditBtn:$("saveEditBtn"),toast:$("toast"),
  previewDialog:$("previewDialog"),previewCloseBtn:$("previewCloseBtn"),previewFrame:$("previewFrame"),
+ termoForm:$("termoForm"),termoDate:$("termoDate"),termoWord:$("termoWord"),termoEditDate:$("termoEditDate"),termoSaveBtn:$("termoSaveBtn"),termoCancelEditBtn:$("termoCancelEditBtn"),termoFormStatus:$("termoFormStatus"),termoRefreshBtn:$("termoRefreshBtn"),termoWordsList:$("termoWordsList"),termoWordsEmpty:$("termoWordsEmpty"),
  metricPlayers:$("metricPlayers"),metricPlayersSub:$("metricPlayersSub"),metricOnline:$("metricOnline"),metricOnlineSub:$("metricOnlineSub"),metricUnique:$("metricUnique"),metricUniqueSub:$("metricUniqueSub"),metricDuration:$("metricDuration"),metricDurationSub:$("metricDurationSub"),trafficTotal:$("trafficTotal"),
  trafficChart:$("trafficChart"),todaySongTitle:$("todaySongTitle"),todayChallenge:$("todayChallenge"),todayWins:$("todayWins"),todayFails:$("todayFails"),todayRate:$("todayRate"),
  roundBars:$("roundBars"),commonGuesses:$("commonGuesses"),audioErrors:$("audioErrors"),abandonRate:$("abandonRate"),completionRate:$("completionRate"),pageViews:$("pageViews"),
  analyticsWarning:$("analyticsWarning"),analyticsStatusPanel:$("analyticsStatusPanel"),analyticsStatusTitle:$("analyticsStatusTitle"),analyticsStatusText:$("analyticsStatusText"),
  dashboardDate:$("dashboardDate"),selectedDateLabel:$("selectedDateLabel"),autoRefreshStatus:$("autoRefreshStatus"),prevDateBtn:$("prevDateBtn"),nextDateBtn:$("nextDateBtn"),todayDateBtn:$("todayDateBtn"),trafficPeriodTitle:$("trafficPeriodTitle")
 };
-var token="",catalog={songs:[]},catalogSha="",analyticsConfig=null,toastTimer=null,selectedDate="",previewSong=null,previewTrackIndex=0,dashboardRefreshTimer=null,dashboardRefreshBusy=false,lastDashboardRefreshAt=0,latestMidiManifest=null;
+var token="",catalog={songs:[]},catalogSha="",termoCatalog={words:[]},analyticsConfig=null,toastTimer=null,selectedDate="",previewSong=null,previewTrackIndex=0,dashboardRefreshTimer=null,dashboardRefreshBusy=false,lastDashboardRefreshAt=0,latestMidiManifest=null;
 var DASHBOARD_REFRESH_MS=10000;
 var DEFAULT_ANALYTICS_CONFIG={
   endpoint:"https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-analytics",
@@ -139,6 +140,73 @@ function renderSongs(){
  actions.append(test,edit,del,open);row.append(d,main,actions);E.songsList.appendChild(row)
  })
 }
+function normalizeTermoWord(value){
+ return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z]/g,"").toUpperCase()
+}
+async function loadTermoCatalog(showToast){
+ try{
+   var file=await getRepoFile("termo/catalog.json");
+   termoCatalog=decodeRepoContent(file);
+   if(!Array.isArray(termoCatalog.words))termoCatalog.words=[];
+   renderTermoWords();
+   if(showToast)toast("Palavras do Termo atualizadas.");
+ }catch(err){
+   console.error("termo catalog",err);
+   termoCatalog={words:[]};renderTermoWords();
+   if(showToast)toast("Não consegui carregar o Termo.");
+ }
+}
+function renderTermoWords(){
+ if(!E.termoWordsList)return;
+ E.termoWordsList.innerHTML="";
+ var words=(termoCatalog.words||[]).slice().sort(function(a,b){return String(b.date||"").localeCompare(String(a.date||""))});
+ E.termoWordsEmpty.classList.toggle("hidden",words.length>0);
+ words.forEach(function(item){
+   var row=document.createElement("div");row.className="termo-word-row";
+   var date=document.createElement("div");date.className="termo-word-date";date.textContent=prettyDate(item.date);
+   var tag=document.createElement("span");var future=String(item.date||"")>brazilDate();tag.className="tag "+(future?"future":"live");tag.textContent=future?"Agendada":"Publicada";date.appendChild(tag);
+
+   var word=document.createElement("div");word.className="termo-word-main";
+   var strong=document.createElement("strong");strong.textContent=String(item.word||"").toUpperCase();
+   var small=document.createElement("span");small.textContent="versão "+(item.version||1);
+   word.append(strong,small);
+
+   var actions=document.createElement("div");actions.className="song-actions";
+   var test=document.createElement("button");test.className="mini-btn test-btn";test.type="button";test.textContent="Testar";test.onclick=function(){
+     if(E.previewFrame){
+       E.previewFrame.src="/termo/?adminPreview=1&previewDate="+encodeURIComponent(item.date)+"&_="+Date.now();
+       E.previewDialog.showModal();
+     }
+   };
+   var edit=document.createElement("button");edit.className="mini-btn";edit.type="button";edit.textContent="Editar";edit.onclick=function(){
+     E.termoDate.value=item.date||"";
+     E.termoWord.value=item.word||"";
+     E.termoEditDate.value=item.date||"";
+     E.termoSaveBtn.textContent="Salvar alteração";
+     E.termoCancelEditBtn.classList.remove("hidden");
+     E.termoFormStatus.textContent="Editando "+prettyDate(item.date)+".";
+     window.scrollTo({top:0,behavior:"smooth"});
+   };
+   var del=document.createElement("button");del.className="mini-btn delete-btn";del.type="button";del.textContent="Excluir";del.onclick=async function(){
+     if(!window.confirm('Excluir a palavra de '+prettyDate(item.date)+'?'))return;
+     var file=await getRepoFile("termo/catalog.json"),fresh=decodeRepoContent(file);
+     fresh.words=(fresh.words||[]).filter(function(w){return String(w.date||"")!==String(item.date||"")});
+     await saveTermoCatalog(fresh,file.sha,"Delete Termo word "+item.date);
+     termoCatalog=fresh;renderTermoWords();toast("Palavra excluída.");
+   };
+   actions.append(test,edit,del);row.append(date,word,actions);E.termoWordsList.appendChild(row);
+ })
+}
+async function saveTermoCatalog(data,sha,message){
+ var json=JSON.stringify(data,null,2)+"\n",bytes=new TextEncoder().encode(json),binary="";
+ for(var i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ return api("/contents/termo/catalog.json",{method:"PUT",headers:headers({"Content-Type":"application/json"}),body:JSON.stringify({message:message||"Update Termo catalog",content:btoa(binary),branch:BRANCH,sha:sha})})
+}
+function resetTermoForm(){
+ if(!E.termoForm)return;
+ E.termoForm.reset();E.termoDate.value=brazilDate();E.termoEditDate.value="";E.termoSaveBtn.textContent="Salvar palavra do dia";E.termoCancelEditBtn.classList.add("hidden");E.termoFormStatus.textContent="Acentos são aceitos; o jogo compara as letras sem diferenciar acento.";
+}
+
 function songForDate(date){var eligible=catalog.songs.filter(function(s){return String(s.date||"")<=String(date||"")});return eligible.length?eligible[eligible.length-1]:null}
 function renderSelectedChallenge(){
  var song=songForDate(selectedDate||brazilDate());
@@ -613,10 +681,10 @@ function renderTraffic(days){
  E.trafficChart.innerHTML="";if(!Array.isArray(days)||!days.length){E.trafficChart.innerHTML='<div class="empty-chart">Sem histórico de acessos</div>';E.trafficTotal.textContent="— total";return}
  var max=Math.max.apply(Math,days.map(function(d){return Number(d.views||d.accesses||0)}).concat([1])),sum=0;days.slice(-7).forEach(function(d){var v=Number(d.views||d.accesses||0)||0;sum+=v;var col=document.createElement("div");col.className="chart-col";var bar=document.createElement("i");bar.style.height=Math.max(3,Math.round(v/max*150))+"px";var lab=document.createElement("span");lab.textContent=(d.label||String(d.date||"").slice(5)||"—");col.append(bar,lab);E.trafficChart.appendChild(col)});E.trafficTotal.textContent=formatInt(sum)+" total"
 }
-var titles={"dashboard":["PAINEL","Visão geral"],"new-song":["CONTEÚDO","Nova música"],"catalog":["BIBLIOTECA","Catálogo"],"midi-lab":["LABORATÓRIO","MIDI automático"],"settings":["SISTEMA","Configurações"]};
+var titles={"dashboard":["PAINEL","Visão geral"],"new-song":["CONTEÚDO","Nova música"],"catalog":["BIBLIOTECA","Catálogo"],"termo":["JOGO","Termo do Dia"],"midi-lab":["LABORATÓRIO","MIDI automático"],"settings":["SISTEMA","Configurações"]};
 function switchView(name){
  document.querySelectorAll(".nav-item").forEach(function(b){b.classList.toggle("active",b.dataset.view===name)});document.querySelectorAll("[data-view-panel]").forEach(function(v){v.classList.toggle("active",v.dataset.viewPanel===name)});
- var t=titles[name]||titles.dashboard;E.sectionEyebrow.textContent=t[0];E.sectionTitle.textContent=t[1];document.querySelector(".sidebar").classList.remove("open");if(name==="dashboard")refreshDashboard();if(name==="midi-lab")loadLatestMidiResult(true)
+ var t=titles[name]||titles.dashboard;E.sectionEyebrow.textContent=t[0];E.sectionTitle.textContent=t[1];document.querySelector(".sidebar").classList.remove("open");if(name==="dashboard")refreshDashboard();if(name==="midi-lab")loadLatestMidiResult(true);if(name==="termo")loadTermoCatalog(true)
 }
 document.querySelectorAll(".nav-item").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.view)})});
 document.querySelectorAll("[data-view-jump]").forEach(function(b){b.addEventListener("click",function(){switchView(b.dataset.viewJump)})});
@@ -710,6 +778,32 @@ E.audioFile.addEventListener("change",function(){var f=E.audioFile.files&&E.audi
 ["dragenter","dragover"].forEach(function(n){E.uploadZone.addEventListener(n,function(ev){ev.preventDefault();E.uploadZone.classList.add("drag")})});["dragleave","drop"].forEach(function(n){E.uploadZone.addEventListener(n,function(){E.uploadZone.classList.remove("drag")})});
 E.songForm.addEventListener("submit",async function(ev){ev.preventDefault();var file=E.audioFile.files&&E.audioFile.files[0];if(!file){toast("Escolha o arquivo de áudio.");return}if(file.size>MAX_FILE_MB*1024*1024){toast("O áudio passa de "+MAX_FILE_MB+" MB.");return}var v=formValues();if(!v.date){toast("Escolha a data.");return}E.publishBtn.disabled=true;E.workflowLink.classList.add("hidden");try{var path="incoming/"+Date.now()+"-"+sanitizeFilename(file.name);setJob(15,"Enviando áudio","Preparando arquivo.");await uploadAudio(file,path);setJob(55,"Upload concluído","Iniciando processamento.");var t=Date.now();await dispatch(path,v);setJob(62,"Processamento solicitado","Localizando execução.");var run=await waitRun(t);if(!run){setJob(66,"Processamento iniciado","Atualize o catálogo em alguns minutos.");toast("Processamento enviado.");return}await monitor(run)}catch(err){console.error(err);setJob(100,"Não foi possível concluir",err.status===403?"O token precisa de Contents e Actions em leitura e escrita.":"Confira a conexão ou a execução no GitHub.");toast("Ocorreu um erro no envio.")}finally{E.publishBtn.disabled=false}});
 E.refreshSongsBtn.addEventListener("click",async function(){try{await loadCatalog();toast("Catálogo atualizado.")}catch(_){toast("Não consegui atualizar.")}});
+if(E.termoRefreshBtn)E.termoRefreshBtn.addEventListener("click",function(){loadTermoCatalog(true)});
+if(E.termoCancelEditBtn)E.termoCancelEditBtn.addEventListener("click",resetTermoForm);
+if(E.termoForm)E.termoForm.addEventListener("submit",async function(ev){
+ ev.preventDefault();
+ var date=String(E.termoDate.value||"").trim(),word=String(E.termoWord.value||"").trim().toUpperCase();
+ if(!date){toast("Escolha a data.");return}
+ if(normalizeTermoWord(word).length!==5){toast("A palavra precisa ter exatamente 5 letras.");return}
+
+ E.termoSaveBtn.disabled=true;E.termoFormStatus.textContent="Salvando...";
+ try{
+   var file=await getRepoFile("termo/catalog.json"),fresh=decodeRepoContent(file);
+   if(!Array.isArray(fresh.words))fresh.words=[];
+   var oldDate=String(E.termoEditDate.value||"").trim();
+   if(oldDate&&oldDate!==date)fresh.words=fresh.words.filter(function(item){return String(item.date||"")!==oldDate});
+   var index=fresh.words.findIndex(function(item){return String(item.date||"")===date});
+   var current=index>=0?fresh.words[index]:null;
+   var item={date:date,word:word,version:Math.max(1,Number(current&&current.version||0)+1)};
+   if(index>=0)fresh.words[index]=item;else fresh.words.push(item);
+   fresh.words.sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""))});
+   await saveTermoCatalog(fresh,file.sha,"Publish Termo word for "+date);
+   termoCatalog=fresh;renderTermoWords();resetTermoForm();toast("Palavra do Termo salva.");
+ }catch(err){
+   console.error("save termo",err);E.termoFormStatus.textContent="Não foi possível salvar.";toast("Falha ao salvar o Termo.");
+ }finally{E.termoSaveBtn.disabled=false}
+});
+
 E.editForm.addEventListener("submit",async function(ev){ev.preventDefault();var i=Number(E.editIndex.value),s=catalog.songs[i];if(!s)return;E.saveEditBtn.disabled=true;s.title=E.editTitle.value.trim();s.artist=E.editArtist.value.trim();s.releaseYear=E.editReleaseYear.value.trim();s.youtubeViews=E.editYoutubeViews.value.trim();s.difficulty=E.editDifficulty.value;s.youtubeUrl=E.editYoutubeUrl.value.trim();s.spotifyUrl=E.editSpotifyUrl.value.trim();s.appleMusicUrl=E.editAppleMusicUrl.value.trim();s.deezerUrl=E.editDeezerUrl.value.trim();s.coverUrl=E.editCoverUrl.value.trim();try{await saveCatalog();renderSongs();renderSelectedChallenge();E.editDialog.close();toast("Alterações salvas.")}catch(err){console.error(err);toast("Não consegui salvar.")}finally{E.saveEditBtn.disabled=false}});
 function setDashboardDate(date){
  var today=brazilDate();
@@ -732,7 +826,7 @@ E.todayDateBtn.addEventListener("click",function(){setDashboardDate(brazilDate()
 
 async function boot(){
  loadAdminTheme();
- setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();if(E.midiPublishDate&&!E.midiPublishDate.value)E.midiPublishDate.value=brazilDate();
+ setDefaultDate();selectedDate=brazilDate();updateDateFilterUi();if(E.midiPublishDate&&!E.midiPublishDate.value)E.midiPublishDate.value=brazilDate();if(E.termoDate&&!E.termoDate.value)E.termoDate.value=brazilDate();
  var st=storedToken();
  if(!st)return;
 

@@ -12,7 +12,7 @@ var E={
   statPlayed:el("statPlayed"),statWinRate:el("statWinRate"),statStreak:el("statStreak"),statBest:el("statBest")
 };
 
-var challenge=null,catalogIndex=-1,row=0,current="",guesses=[],evaluations=[],finished=false,won=false;
+var challenge=null,catalogIndex=-1,row=0,current="",guesses=[],evaluations=[],finished=false,won=false,editIndex=null;
 var keyStates={};
 var allowedThemes=["creme","azul","verde","rosa","lilas","noite"];
 var previewDate="",adminPreview=false;
@@ -57,7 +57,21 @@ function buildBoard(){
   E.board.innerHTML="";
   for(var r=0;r<6;r++){
     var rowEl=document.createElement("div");rowEl.className="termo-row";rowEl.dataset.row=String(r);
-    for(var c=0;c<5;c++){var cell=document.createElement("div");cell.className="termo-cell";cell.dataset.col=String(c);rowEl.appendChild(cell)}
+    for(var c=0;c<5;c++){
+      var cell=document.createElement("div");
+      cell.className="termo-cell";
+      cell.dataset.col=String(c);
+      cell.tabIndex=-1;
+      (function(rowIndex,colIndex,target){
+        target.addEventListener("click",function(){selectCell(rowIndex,colIndex)});
+        target.addEventListener("keydown",function(ev){
+          if(ev.key!=="Enter"&&ev.key!==" ")return;
+          ev.preventDefault();
+          selectCell(rowIndex,colIndex);
+        });
+      })(r,c,cell);
+      rowEl.appendChild(cell)
+    }
     E.board.appendChild(rowEl);
   }
 }
@@ -80,11 +94,22 @@ function makeKey(label,value){
   b.addEventListener("click",function(){handleKey(value)});return b;
 }
 function cellsFor(r){return Array.prototype.slice.call(E.board.querySelectorAll('.termo-row[data-row="'+r+'"] .termo-cell'))}
+function selectCell(rowIndex,colIndex){
+  if(finished||rowIndex!==row||colIndex>=current.length)return;
+  editIndex=colIndex;
+  renderCurrent();
+  setMessage("Digite a nova letra para substituir "+current[colIndex]+".");
+}
 function renderCurrent(){
   var cells=cellsFor(row);
   cells.forEach(function(cell,i){
+    var hasLetter=Boolean(current[i]);
     cell.textContent=current[i]||"";
-    cell.classList.toggle("filled",Boolean(current[i]));
+    cell.classList.toggle("filled",hasLetter);
+    cell.classList.toggle("editing",editIndex===i&&hasLetter);
+    cell.classList.toggle("editable",hasLetter&&!finished);
+    cell.tabIndex=hasLetter&&!finished?0:-1;
+    cell.setAttribute("aria-label",hasLetter?("Letra "+current[i]+". Clique para trocar."):"Posição "+(i+1));
   });
 }
 function priority(state){return state==="correct"?3:state==="present"?2:state==="absent"?1:0}
@@ -156,7 +181,7 @@ function readStats(){
   E.statStreak.textContent=String(stats.streak||0);E.statBest.textContent=String(stats.best||0);
 }
 function finish(win){
-  finished=true;won=Boolean(win);current="";updateStats(won);save();updateAttemptLabel();
+  finished=true;won=Boolean(win);current="";editIndex=null;updateStats(won);save();updateAttemptLabel();
   E.result.classList.remove("hidden");
   E.resultStatus.textContent=won?"Acertou!":"Não foi dessa vez";
   E.resultStatus.className=won?"result-status success":"result-status fail";
@@ -167,6 +192,7 @@ function finish(win){
 }
 function submit(){
   if(finished)return;
+  editIndex=null;
   if(current.length!==5){setMessage("A palavra precisa ter 5 letras.","error");shake();return}
   var answer=normalizeWord(challenge.word);
   var guess=current,result=evaluateGuess(guess,answer),cells=cellsFor(row);
@@ -179,8 +205,31 @@ function submit(){
 function handleKey(key){
   if(!challenge||finished)return;
   if(key==="ENTER"){submit();return}
-  if(key==="BACKSPACE"){if(current.length){current=current.slice(0,-1);renderCurrent()}return}
-  if(/^[A-Z]$/.test(key)&&current.length<5){current+=key;renderCurrent();setMessage("Digite uma palavra de 5 letras.")}
+  if(key==="BACKSPACE"){
+    if(editIndex!==null&&editIndex<current.length){
+      current=current.slice(0,editIndex)+current.slice(editIndex+1);
+      editIndex=null;
+      renderCurrent();
+      setMessage("Letra removida.");
+      return
+    }
+    if(current.length){current=current.slice(0,-1);editIndex=null;renderCurrent()}
+    return
+  }
+  if(/^[A-Z]$/.test(key)){
+    if(editIndex!==null&&editIndex<current.length){
+      current=current.slice(0,editIndex)+key+current.slice(editIndex+1);
+      editIndex=null;
+      renderCurrent();
+      setMessage("Letra trocada.");
+      return
+    }
+    if(current.length<5){
+      current+=key;
+      renderCurrent();
+      setMessage("Digite uma palavra de 5 letras.")
+    }
+  }
 }
 function resultGrid(){
   return evaluations.map(function(rowEv){return rowEv.map(function(v){return v==="correct"?"🟩":v==="present"?"🟨":"⬛"}).join("")}).join("\n");
@@ -192,7 +241,7 @@ async function share(){
   try{await navigator.clipboard.writeText(text);setMessage("Resultado copiado.","success")}catch(_){setMessage(text)}
 }
 function resetPreview(){
-  row=0;current="";guesses=[];evaluations=[];finished=false;won=false;keyStates={};
+  row=0;current="";guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};
   E.result.classList.add("hidden");E.resetPreview.classList.add("hidden");buildBoard();buildKeyboard();updateAttemptLabel();setMessage("Digite uma palavra de 5 letras.");
 }
 async function init(){

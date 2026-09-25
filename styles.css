@@ -1403,3 +1403,129 @@ body[data-theme="noite"] .platform-apple .platform-logo{color:#f3f3f5}
 }
 
 body[data-theme="grafite"] .platform-apple .platform-logo{color:#f3f3f5}
+
+
+/* Seletor compacto de jogos integrado ao título. */
+.game-menu{
+  position:relative;
+  justify-self:center;
+  min-width:0;
+  z-index:115;
+}
+
+.game-menu-trigger{
+  cursor:pointer;
+  user-select:none;
+  list-style:none;
+  border-radius:12px;
+  padding:3px 7px 3px 3px;
+  transition:background .15s ease, transform .15s ease;
+}
+
+.game-menu-trigger::-webkit-details-marker{display:none}
+.game-menu-trigger::marker{content:""}
+
+.game-menu-trigger:hover{
+  background:color-mix(in srgb,var(--surface-2) 62%,transparent);
+}
+
+.game-menu-chevron{
+  width:18px;
+  height:18px;
+  display:grid;
+  place-items:center;
+  flex:0 0 18px;
+  margin-left:1px;
+  color:var(--muted);
+  font-size:17px;
+  font-weight:900;
+  line-height:1;
+  transform:translateY(-1px);
+  transition:transform .16s ease,color .16s ease;
+}
+
+.game-menu[open] .game-menu-chevron{
+  transform:translateY(1px) rotate(180deg);
+  color:var(--text);
+}
+
+.game-menu-popover{
+  position:absolute;
+  top:calc(100% + 7px);
+  left:50%;
+  width:220px;
+  padding:6px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);
+  box-shadow:0 14px 36px var(--shadow);
+  transform:translateX(-50%);
+  display:grid;
+  gap:4px;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+
+.game-menu-option{
+  min-height:43px;
+  padding:5px 8px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:var(--muted);
+  text-decoration:none;
+  font-size:12px;
+  font-weight:900;
+  transition:background .15s ease,color .15s ease;
+}
+
+.game-menu-option:hover{
+  color:var(--text);
+  background:var(--pill);
+}
+
+.game-menu-option.active{
+  color:var(--text);
+  background:var(--pill-active);
+}
+
+.game-menu-option-icon{
+  width:28px;
+  height:28px;
+  flex:0 0 28px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  object-fit:contain;
+}
+
+.game-menu-term-icon{
+  background:#58a354;
+  color:#fff;
+  font-size:17px;
+  font-weight:1000;
+}
+
+@media(max-width:600px){
+  .game-menu-trigger{
+    padding:2px 5px 2px 2px;
+  }
+
+  .game-menu-chevron{
+    width:16px;
+    height:16px;
+    flex-basis:16px;
+    font-size:15px;
+  }
+
+  .game-menu-popover{
+    width:205px;
+    top:calc(100% + 6px);
+  }
+
+  .game-menu-option{
+    min-height:41px;
+    font-size:11px;
+  }
+}

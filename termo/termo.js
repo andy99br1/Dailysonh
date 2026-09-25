@@ -330,10 +330,22 @@ async function init(){
   }
 }
 
-E.themeToggle.addEventListener("click",function(ev){ev.stopPropagation();E.themeMenu.classList.toggle("hidden")});
+var gameMenu=document.querySelector(".game-menu");
+if(gameMenu){
+  gameMenu.addEventListener("toggle",function(){if(gameMenu.open)E.themeMenu.classList.add("hidden")});
+}
+E.themeToggle.addEventListener("click",function(ev){
+  ev.stopPropagation();
+  if(gameMenu)gameMenu.open=false;
+  E.themeMenu.classList.toggle("hidden");
+});
 E.themeOptions.forEach(function(btn){btn.addEventListener("click",function(){chooseTheme(btn.getAttribute("data-theme-choice"))})});
-document.addEventListener("click",function(ev){if(E.themeMenu.classList.contains("hidden"))return;if(ev.target.closest&&ev.target.closest(".theme-picker"))return;E.themeMenu.classList.add("hidden")});
+document.addEventListener("click",function(ev){
+  if(!E.themeMenu.classList.contains("hidden")&&!(ev.target.closest&&ev.target.closest(".theme-picker")))E.themeMenu.classList.add("hidden");
+  if(gameMenu&&gameMenu.open&&!(ev.target.closest&&ev.target.closest(".game-menu")))gameMenu.open=false;
+});
 document.addEventListener("keydown",function(ev){
+  if(ev.key==="Escape"&&gameMenu){gameMenu.open=false;return}
   if(ev.ctrlKey||ev.metaKey||ev.altKey)return;
   if(ev.key==="Enter")handleKey("ENTER");
   else if(ev.key==="Backspace")handleKey("BACKSPACE");

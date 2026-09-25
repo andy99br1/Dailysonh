@@ -850,3 +850,18 @@ body[data-theme] .termo-cell.editable:focus-visible{
     min-height:48px;
   }
 }
+
+
+/* Layout simplificado: tabuleiro mais centralizado após remover título e barra de informações. */
+.termo-card{
+  padding-top:6px;
+}
+
+.termo-board{
+  margin-top:clamp(6px,1.6vh,16px);
+}
+
+@media(max-width:600px){
+  .termo-card{padding-top:4px}
+  .termo-board{margin-top:5px}
+}

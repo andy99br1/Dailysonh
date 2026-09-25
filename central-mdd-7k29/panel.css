@@ -581,3 +581,65 @@ body[data-admin-theme="day"] .midi-name-editor{background:rgba(38,55,92,.025)}
   .termo-word-row{grid-template-columns:1fr auto}
   .termo-word-date{grid-column:1/-1}
 }
+
+
+/* Tema grafite do painel administrativo */
+body[data-admin-theme="grafite"]{
+  --bg:#202428;
+  --bg-2:#1b1f23;
+  --panel:#262b30;
+  --panel-2:#2d3339;
+  --panel-3:#343b42;
+  --line:rgba(255,255,255,.09);
+  --text:#f3f4f5;
+  --muted:#a7adb3;
+  --blue:#7d91a6;
+  --cyan:#7f9da7;
+  --purple:#9788a8;
+  --orange:#b88c72;
+  --green:#6ea36a;
+  --red:#c86d72;
+  --yellow:#c4a45f;
+  --shadow:0 18px 50px rgba(0,0,0,.22);
+  background:
+    radial-gradient(circle at 82% 5%,rgba(255,255,255,.035),transparent 28rem),
+    radial-gradient(circle at 22% 85%,rgba(255,255,255,.02),transparent 24rem),
+    var(--bg);
+}
+
+body[data-admin-theme="grafite"] .sidebar{
+  background:linear-gradient(180deg,#262b30 0%,#1e2327 100%);
+  border-right-color:rgba(255,255,255,.07);
+}
+
+body[data-admin-theme="grafite"] .nav-item{color:#aab0b6}
+body[data-admin-theme="grafite"] .nav-item:hover{background:rgba(255,255,255,.045);color:#fff}
+body[data-admin-theme="grafite"] .nav-item.active{
+  background:linear-gradient(90deg,rgba(255,255,255,.10),rgba(255,255,255,.035));
+  color:#fff;
+  box-shadow:inset 3px 0 0 #87919a;
+}
+
+body[data-admin-theme="grafite"] .metric-card,
+body[data-admin-theme="grafite"] .dash-card,
+body[data-admin-theme="grafite"] .date-filter,
+body[data-admin-theme="grafite"] .login-card{
+  background:linear-gradient(145deg,#292f34,#23282d);
+}
+
+body[data-admin-theme="grafite"] input,
+body[data-admin-theme="grafite"] select{
+  background:#1f2428;
+  color:#f2f3f4;
+  border-color:rgba(255,255,255,.10);
+  color-scheme:dark;
+}
+
+body[data-admin-theme="grafite"] .theme-switch button.active{
+  background:#3a4147;
+  color:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
+}
+
+body[data-admin-theme="grafite"] .side-brand{color:#f3f4f5}
+body[data-admin-theme="grafite"] .eyebrow{color:#a7adb3}

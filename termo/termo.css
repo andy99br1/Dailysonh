@@ -219,3 +219,246 @@ body[data-theme="grafite"] .termo-result{
   .termo-submit{min-height:49px}
   .termo-legend{gap:8px}
 }
+
+
+/* Layout responsivo sem scroll: todo o Termo cabe na viewport. */
+html,body{
+  height:100%;
+  overflow:hidden;
+}
+
+.termo-shell{
+  --term-cell:min(
+    66px,
+    calc((100vw - 46px)/5),
+    calc((100dvh - 345px)/6)
+  );
+  width:min(760px,100%);
+  height:100dvh;
+  min-height:0;
+  padding:5px 12px 6px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+.termo-shell .game-switcher{
+  flex:0 0 auto;
+  min-height:27px;
+  margin:0 auto 2px;
+}
+
+.termo-shell .game-switcher-link{
+  min-height:26px;
+  padding:0 9px;
+  font-size:9px;
+}
+
+.termo-shell .topbar{
+  flex:0 0 auto;
+  min-height:45px;
+  margin:0 0 1px;
+  grid-template-columns:36px 1fr 36px;
+}
+
+.termo-shell .theme-toggle,
+.termo-shell .day-chip{
+  width:34px;
+  height:34px;
+}
+
+.termo-shell .palette-icon{transform:scale(.88)}
+
+.termo-shell .termo-brand-mark{
+  width:34px;
+  height:34px;
+  flex-basis:34px;
+  font-size:20px;
+}
+
+.termo-shell .brand{gap:7px}
+.termo-shell .brand h1{font-size:19px}
+.termo-shell .brand p{margin-top:2px;font-size:8px}
+
+.termo-card{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.termo-card .game-title{
+  flex:0 0 auto;
+  margin:0 0 4px;
+  font-size:14px;
+}
+
+.termo-info{
+  flex:0 0 auto;
+  width:min(430px,100%);
+  margin:0 auto 4px;
+  padding:5px 6px;
+  border-radius:8px;
+}
+
+.termo-info .info-item span{
+  margin-bottom:1px;
+  font-size:7px;
+}
+.termo-info .info-item strong{font-size:10px}
+
+.termo-legend{
+  flex:0 0 auto;
+  margin:0 0 4px;
+  font-size:8px;
+}
+
+.termo-board{
+  flex:0 0 auto;
+  width:calc(var(--term-cell)*5 + 16px);
+  margin:0 auto;
+  gap:4px;
+}
+
+.termo-row{
+  grid-template-columns:repeat(5,var(--term-cell));
+  gap:4px;
+}
+
+.termo-cell{
+  width:var(--term-cell);
+  height:var(--term-cell);
+  aspect-ratio:auto;
+  border-radius:5px;
+  font-size:clamp(20px,calc(var(--term-cell)*.50),34px);
+}
+
+.termo-message{
+  flex:0 0 auto;
+  min-height:14px;
+  margin:2px 0 0;
+  line-height:14px;
+  font-size:8px;
+}
+
+.termo-keyboard{
+  flex:0 0 auto;
+  width:min(540px,100%);
+  gap:3px;
+  margin:auto auto 0;
+}
+
+.termo-key-row{gap:3px}
+
+.termo-key{
+  height:clamp(34px,4.5dvh,46px);
+  border-radius:5px;
+  padding:0 2px;
+  font-size:13px;
+}
+
+.termo-key.wide{flex:1.45}
+
+.termo-key.delete-key{
+  display:grid;
+  place-items:center;
+  padding:0;
+}
+
+.termo-key.delete-key svg{
+  width:21px;
+  height:21px;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.termo-submit{
+  flex:0 0 auto;
+  width:min(540px,100%);
+  height:clamp(38px,4.8dvh,46px);
+  min-height:0;
+  margin:4px auto 0;
+  border-radius:5px;
+  font-size:13px;
+}
+
+.termo-reset-test{
+  flex:0 0 auto;
+  margin:4px auto 0;
+  padding:3px 9px;
+  font-size:8px;
+  line-height:1.2;
+}
+
+.termo-shell .footer-note{display:none}
+
+body.termo-finished .termo-keyboard,
+body.termo-finished .termo-submit{
+  display:none;
+}
+
+body.termo-finished .termo-result{
+  margin:6px auto auto;
+  padding:10px 12px;
+}
+
+body.termo-finished .termo-result h2{
+  margin:2px 0 7px;
+  font-size:24px;
+}
+
+body.termo-finished .termo-stats{margin-bottom:7px}
+
+/* Celulares baixos: comprime cabeçalho e tabuleiro automaticamente. */
+@media(max-width:600px){
+  .termo-shell{
+    --term-cell:min(
+      60px,
+      calc((100vw - 34px)/5),
+      calc((100dvh - 315px)/6)
+    );
+    padding:3px 8px 5px;
+  }
+  .termo-shell .game-switcher{min-height:24px;margin-bottom:1px}
+  .termo-shell .game-switcher-link{min-height:23px;font-size:8px;padding:0 8px}
+  .termo-shell .topbar{min-height:40px;grid-template-columns:31px 1fr 31px}
+  .termo-shell .theme-toggle,
+  .termo-shell .day-chip{width:30px;height:30px}
+  .termo-shell .termo-brand-mark{width:30px;height:30px;flex-basis:30px;font-size:18px}
+  .termo-shell .brand h1{font-size:17px}
+  .termo-shell .brand p{font-size:7px}
+  .termo-card .game-title{font-size:12px;margin-bottom:3px}
+  .termo-info{padding:4px 5px;margin-bottom:3px}
+  .termo-info .info-item span{font-size:6.5px}
+  .termo-info .info-item strong{font-size:9px}
+  .termo-legend{display:none}
+  .termo-board{gap:3px;width:calc(var(--term-cell)*5 + 12px)}
+  .termo-row{gap:3px}
+  .termo-message{min-height:12px;line-height:12px;font-size:7.5px;margin-top:1px}
+  .termo-keyboard{gap:3px}
+  .termo-key{height:clamp(32px,4.4dvh,42px);font-size:12px}
+  .termo-submit{height:clamp(36px,4.6dvh,42px);font-size:12px;margin-top:3px}
+  .termo-reset-test{margin-top:3px;padding:2px 8px;font-size:7px}
+}
+
+@media(max-height:650px){
+  .termo-shell{
+    --term-cell:min(
+      52px,
+      calc((100vw - 34px)/5),
+      calc((100dvh - 285px)/6)
+    );
+  }
+  .termo-shell .topbar{min-height:36px}
+  .termo-shell .brand p{display:none}
+  .termo-card .game-title{font-size:11px}
+  .termo-info{padding:3px 5px}
+  .termo-message{display:none}
+  .termo-key{height:30px}
+  .termo-submit{height:34px}
+}

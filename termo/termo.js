@@ -233,21 +233,18 @@ function handleKey(key){
   if(!challenge||finished)return;
   if(key==="ENTER"){submit();return}
   if(key==="BACKSPACE"){
-    if(editIndex!==null){
-      current[editIndex]="";
-      renderCurrent();
-      setMessage("Letra removida.");
-      return
-    }
-    for(var i=4;i>=0;i--){
+    var start=editIndex!==null?editIndex:4;
+    for(var i=start;i>=0;i--){
       if(current[i]){
         current[i]="";
-        editIndex=i;
+        editIndex=i>0?i-1:0;
         renderCurrent();
         setMessage("Letra removida.");
         return
       }
     }
+    editIndex=0;
+    renderCurrent();
     return
   }
   if(/^[A-Z]$/.test(key)){

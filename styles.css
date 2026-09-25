@@ -395,8 +395,8 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .song-stat {
   min-width: 0;
-  min-height: 56px;
-  padding: 8px 6px;
+  min-height: 42px;
+  padding: 5px 6px 4px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface-2);

@@ -12,7 +12,7 @@
     }
   </script>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=18">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=19">
 </head>
 <body class="auth-locked">
   <div class="app-shell">
@@ -26,6 +26,7 @@
         <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
         <button class="nav-item" data-view="new-song"><span class="nav-icon">＋</span><span>Nova música</span></button>
         <button class="nav-item" data-view="catalog"><span class="nav-icon">♫</span><span>Catálogo</span></button>
+        <button class="nav-item" data-view="termo"><span class="nav-icon">▦</span><span>Termo do Dia</span></button>
         <button class="nav-item" data-view="midi-lab"><span class="nav-icon">♬</span><span>Laboratório MIDI</span></button>
         <a class="nav-item" href="/central-mdd-7k29/stem-flute-lab.html" style="text-decoration:none"><span class="nav-icon">≈</span><span>Stem + Flauta</span></a>
         <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span>Configurações</span></button>
@@ -240,6 +241,63 @@
             </div>
             <div id="songsEmpty" class="empty-row hidden">Nenhuma música cadastrada.</div>
             <div id="songsList" class="songs-list"></div>
+          </article>
+        </section>
+
+
+        <section class="view" data-view-panel="termo">
+          <div class="termo-admin-grid">
+            <article class="dash-card">
+              <div class="card-title-row">
+                <div>
+                  <span class="eyebrow">TERMO DO DIA</span>
+                  <h2>Palavra diária</h2>
+                </div>
+                <a class="btn secondary small termo-open-link" href="/termo/" target="_blank" rel="noopener">Abrir jogo</a>
+              </div>
+
+              <p class="muted termo-admin-intro">Cadastre uma palavra de 5 letras para cada data. O jogo libera automaticamente a palavra correspondente no dia agendado.</p>
+
+              <form id="termoForm">
+                <input id="termoEditDate" type="hidden">
+                <div class="fields two">
+                  <label>Data do desafio
+                    <input id="termoDate" type="date" required>
+                  </label>
+                  <label>Palavra de 5 letras
+                    <input id="termoWord" type="text" maxlength="12" autocomplete="off" placeholder="Ex.: CANTO" required>
+                  </label>
+                </div>
+                <div class="termo-admin-actions">
+                  <button class="btn primary" id="termoSaveBtn" type="submit">Salvar palavra do dia</button>
+                  <button class="btn secondary hidden" id="termoCancelEditBtn" type="button">Cancelar edição</button>
+                  <span class="muted" id="termoFormStatus">Acentos são aceitos; o jogo compara as letras sem diferenciar acento.</span>
+                </div>
+              </form>
+            </article>
+
+            <aside class="dash-card process-card">
+              <span class="eyebrow">COMO FUNCIONA</span>
+              <h2>Mesmo estilo, outro jogo</h2>
+              <div class="process-flow">
+                <div><i>1</i><p><strong>5 letras</strong><span>O jogador tem até 6 tentativas.</span></p></div>
+                <div><i>2</i><p><strong>Verde</strong><span>Letra certa no lugar certo.</span></p></div>
+                <div><i>3</i><p><strong>Amarelo</strong><span>Letra presente em outro lugar.</span></p></div>
+                <div><i>4</i><p><strong>Diário</strong><span>Uma palavra por data, como o Música do Dia.</span></p></div>
+              </div>
+            </aside>
+          </div>
+
+          <article class="dash-card termo-catalog-card">
+            <div class="card-title-row">
+              <div>
+                <span class="eyebrow">AGENDA</span>
+                <h2>Palavras cadastradas</h2>
+              </div>
+              <button class="btn secondary small" id="termoRefreshBtn" type="button">Atualizar</button>
+            </div>
+            <div class="termo-word-empty empty-row hidden" id="termoWordsEmpty">Nenhuma palavra cadastrada.</div>
+            <div class="termo-word-list" id="termoWordsList"></div>
           </article>
         </section>
 
@@ -470,6 +528,6 @@
       } catch (_) {}
     })();
   </script>
-  <script src="/central-mdd-7k29/panel.js?v=20"></script>
+  <script src="/central-mdd-7k29/panel.js?v=21"></script>
 </body>
 </html>

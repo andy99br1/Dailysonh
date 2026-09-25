@@ -38,7 +38,7 @@ function prettyDate(value){
   return new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(Date.UTC(p[0],p[1]-1,p[2])));
 }
 function applyTheme(theme){
-  if(allowedThemes.indexOf(theme)<0)theme="noite";
+  if(allowedThemes.indexOf(theme)<0)theme="grafite";
   document.body.setAttribute("data-theme",theme);
   E.themeOptions.forEach(function(btn){btn.classList.toggle("active",btn.getAttribute("data-theme-choice")===theme)});
   var colors={creme:"#f5efe4",azul:"#eef5fb",verde:"#eef4ec",rosa:"#fbf0f2",lilas:"#f3effa",noite:"#071632",grafite:"#202428"};
@@ -47,7 +47,7 @@ function applyTheme(theme){
 function loadTheme(){
   var saved=localStorage.getItem("musicadodia:theme");
   if(saved==="dark")saved="noite";if(saved==="light")saved="creme";
-  applyTheme(allowedThemes.indexOf(saved)>=0?saved:"noite");
+  applyTheme(allowedThemes.indexOf(saved)>=0?saved:"grafite");
 }
 function chooseTheme(theme){localStorage.setItem("musicadodia:theme",theme);applyTheme(theme);E.themeMenu.classList.add("hidden")}
 function stateKey(){return challenge?"musicadodia:termo:"+challenge.date+":v"+(challenge.version||1):""}

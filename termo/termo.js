@@ -6,7 +6,7 @@ var E={
   themeToggle:el("themeToggle"),themeMenu:el("themeMenu"),themeColor:el("themeColor"),
   themeOptions:Array.prototype.slice.call(document.querySelectorAll("[data-theme-choice]")),
   dayChip:el("dayChip"),challengeNumber:el("challengeNumber"),termDate:el("termDate"),attemptLabel:el("attemptLabel"),
-  board:el("termBoard"),keyboard:el("termKeyboard"),message:el("termMessage"),
+  board:el("termBoard"),keyboard:el("termKeyboard"),message:el("termMessage"),submit:el("termSubmitBtn"),reset:el("termResetBtn"),
   result:el("termResult"),resultStatus:el("termResultStatus"),answer:el("termAnswer"),
   share:el("termShareBtn"),resetPreview:el("termResetPreviewBtn"),
   statPlayed:el("statPlayed"),statWinRate:el("statWinRate"),statStreak:el("statStreak"),statBest:el("statBest")
@@ -14,7 +14,7 @@ var E={
 
 var challenge=null,catalogIndex=-1,row=0,current="",guesses=[],evaluations=[],finished=false,won=false,editIndex=null;
 var keyStates={};
-var allowedThemes=["creme","azul","verde","rosa","lilas","noite"];
+var allowedThemes=["creme","azul","verde","rosa","lilas","noite","grafite"];
 var previewDate="",adminPreview=false;
 
 try{
@@ -41,7 +41,7 @@ function applyTheme(theme){
   if(allowedThemes.indexOf(theme)<0)theme="noite";
   document.body.setAttribute("data-theme",theme);
   E.themeOptions.forEach(function(btn){btn.classList.toggle("active",btn.getAttribute("data-theme-choice")===theme)});
-  var colors={creme:"#f5efe4",azul:"#eef5fb",verde:"#eef4ec",rosa:"#fbf0f2",lilas:"#f3effa",noite:"#071632"};
+  var colors={creme:"#f5efe4",azul:"#eef5fb",verde:"#eef4ec",rosa:"#fbf0f2",lilas:"#f3effa",noite:"#071632",grafite:"#202428"};
   E.themeColor.setAttribute("content",colors[theme]||colors.noite);
 }
 function loadTheme(){
@@ -79,9 +79,6 @@ function buildKeyboard(){
   E.keyboard.innerHTML="";
   ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"].forEach(function(chars,index){
     var line=document.createElement("div");line.className="termo-key-row";
-    if(index===2){
-      var enter=makeKey("ENTER","ENTER");enter.classList.add("wide");line.appendChild(enter);
-    }
     chars.split("").forEach(function(ch){line.appendChild(makeKey(ch,ch))});
     if(index===2){
       var del=makeKey("⌫","BACKSPACE");del.classList.add("wide");line.appendChild(del);
@@ -244,6 +241,17 @@ function resetPreview(){
   row=0;current="";guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};
   E.result.classList.add("hidden");E.resetPreview.classList.add("hidden");buildBoard();buildKeyboard();updateAttemptLabel();setMessage("Digite uma palavra de 5 letras.");
 }
+function resetGameForTesting(){
+  if(!challenge)return;
+  if(!adminPreview){
+    try{localStorage.removeItem(stateKey())}catch(_){}
+  }
+  row=0;current="";guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};
+  E.result.classList.add("hidden");
+  if(E.resetPreview)E.resetPreview.classList.add("hidden");
+  buildBoard();buildKeyboard();updateAttemptLabel();
+  setMessage("Jogo resetado para teste.");
+}
 async function init(){
   loadTheme();buildBoard();buildKeyboard();
   try{
@@ -277,6 +285,9 @@ document.addEventListener("keydown",function(ev){
   else if(ev.key==="Backspace")handleKey("BACKSPACE");
   else{var n=normalizeWord(ev.key);if(n.length===1)handleKey(n)}
 });
-E.share.addEventListener("click",share);E.resetPreview.addEventListener("click",resetPreview);
+E.share.addEventListener("click",share);
+if(E.resetPreview)E.resetPreview.addEventListener("click",resetPreview);
+if(E.submit)E.submit.addEventListener("click",submit);
+if(E.reset)E.reset.addEventListener("click",resetGameForTesting);
 init();
 })();

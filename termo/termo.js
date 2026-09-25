@@ -81,7 +81,11 @@ function buildKeyboard(){
     var line=document.createElement("div");line.className="termo-key-row";
     chars.split("").forEach(function(ch){line.appendChild(makeKey(ch,ch))});
     if(index===2){
-      var del=makeKey("⌫","BACKSPACE");del.classList.add("wide");line.appendChild(del);
+      var del=makeKey("","BACKSPACE");
+      del.classList.add("wide","delete-key");
+      del.setAttribute("aria-label","Apagar letra");
+      del.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9.5L2 12l7.5-7Z"></path><path d="m13 9 4 6"></path><path d="m17 9-4 6"></path></svg>';
+      line.appendChild(del);
     }
     E.keyboard.appendChild(line);
   });
@@ -178,7 +182,7 @@ function readStats(){
   E.statStreak.textContent=String(stats.streak||0);E.statBest.textContent=String(stats.best||0);
 }
 function finish(win){
-  finished=true;won=Boolean(win);current="";editIndex=null;updateStats(won);save();updateAttemptLabel();
+  finished=true;won=Boolean(win);current="";editIndex=null;document.body.classList.add("termo-finished");updateStats(won);save();updateAttemptLabel();
   E.result.classList.remove("hidden");
   E.resultStatus.textContent=won?"Acertou!":"Não foi dessa vez";
   E.resultStatus.className=won?"result-status success":"result-status fail";
@@ -238,11 +242,12 @@ async function share(){
   try{await navigator.clipboard.writeText(text);setMessage("Resultado copiado.","success")}catch(_){setMessage(text)}
 }
 function resetPreview(){
-  row=0;current="";guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};
+  row=0;current="";guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};document.body.classList.remove("termo-finished");
   E.result.classList.add("hidden");E.resetPreview.classList.add("hidden");buildBoard();buildKeyboard();updateAttemptLabel();setMessage("Digite uma palavra de 5 letras.");
 }
 function resetGameForTesting(){
   if(!challenge)return;
+  document.body.classList.remove("termo-finished");
   if(!adminPreview){
     try{localStorage.removeItem(stateKey())}catch(_){}
   }

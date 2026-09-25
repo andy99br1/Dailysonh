@@ -16,17 +16,12 @@
   <meta property="og:url" content="https://musicadodia.com/termo/">
   <link rel="canonical" href="https://musicadodia.com/termo/">
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css?v=20260925-5">
+  <link rel="stylesheet" href="/styles.css?v=20260925-7">
   <link rel="stylesheet" href="/termo/termo.css?v=13">
   <title>Termo do Dia — jogo de palavras diário</title>
 </head>
 <body data-theme="grafite">
   <main class="shell termo-shell">
-    <nav class="game-switcher" aria-label="Jogos do site">
-      <a class="game-switcher-link" href="/">♫ Música</a>
-      <a class="game-switcher-link active" href="/termo/" aria-current="page">▦ Termo</a>
-    </nav>
-
     <header class="topbar">
       <div class="theme-picker">
         <button class="theme-toggle" id="themeToggle" type="button" aria-label="Escolher paleta de cores" title="Escolher cores" aria-expanded="false">
@@ -43,12 +38,25 @@
         </div>
       </div>
 
-      <div class="brand">
-        <div class="termo-brand-mark" aria-hidden="true">T</div>
-        <div class="brand-copy">
-          <h1>Termo do Dia</h1>
+      <details class="game-menu">
+        <summary class="brand game-menu-trigger" aria-label="Trocar de jogo">
+          <div class="termo-brand-mark" aria-hidden="true">T</div>
+          <div class="brand-copy">
+            <h1>Termo do Dia</h1>
+          </div>
+          <span class="game-menu-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="game-menu-popover" role="menu" aria-label="Escolher jogo">
+          <a class="game-menu-option" href="/" role="menuitem">
+            <img class="game-menu-option-icon" src="/logo.svg?v=20260922-3" alt="" aria-hidden="true">
+            <span>Música do Dia</span>
+          </a>
+          <a class="game-menu-option active" href="/termo/" aria-current="page" role="menuitem">
+            <span class="game-menu-option-icon game-menu-term-icon" aria-hidden="true">T</span>
+            <span>Termo do Dia</span>
+          </a>
         </div>
-      </div>
+      </details>
 
       <div class="day-chip" id="dayChip" aria-label="Número do desafio">#—</div>
     </header>
@@ -93,6 +101,6 @@
     </footer>
   </main>
 
-  <script src="/termo/termo.js?v=11"></script>
+  <script src="/termo/termo.js?v=12"></script>
 </body>
 </html>

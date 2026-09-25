@@ -949,3 +949,33 @@ body[data-theme] .termo-cell.editable:focus-visible{
     margin:12px auto 0;
   }
 }
+
+
+/* Centralização exata do ícone de paleta no Termo. */
+.termo-shell .theme-toggle{
+  padding:0;
+  display:grid;
+  place-items:center;
+  line-height:0;
+}
+
+.termo-shell .palette-icon{
+  width:19px;
+  height:19px;
+  display:grid;
+  grid-template-columns:repeat(2,8px);
+  grid-template-rows:repeat(2,8px);
+  gap:3px;
+  place-content:center;
+  align-self:center;
+  justify-self:center;
+  margin:0;
+  transform:none;
+  transform-origin:center;
+}
+
+.termo-shell .palette-icon i{
+  width:8px;
+  height:8px;
+  margin:0;
+}

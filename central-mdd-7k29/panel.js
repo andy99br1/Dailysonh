@@ -4,7 +4,7 @@ var BRANCH="main",GITHUB_PROXY="https://kxoxlgiktwumooixedgu.supabase.co/functio
 function $(id){return document.getElementById(id)}
 var E={
  loginView:$("loginView"),panel:$("panel"),connectForm:$("connectForm"),tokenInput:$("tokenInput"),disconnectBtn:$("disconnectBtn"),
- githubUser:$("githubUser"),connectionLabel:$("connectionLabel"),menuBtn:$("menuBtn"),themeDayBtn:$("themeDayBtn"),themeNightBtn:$("themeNightBtn"),adminThemeColor:$("adminThemeColor"),sectionTitle:$("sectionTitle"),sectionEyebrow:$("sectionEyebrow"),
+ githubUser:$("githubUser"),connectionLabel:$("connectionLabel"),menuBtn:$("menuBtn"),themeDayBtn:$("themeDayBtn"),themeNightBtn:$("themeNightBtn"),themeGraphiteBtn:$("themeGraphiteBtn"),adminThemeColor:$("adminThemeColor"),sectionTitle:$("sectionTitle"),sectionEyebrow:$("sectionEyebrow"),
  songForm:$("songForm"),audioFile:$("audioFile"),uploadZone:$("uploadZone"),fileLabel:$("fileLabel"),songTitle:$("songTitle"),songArtist:$("songArtist"),songDateInput:$("songDateInput"),
  releaseYearInput:$("releaseYearInput"),difficultyInput:$("difficultyInput"),youtubeViewsInput:$("youtubeViewsInput"),clipStartInput:$("clipStartInput"),
  youtubeUrlInput:$("youtubeUrlInput"),spotifyUrlInput:$("spotifyUrlInput"),appleMusicUrlInput:$("appleMusicUrlInput"),deezerUrlInput:$("deezerUrlInput"),publishBtn:$("publishBtn"),
@@ -43,16 +43,20 @@ async function api(path,options){
 function toast(message){E.toast.textContent=message;E.toast.classList.remove("hidden");clearTimeout(toastTimer);toastTimer=setTimeout(function(){E.toast.classList.add("hidden")},3000)}
 
 function applyAdminTheme(theme){
- theme=theme==="day"?"day":"night";
+ if(theme!=="day"&&theme!=="night"&&theme!=="grafite")theme="night";
  document.body.setAttribute("data-admin-theme",theme);
  localStorage.setItem("musicadodia:admin-theme",theme);
  if(E.themeDayBtn)E.themeDayBtn.classList.toggle("active",theme==="day");
  if(E.themeNightBtn)E.themeNightBtn.classList.toggle("active",theme==="night");
- if(E.adminThemeColor)E.adminThemeColor.setAttribute("content",theme==="day"?"#f3f6fb":"#0b1230");
+ if(E.themeGraphiteBtn)E.themeGraphiteBtn.classList.toggle("active",theme==="grafite");
+ if(E.adminThemeColor){
+   var colors={day:"#f3f6fb",night:"#0b1230",grafite:"#202428"};
+   E.adminThemeColor.setAttribute("content",colors[theme]||colors.night);
+ }
 }
 function loadAdminTheme(){
  var saved=localStorage.getItem("musicadodia:admin-theme");
- if(saved!=="day"&&saved!=="night")saved="night";
+ if(saved!=="day"&&saved!=="night"&&saved!=="grafite")saved="night";
  applyAdminTheme(saved);
 }
 
@@ -691,6 +695,7 @@ document.querySelectorAll("[data-view-jump]").forEach(function(b){b.addEventList
 E.menuBtn.addEventListener("click",function(){document.querySelector(".sidebar").classList.toggle("open")});
 E.themeDayBtn.addEventListener("click",function(){applyAdminTheme("day")});
 E.themeNightBtn.addEventListener("click",function(){applyAdminTheme("night")});
+if(E.themeGraphiteBtn)E.themeGraphiteBtn.addEventListener("click",function(){applyAdminTheme("grafite")});
 E.connectForm.addEventListener("submit",async function(ev){ev.preventDefault();var btn=ev.submitter;if(btn)btn.disabled=true;try{await connect(E.tokenInput.value);E.tokenInput.value=""}catch(err){toast(err.status===401?"Token inválido ou expirado.":err.status===403?"O token não tem acesso suficiente ao repositório do jogo.":"Não consegui conectar ao GitHub. A key salva não foi apagada.")}finally{if(btn)btn.disabled=false}});
 E.disconnectBtn.addEventListener("click",function(){
  stopDashboardAutoRefresh();

@@ -291,7 +291,7 @@
   var allowedThemes = ["creme", "azul", "verde", "rosa", "lilas", "noite", "grafite"];
 
   function applyTheme(theme) {
-    if (allowedThemes.indexOf(theme) < 0) theme = "noite";
+    if (allowedThemes.indexOf(theme) < 0) theme = "grafite";
 
     document.body.classList.remove("dark");
     document.body.setAttribute("data-theme", theme);
@@ -331,7 +331,7 @@
 
     if (saved === "dark") saved = "noite";
     if (saved === "light") saved = "creme";
-    if (allowedThemes.indexOf(saved) < 0) saved = "noite";
+    if (allowedThemes.indexOf(saved) < 0) saved = "grafite";
 
     applyTheme(saved);
   }

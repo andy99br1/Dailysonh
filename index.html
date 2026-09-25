@@ -55,15 +55,10 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=20260925-6">
+  <link rel="stylesheet" href="styles.css?v=20260925-7">
 </head>
 <body data-theme="grafite">
   <main class="shell">
-    <nav class="game-switcher" aria-label="Jogos do site">
-      <a class="game-switcher-link active" href="/" aria-current="page">♫ Música</a>
-      <a class="game-switcher-link" href="/termo/">▦ Termo</a>
-    </nav>
-
     <header class="topbar">
       <div class="theme-picker">
         <button class="theme-toggle" id="themeToggle" type="button" aria-label="Escolher paleta de cores" title="Escolher cores" aria-expanded="false">
@@ -82,12 +77,25 @@
         </div>
       </div>
 
-      <div class="brand">
-        <img class="brand-logo" src="/logo.svg?v=20260922-3" width="38" height="38" alt="" aria-hidden="true">
-        <div class="brand-copy">
-          <h1>Música do Dia</h1>
+      <details class="game-menu">
+        <summary class="brand game-menu-trigger" aria-label="Trocar de jogo">
+          <img class="brand-logo" src="/logo.svg?v=20260922-3" width="38" height="38" alt="" aria-hidden="true">
+          <div class="brand-copy">
+            <h1>Música do Dia</h1>
+          </div>
+          <span class="game-menu-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="game-menu-popover" role="menu" aria-label="Escolher jogo">
+          <a class="game-menu-option active" href="/" aria-current="page" role="menuitem">
+            <img class="game-menu-option-icon" src="/logo.svg?v=20260922-3" alt="" aria-hidden="true">
+            <span>Música do Dia</span>
+          </a>
+          <a class="game-menu-option" href="/termo/" role="menuitem">
+            <span class="game-menu-option-icon game-menu-term-icon" aria-hidden="true">T</span>
+            <span>Termo do Dia</span>
+          </a>
         </div>
-      </div>
+      </details>
 
       <div class="day-chip" id="dayChip" aria-label="Número do desafio">#—</div>
     </header>
@@ -228,6 +236,6 @@
     </footer>
   </main>
 
-  <script src="app.js?v=20260925-4"></script>
+  <script src="app.js?v=20260925-5"></script>
 </body>
 </html>

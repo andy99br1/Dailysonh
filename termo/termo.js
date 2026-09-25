@@ -12,7 +12,7 @@ var E={
   statPlayed:el("statPlayed"),statWinRate:el("statWinRate"),statStreak:el("statStreak"),statBest:el("statBest")
 };
 
-var challenge=null,catalogIndex=-1,row=0,current="",guesses=[],evaluations=[],finished=false,won=false,editIndex=null;
+var challenge=null,catalogIndex=-1,row=0,current=["","","","",""],guesses=[],evaluations=[],finished=false,won=false,editIndex=null;
 var keyStates={},validWords=null;
 var allowedThemes=["creme","azul","verde","rosa","lilas","noite","grafite"];
 var previewDate="",adminPreview=false;
@@ -95,11 +95,17 @@ function makeKey(label,value){
   b.addEventListener("click",function(){handleKey(value)});return b;
 }
 function cellsFor(r){return Array.prototype.slice.call(E.board.querySelectorAll('.termo-row[data-row="'+r+'"] .termo-cell'))}
+function emptyCurrent(){return ["","","","",""]}
+function currentWord(){return current.join("")}
 function selectCell(rowIndex,colIndex){
-  if(finished||rowIndex!==row||colIndex>=current.length)return;
+  if(finished||rowIndex!==row||colIndex<0||colIndex>4)return;
   editIndex=colIndex;
   renderCurrent();
-  setMessage("Digite a nova letra para substituir "+current[colIndex]+".");
+  if(current[colIndex]){
+    setMessage("Digite a nova letra para substituir "+current[colIndex]+".");
+  }else{
+    setMessage("Digite uma letra para esta posição.");
+  }
 }
 function renderCurrent(){
   var cells=cellsFor(row);
@@ -107,10 +113,10 @@ function renderCurrent(){
     var hasLetter=Boolean(current[i]);
     cell.textContent=current[i]||"";
     cell.classList.toggle("filled",hasLetter);
-    cell.classList.toggle("editing",editIndex===i&&hasLetter);
-    cell.classList.toggle("editable",hasLetter&&!finished);
-    cell.tabIndex=hasLetter&&!finished?0:-1;
-    cell.setAttribute("aria-label",hasLetter?("Letra "+current[i]+". Clique para trocar."):"Posição "+(i+1));
+    cell.classList.toggle("editing",editIndex===i);
+    cell.classList.toggle("editable",!finished);
+    cell.tabIndex=!finished?0:-1;
+    cell.setAttribute("aria-label",hasLetter?("Letra "+current[i]+". Clique para trocar."):"Posição "+(i+1)+". Clique para preencher.");
   });
 }
 function priority(state){return state==="correct"?3:state==="present"?2:state==="absent"?1:0}
@@ -148,7 +154,14 @@ function load(){
   try{
     var raw=localStorage.getItem(stateKey());if(!raw)return;
     var s=JSON.parse(raw);
-    row=Math.max(0,Math.min(6,Number(s.row)||0));current=String(s.current||"").slice(0,5);
+    row=Math.max(0,Math.min(6,Number(s.row)||0));
+    if(Array.isArray(s.current)){
+      current=emptyCurrent();
+      s.current.slice(0,5).forEach(function(letter,index){current[index]=normalizeWord(letter).slice(0,1)});
+    }else{
+      current=emptyCurrent();
+      String(s.current||"").slice(0,5).split("").forEach(function(letter,index){current[index]=normalizeWord(letter).slice(0,1)});
+    }
     guesses=Array.isArray(s.guesses)?s.guesses.slice(0,6):[];
     evaluations=Array.isArray(s.evaluations)?s.evaluations.slice(0,6):[];
     finished=Boolean(s.finished);won=Boolean(s.won);keyStates=s.keyStates&&typeof s.keyStates==="object"?s.keyStates:{};
@@ -182,7 +195,7 @@ function readStats(){
   E.statStreak.textContent=String(stats.streak||0);E.statBest.textContent=String(stats.best||0);
 }
 function finish(win){
-  finished=true;won=Boolean(win);current="";editIndex=null;document.body.classList.add("termo-finished");updateStats(won);save();updateAttemptLabel();
+  finished=true;won=Boolean(win);current=emptyCurrent();editIndex=null;document.body.classList.add("termo-finished");updateStats(won);save();updateAttemptLabel();
   E.result.classList.remove("hidden");
   E.resultStatus.textContent=won?"Acertou!":"Não foi dessa vez";
   E.resultStatus.className=won?"result-status success":"result-status fail";
@@ -194,10 +207,10 @@ function finish(win){
 function submit(){
   if(finished)return;
   editIndex=null;
-  if(current.length!==5){setMessage("A palavra precisa ter 5 letras.","error");shake();return}
+  if(current.some(function(letter){return !letter})){setMessage("Preencha as 5 letras.","error");shake();renderCurrent();return}
   if(!validWords){setMessage("O dicionário ainda está carregando.","error");shake();return}
   var answer=normalizeWord(challenge.word);
-  var guess=current;
+  var guess=currentWord();
   if(guess!==answer&&!validWords.has(guess)){
     setMessage("Essa palavra não existe em português.","error");
     shake();
@@ -211,7 +224,7 @@ function submit(){
     cell.setAttribute("aria-label","Letra "+guess[i]+" da tentativa anterior");
     updateKey(guess[i],result[i])
   });
-  guesses.push(guess);evaluations.push(result);current="";
+  guesses.push(guess);evaluations.push(result);current=emptyCurrent();
   if(guess===answer){row+=1;finish(true);return}
   row+=1;if(row>=6){finish(false);return}
   updateAttemptLabel();setMessage("Tente outra palavra.");save();renderCurrent();
@@ -220,29 +233,34 @@ function handleKey(key){
   if(!challenge||finished)return;
   if(key==="ENTER"){submit();return}
   if(key==="BACKSPACE"){
-    if(editIndex!==null&&editIndex<current.length){
-      current=current.slice(0,editIndex)+current.slice(editIndex+1);
-      editIndex=null;
+    if(editIndex!==null){
+      current[editIndex]="";
       renderCurrent();
       setMessage("Letra removida.");
       return
     }
-    if(current.length){current=current.slice(0,-1);editIndex=null;renderCurrent()}
+    for(var i=4;i>=0;i--){
+      if(current[i]){
+        current[i]="";
+        editIndex=i;
+        renderCurrent();
+        setMessage("Letra removida.");
+        return
+      }
+    }
     return
   }
   if(/^[A-Z]$/.test(key)){
-    if(editIndex!==null&&editIndex<current.length){
-      current=current.slice(0,editIndex)+key+current.slice(editIndex+1);
-      editIndex=null;
-      renderCurrent();
-      setMessage("Letra trocada.");
-      return
+    var target=editIndex;
+    if(target===null){
+      target=current.findIndex(function(letter){return !letter});
     }
-    if(current.length<5){
-      current+=key;
-      renderCurrent();
-      setMessage("Digite uma palavra de 5 letras.")
-    }
+    if(target<0||target>4)return;
+    var replacing=Boolean(current[target]);
+    current[target]=key;
+    editIndex=null;
+    renderCurrent();
+    setMessage(replacing?"Letra trocada.":"Digite uma palavra de 5 letras.");
   }
 }
 function resultGrid(){
@@ -255,7 +273,7 @@ async function share(){
   try{await navigator.clipboard.writeText(text);setMessage("Resultado copiado.","success")}catch(_){setMessage(text)}
 }
 function resetPreview(){
-  row=0;current="";guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};document.body.classList.remove("termo-finished");
+  row=0;current=emptyCurrent();guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};document.body.classList.remove("termo-finished");
   E.result.classList.add("hidden");E.resetPreview.classList.add("hidden");buildBoard();buildKeyboard();updateAttemptLabel();setMessage("Digite uma palavra de 5 letras.");
 }
 function resetGameForTesting(){
@@ -264,7 +282,7 @@ function resetGameForTesting(){
   if(!adminPreview){
     try{localStorage.removeItem(stateKey())}catch(_){}
   }
-  row=0;current="";guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};
+  row=0;current=emptyCurrent();guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};
   E.result.classList.add("hidden");
   if(E.resetPreview)E.resetPreview.classList.add("hidden");
   buildBoard();buildKeyboard();updateAttemptLabel();

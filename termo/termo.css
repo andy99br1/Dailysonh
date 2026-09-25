@@ -571,3 +571,66 @@ body[data-theme] .termo-cell.editable:focus-visible{
     width:min(570px,100%);
   }
 }
+
+
+/* Mantém o cabeçalho na mesma posição do Música do Dia para uma troca harmoniosa. */
+@media(min-width:601px){
+  .termo-shell{
+    width:min(600px,100%);
+    height:100dvh;
+    padding:14px 18px 10px;
+  }
+
+  .termo-shell .game-switcher{
+    min-height:0;
+    margin:0 auto 5px;
+  }
+
+  .termo-shell .game-switcher-link{
+    min-height:30px;
+    padding:0 11px;
+    font-size:11px;
+  }
+
+  .termo-shell .topbar{
+    min-height:60px;
+    margin-bottom:4px;
+    grid-template-columns:42px 1fr 42px;
+  }
+
+  .termo-shell .theme-toggle,
+  .termo-shell .day-chip{
+    width:42px;
+    height:42px;
+  }
+
+  .termo-shell .palette-icon{transform:none}
+
+  .termo-shell .termo-brand-mark{
+    width:42px;
+    height:42px;
+    flex-basis:42px;
+    font-size:24px;
+  }
+
+  .termo-shell .brand{
+    gap:8px;
+  }
+
+  .termo-shell .brand h1{
+    font-size:24px;
+  }
+
+  .termo-shell .brand p{
+    margin-top:4px;
+    font-size:10.5px;
+  }
+
+  .termo-shell{
+    --term-cell:min(
+      66px,
+      calc((100vw - 46px)/5),
+      calc((100dvh - 370px)/6)
+    );
+  }
+}

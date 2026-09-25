@@ -1048,3 +1048,104 @@ body[data-theme] .termo-cell.editable:focus-visible{
     margin-top:7px;
   }
 }
+
+
+/* Cabeçalho do Termo com a mesma geometria do Música do Dia. */
+@media(max-width:600px){
+  .termo-shell .topbar{
+    min-height:56px;
+    grid-template-columns:40px 1fr 40px;
+    gap:7px;
+    margin-bottom:3px;
+  }
+
+  .termo-shell .theme-toggle,
+  .termo-shell .day-chip{
+    width:40px;
+    height:40px;
+  }
+
+  .termo-shell .theme-toggle{
+    padding:0;
+  }
+
+  .termo-shell .palette-icon{
+    width:21px;
+    height:21px;
+    grid-template-columns:repeat(2,8px);
+    grid-template-rows:repeat(2,8px);
+    gap:3px;
+    place-content:center;
+    margin:0;
+    transform:none;
+  }
+
+  .termo-shell .termo-brand-mark{
+    width:39px;
+    height:39px;
+    flex-basis:39px;
+    border-radius:9px;
+    font-size:22px;
+  }
+
+  .termo-shell .brand{
+    gap:7px;
+  }
+
+  .termo-shell .brand h1{
+    font-size:22px;
+    line-height:1;
+  }
+
+  .termo-shell .day-chip{
+    font-size:12px;
+  }
+}
+
+/* Desktop também segue exatamente o tamanho dos ícones do Música do Dia. */
+@media(min-width:601px){
+  .termo-shell .topbar{
+    min-height:60px;
+    grid-template-columns:42px 1fr 42px;
+    gap:8px;
+    margin-bottom:4px;
+  }
+
+  .termo-shell .theme-toggle,
+  .termo-shell .day-chip{
+    width:42px;
+    height:42px;
+  }
+
+  .termo-shell .palette-icon{
+    width:21px;
+    height:21px;
+    grid-template-columns:repeat(2,8px);
+    grid-template-rows:repeat(2,8px);
+    gap:3px;
+    place-content:center;
+    margin:0;
+    transform:none;
+  }
+
+  .termo-shell .termo-brand-mark{
+    width:42px;
+    height:42px;
+    flex-basis:42px;
+    border-radius:9px;
+    font-size:24px;
+  }
+
+  .termo-shell .brand{
+    gap:8px;
+  }
+
+  .termo-shell .brand h1{
+    font-size:24px;
+    line-height:1;
+  }
+
+  .termo-shell .day-chip{
+    font-size:11px;
+  }
+}

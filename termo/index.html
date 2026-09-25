@@ -16,8 +16,8 @@
   <meta property="og:url" content="https://musicadodia.com/termo/">
   <link rel="canonical" href="https://musicadodia.com/termo/">
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css?v=20260925-1">
-  <link rel="stylesheet" href="/termo/termo.css?v=2">
+  <link rel="stylesheet" href="/styles.css?v=20260925-2">
+  <link rel="stylesheet" href="/termo/termo.css?v=3">
   <title>Termo do Dia — jogo de palavras diário</title>
 </head>
 <body data-theme="noite">
@@ -39,6 +39,7 @@
           <button class="theme-option" type="button" data-theme-choice="rosa"><span class="theme-swatch swatch-rosa"></span><span>Rosa</span></button>
           <button class="theme-option" type="button" data-theme-choice="lilas"><span class="theme-swatch swatch-lilas"></span><span>Lilás</span></button>
           <button class="theme-option" type="button" data-theme-choice="noite"><span class="theme-swatch swatch-noite"></span><span>Noite</span></button>
+          <button class="theme-option" type="button" data-theme-choice="grafite"><span class="theme-swatch swatch-grafite"></span><span>Grafite</span></button>
         </div>
       </div>
 
@@ -81,6 +82,8 @@
       <p class="termo-message" id="termMessage">Digite uma palavra de 5 letras.</p>
 
       <div class="termo-keyboard" id="termKeyboard" aria-label="Teclado virtual"></div>
+      <button class="termo-submit" id="termSubmitBtn" type="button">ENVIAR</button>
+      <button class="termo-reset-test" id="termResetBtn" type="button">Resetar teste</button>
 
       <section class="termo-result hidden" id="termResult">
         <p class="result-status" id="termResultStatus"></p>
@@ -107,6 +110,6 @@
     </footer>
   </main>
 
-  <script src="/termo/termo.js?v=2"></script>
+  <script src="/termo/termo.js?v=3"></script>
 </body>
 </html>

@@ -948,14 +948,14 @@ button:disabled {
   }
 
   .song-stat {
-    min-height: 58px;
-    padding: 8px 5px;
-    border-radius: 11px;
+    min-height: 42px;
+    padding: 5px 6px 4px;
+    border-radius: 10px;
   }
 
   .song-stat span {
     font-size: 8.5px;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
 
   .song-stat strong { font-size: 12.5px; }

@@ -119,6 +119,14 @@ function renderCurrent(){
     cell.setAttribute("aria-label",hasLetter?("Letra "+current[i]+". Clique para trocar."):"Posição "+(i+1)+". Clique para preencher.");
   });
 }
+function animateCurrentCell(index){
+  var cells=cellsFor(row),cell=cells[index];
+  if(!cell)return;
+  cell.classList.remove("letter-pop");
+  void cell.offsetWidth;
+  cell.classList.add("letter-pop");
+  window.setTimeout(function(){cell.classList.remove("letter-pop")},190);
+}
 function priority(state){return state==="correct"?3:state==="present"?2:state==="absent"?1:0}
 function updateKey(letter,state){
   if(priority(state)<=priority(keyStates[letter]))return;
@@ -257,6 +265,7 @@ function handleKey(key){
     current[target]=key;
     editIndex=null;
     renderCurrent();
+    animateCurrentCell(target);
     setMessage(replacing?"Letra trocada.":"Digite uma palavra de 5 letras.");
   }
 }

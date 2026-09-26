@@ -1,29 +1,29 @@
 {
-  "title": "Infiel",
-  "artist": "Marília Mendonça",
-  "date": "2026-09-24",
-  "releaseYear": "2015",
-  "difficulty": "Fácil",
-  "youtubeViews": "681M",
-  "youtubeUrl": "",
-  "coverUrl": "https://i.ytimg.com/vi/bfeqcnRWCbw/maxresdefault.jpg",
+  "title": "Até Quando?",
+  "artist": "Gabriel O Pensador",
+  "date": "2026-09-26",
+  "releaseYear": "2001",
+  "difficulty": "Difícil",
+  "youtubeViews": "6,2M",
+  "youtubeUrl": "https://www.youtube.com/watch?v=atXuxbc7zZk&list=RDatXuxbc7zZk&start_radio=1",
+  "coverUrl": "https://i.ytimg.com/vi/atXuxbc7zZk/maxresdefault.jpg",
   "spotifyUrl": "",
   "appleMusicUrl": "",
   "deezerUrl": "",
-  "expectedCreatedAt": "2026-09-23T09:34:07.523598+00:00",
+  "expectedCreatedAt": "2026-09-26T04:11:09.249194+00:00",
   "selectedLayers": [
     "drums",
     "bass",
     "guitar",
     "piano",
-    "flute"
+    "other"
   ],
   "selectedLayerLabels": [
     "Bateria",
     "Baixo",
-    "Violão",
-    "Piano",
-    "Melodia"
+    "Guitarra",
+    "Piano / teclas",
+    "Instrumentos completos"
   ],
-  "nonce": "1790202599331"
+  "nonce": "1790399784772"
 }

@@ -1,24 +1,24 @@
 {
   "version": 1,
-  "createdAt": "2026-09-26T03:44:17.483695+00:00",
-  "sourceName": "1790393755114-Gabriel-o-Pensador-Ate-Quando_-Clipe-Oficial-atXuxbc7zZk-1.mp3",
-  "sourcePath": "stem-flute-incoming/1790393755114-Gabriel-o-Pensador-Ate-Quando_-Clipe-Oficial-atXuxbc7zZk-1.mp3",
-  "clipStart": 164.0,
+  "createdAt": "2026-09-26T04:11:09.249194+00:00",
+  "sourceName": "1790395363720-YTDown.com_YouTube_Media_YPnRhfZZOJs_Gabriel-o-Pensador-Ate-Quando_009_128k.mp3",
+  "sourcePath": "stem-flute-incoming/1790395363720-YTDown.com_YouTube_Media_YPnRhfZZOJs_Gabriel-o-Pensador-Ate-Quando_009_128k.mp3",
+  "clipStart": 46.0,
   "clipSeconds": 18.0,
   "selection": {
-    "duration": 263.237,
-    "candidates": 159,
-    "score": 0.7172,
-    "mode": "automatic"
+    "duration": 262.153,
+    "candidates": 1,
+    "score": null,
+    "mode": "manual"
   },
   "separationModel": "Hybrid: htdemucs_ft (drums/bass) + BS-Roformer-SW (vocals/instruments)",
   "voiceTransform": "stabilized-note flute (pYIN + note cleanup, no MIDI)",
   "instrumentBody": "recombined accompaniment + filtered residual body restoration",
   "webAudioEncoding": "Ogg Vorbis q8",
   "flute": {
-    "voicedPercent": 38.6,
-    "medianHz": 353.12,
-    "noteSegments": 65
+    "voicedPercent": 54.2,
+    "medianHz": 297.8,
+    "noteSegments": 76
   },
   "tracks": [
     {

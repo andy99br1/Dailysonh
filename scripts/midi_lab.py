@@ -520,13 +520,78 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
 
 
 def render_round(mid, records, channels, start, out_path, soundfont, melody_channel, melody_program, guitar_channels=None):
+    selected = set(channels)
+    guitars = selected & set(guitar_channels or [])
+    others = selected - guitars
+
     with tempfile.TemporaryDirectory(prefix="mdd-midi-round-") as td:
         td = Path(td)
+
+        # Quando houver violão, renderizamos os canais de violão separados do
+        # restante. Assim o tratamento acústico atua de verdade no timbre do
+        # violão, em vez de ficar mascarado por bateria/baixo/cordas.
+        if guitars:
+            guitar_mid = td / "guitar.mid"
+            guitar_wav = td / "guitar.wav"
+            guitar_fx = td / "guitar-fx.wav"
+
+            slice_midi(
+                mid, records, guitars, start, CLIP_SECONDS, guitar_mid,
+                melody_channel, melody_program, guitar_channels=guitars,
+            )
+            run(["fluidsynth", "-ni", "-g", "0.90", "-F", guitar_wav, "-r", "44100", soundfont, guitar_mid])
+
+            guitar_filter = (
+                "highpass=f=72,"
+                "lowpass=f=12500,"
+                "equalizer=f=185:t=q:w=1.0:g=3.0,"
+                "equalizer=f=820:t=q:w=1.2:g=-2.8,"
+                "equalizer=f=3350:t=q:w=0.9:g=4.2,"
+                "equalizer=f=7200:t=q:w=1.1:g=1.6,"
+                "acompressor=threshold=-20dB:ratio=1.45:attack=7:release=110:makeup=1.5,"
+                "aecho=0.82:0.42:24|39:0.13|0.08,"
+                "stereotools=mlev=0.93:slev=1.34,"
+                "alimiter=limit=0.94"
+            )
+            run([
+                "ffmpeg", "-y", "-v", "error", "-i", guitar_wav,
+                "-t", f"{CLIP_SECONDS:.3f}", "-af", guitar_filter,
+                "-c:a", "pcm_s16le", guitar_fx,
+            ])
+
+            if others:
+                base_mid = td / "base.mid"
+                base_wav = td / "base.wav"
+                slice_midi(
+                    mid, records, others, start, CLIP_SECONDS, base_mid,
+                    melody_channel, melody_program, guitar_channels=set(),
+                )
+                run(["fluidsynth", "-ni", "-g", "0.82", "-F", base_wav, "-r", "44100", soundfont, base_mid])
+                run([
+                    "ffmpeg", "-y", "-v", "error",
+                    "-i", base_wav, "-i", guitar_fx,
+                    "-t", f"{CLIP_SECONDS:.3f}",
+                    "-filter_complex",
+                    "[0:a]volume=1.00[base];"
+                    "[1:a]volume=1.22[gtr];"
+                    "[base][gtr]amix=inputs=2:duration=longest:normalize=0,"
+                    "alimiter=limit=0.96[out]",
+                    "-map", "[out]", "-c:a", "libvorbis", "-q:a", "5", out_path,
+                ])
+            else:
+                run([
+                    "ffmpeg", "-y", "-v", "error", "-i", guitar_fx,
+                    "-t", f"{CLIP_SECONDS:.3f}",
+                    "-af", "volume=1.16,alimiter=limit=0.96",
+                    "-c:a", "libvorbis", "-q:a", "5", out_path,
+                ])
+            return
+
         sliced = td / "slice.mid"
         wav = td / "render.wav"
         slice_midi(
-            mid, records, set(channels), start, CLIP_SECONDS, sliced,
-            melody_channel, melody_program, guitar_channels=guitar_channels,
+            mid, records, selected, start, CLIP_SECONDS, sliced,
+            melody_channel, melody_program, guitar_channels=set(),
         )
         run(["fluidsynth", "-ni", "-g", "0.82", "-F", wav, "-r", "44100", soundfont, sliced])
         run([
@@ -639,6 +704,16 @@ def main():
 
     reveal_audio = Path(args.reveal_audio).resolve() if str(args.reveal_audio).strip() else None
 
+    guitar_preview = ""
+    if acoustic_guitar_channels:
+        guitar_preview_path = OUT_DIR / "guitar-preview.ogg"
+        render_round(
+            mid, records, sorted(acoustic_guitar_channels), clip_start,
+            guitar_preview_path, soundfont, melody["channel"], style["program"],
+            guitar_channels=acoustic_guitar_channels,
+        )
+        guitar_preview = "midi-lab/guitar-preview.ogg"
+
     for item in rounds:
         out = OUT_DIR / f"round-{item['number']}.ogg"
         if item["number"] == 6 and reveal_audio and reveal_audio.exists():
@@ -688,10 +763,20 @@ def main():
         "melodyStyle": style_id,
         "melodyStyleName": style["name"],
         "guitarTreatment": {
-            "mode": "acoustic-open",
+            "mode": "acoustic-open-v2",
             "channels": sorted(acoustic_guitar_channels),
-            "features": ["stereo-pan", "micro-strum", "velocity-humanize", "reverb"],
+            "features": [
+                "separate-guitar-render",
+                "stereo-pan",
+                "micro-strum",
+                "velocity-humanize",
+                "acoustic-eq",
+                "compression",
+                "short-room-echo",
+                "stereo-width",
+            ],
         },
+        "guitarPreview": guitar_preview,
         "nameOverrides": name_overrides,
         "roles": {
             "drums": {"channel": drums["channel"], "name": names.get(drums["channel"], "Bateria"), "confidence": 99 if drums["channel"] == 9 else 78},

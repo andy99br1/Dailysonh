@@ -20,6 +20,17 @@ INSTRUMENT_VOLUME_SCALE = 0.76
 MELODY_VOLUME = 112
 MELODY_EXPRESSION = 118
 
+# Tratamento especial para violões GM (nylon/steel): mantém o timbre acústico,
+# abre os dois canais em estéreo e cria um micro-strum determinístico para
+# quebrar o ataque perfeitamente simultâneo típico de MIDI.
+ACOUSTIC_GUITAR_PROGRAMS = {24, 25}
+GUITAR_VOLUME_SCALE = 0.86
+GUITAR_REVERB = 42
+GUITAR_CHORUS = 8
+GUITAR_STRUM_WINDOW = 0.018
+GUITAR_STRUM_STEP = 0.006
+GUITAR_STRUM_MAX = 0.034
+
 MELODY_STYLES = {
     "bandle": {"program": 85, "name": "Lead suave (Bandle)"},
     "flute": {"program": 73, "name": "Flauta / synth suave"},
@@ -334,8 +345,9 @@ def choose_groups(stats, drums, bass, melody, start):
     return group1, group2, active_all
 
 
-def slice_midi(mid, records, selected_channels, start, duration, out_path, melody_channel=None, melody_program=None):
+def slice_midi(mid, records, selected_channels, start, duration, out_path, melody_channel=None, melody_program=None, guitar_channels=None):
     end = start + duration
+    guitar_channels = set(guitar_channels or [])
     out = mido.MidiFile(type=0, ticks_per_beat=480)
     track = mido.MidiTrack()
     out.tracks.append(track)
@@ -366,16 +378,29 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
             if stack:
                 stack.pop(0)
 
+    guitar_order = sorted(ch for ch in selected_channels if ch in guitar_channels)
+    guitar_pan = {}
+    if guitar_order:
+        if len(guitar_order) == 1:
+            guitar_pan[guitar_order[0]] = 64
+        else:
+            positions = [46, 82, 56, 72]
+            for i, ch in enumerate(guitar_order):
+                guitar_pan[ch] = positions[i] if i < len(positions) else (48 if i % 2 == 0 else 80)
+
     for ch in sorted(selected_channels):
         if ch != 9:
             program = melody_program if ch == melody_channel and melody_program is not None else programs.get(ch, 0)
             events.append((0, 1, mido.Message("program_change", channel=ch, program=int(program), time=0)))
         had_volume = False
+        scale = GUITAR_VOLUME_SCALE if ch in guitar_channels else INSTRUMENT_VOLUME_SCALE
         for ctl, value in sorted(controls[ch].items()):
             if ctl in {0, 32}:
                 continue
+            if ch in guitar_channels and ctl in {10, 91, 93}:
+                continue
             if ch != melody_channel and ctl in {7, 11}:
-                value = max(1, min(127, round(value * INSTRUMENT_VOLUME_SCALE)))
+                value = max(1, min(127, round(value * scale)))
             if ctl == 7:
                 had_volume = True
             events.append((0, 2, mido.Message("control_change", channel=ch, control=ctl, value=value, time=0)))
@@ -383,7 +408,11 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
             events.append((0, 2, mido.Message("control_change", channel=ch, control=7, value=MELODY_VOLUME, time=0)))
             events.append((0, 2, mido.Message("control_change", channel=ch, control=11, value=MELODY_EXPRESSION, time=0)))
         elif not had_volume:
-            events.append((0, 2, mido.Message("control_change", channel=ch, control=7, value=round(100 * INSTRUMENT_VOLUME_SCALE), time=0)))
+            events.append((0, 2, mido.Message("control_change", channel=ch, control=7, value=round(100 * scale), time=0)))
+        if ch in guitar_channels:
+            events.append((0, 2, mido.Message("control_change", channel=ch, control=10, value=guitar_pan.get(ch, 64), time=0)))
+            events.append((0, 2, mido.Message("control_change", channel=ch, control=91, value=GUITAR_REVERB, time=0)))
+            events.append((0, 2, mido.Message("control_change", channel=ch, control=93, value=GUITAR_CHORUS, time=0)))
         if pitch[ch]:
             events.append((0, 2, mido.Message("pitchwheel", channel=ch, pitch=pitch[ch], time=0)))
 
@@ -397,7 +426,48 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
     def sec_to_tick(relative_sec):
         return max(0, int(round(mido.second2tick(relative_sec, out.ticks_per_beat, fixed_tempo))))
 
-    for rec in records:
+    # Espalha levemente notas de acordes de violão para simular a passagem
+    # da palheta/dedos pelas cordas. A direção alterna a cada ataque.
+    strum_offsets = {}
+    for guitar_ch in guitar_channels:
+        note_events = []
+        for rec_index, rec in enumerate(records):
+            sec, msg = rec["sec"], rec["msg"]
+            if sec < start or sec >= end:
+                continue
+            if (
+                hasattr(msg, "channel")
+                and msg.channel == guitar_ch
+                and msg.type == "note_on"
+                and msg.velocity > 0
+            ):
+                note_events.append((rec_index, sec, msg.note))
+
+        groups = []
+        current_group = []
+        group_start = None
+        for item in note_events:
+            if group_start is None or item[1] - group_start <= GUITAR_STRUM_WINDOW:
+                current_group.append(item)
+                if group_start is None:
+                    group_start = item[1]
+            else:
+                if current_group:
+                    groups.append(current_group)
+                current_group = [item]
+                group_start = item[1]
+        if current_group:
+            groups.append(current_group)
+
+        for group_index, group in enumerate(groups):
+            if len(group) < 2:
+                continue
+            reverse = bool(group_index % 2)
+            ordered = sorted(group, key=lambda item: item[2], reverse=reverse)
+            for pos, (rec_index, _, _) in enumerate(ordered):
+                strum_offsets[rec_index] = min(pos * GUITAR_STRUM_STEP, GUITAR_STRUM_MAX)
+
+    for rec_index, rec in enumerate(records):
         sec, msg = rec["sec"], rec["msg"]
         if sec < start:
             continue
@@ -410,10 +480,19 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
         ch = msg.channel
         if msg.type == "program_change" and ch == melody_channel:
             continue
-        tick = sec_to_tick(sec - start)
+        tick = sec_to_tick(sec - start + strum_offsets.get(rec_index, 0.0))
         copy = msg.copy(time=0)
+        scale = GUITAR_VOLUME_SCALE if ch in guitar_channels else INSTRUMENT_VOLUME_SCALE
+        if msg.type == "program_change" and ch in guitar_channels:
+            continue
+        if msg.type == "control_change" and ch in guitar_channels and msg.control in {10, 91, 93}:
+            continue
         if msg.type == "control_change" and ch != melody_channel and msg.control in {7, 11}:
-            copy = msg.copy(value=max(1, min(127, round(msg.value * INSTRUMENT_VOLUME_SCALE))), time=0)
+            copy = msg.copy(value=max(1, min(127, round(msg.value * scale))), time=0)
+        if msg.type == "note_on" and msg.velocity > 0 and ch in guitar_channels:
+            # Variação mínima e determinística de dinâmica para evitar ataques idênticos.
+            variation = 0.94 + (((msg.note * 7) + (ch * 11)) % 9) / 100.0
+            copy = msg.copy(velocity=max(1, min(127, round(msg.velocity * variation))), time=0)
         priority = 4
         if msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
             priority = 3
@@ -440,12 +519,15 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
     out.save(out_path)
 
 
-def render_round(mid, records, channels, start, out_path, soundfont, melody_channel, melody_program):
+def render_round(mid, records, channels, start, out_path, soundfont, melody_channel, melody_program, guitar_channels=None):
     with tempfile.TemporaryDirectory(prefix="mdd-midi-round-") as td:
         td = Path(td)
         sliced = td / "slice.mid"
         wav = td / "render.wav"
-        slice_midi(mid, records, set(channels), start, CLIP_SECONDS, sliced, melody_channel, melody_program)
+        slice_midi(
+            mid, records, set(channels), start, CLIP_SECONDS, sliced,
+            melody_channel, melody_program, guitar_channels=guitar_channels,
+        )
         run(["fluidsynth", "-ni", "-g", "0.82", "-F", wav, "-r", "44100", soundfont, sliced])
         run([
             "ffmpeg", "-y", "-v", "error", "-i", wav, "-t", f"{CLIP_SECONDS:.3f}",
@@ -483,6 +565,11 @@ def main():
         manual = float(str(args.clip_start).replace(",", "."))
     clip_start = choose_clip(stats, lyrics, duration, drums, bass, melody, manual)
     group1, group2, active_all = choose_groups(stats, drums, bass, melody, clip_start)
+    acoustic_guitar_channels = {
+        s["channel"]
+        for s in active_all
+        if s["channel"] != melody["channel"] and (s["program"] or 0) in ACOUSTIC_GUITAR_PROGRAMS
+    }
 
     name_overrides = {}
     try:
@@ -548,6 +635,7 @@ def main():
     print(f"Melodia: canal {melody['channel'] + 1} ({program_name(melody['program'] or 0)}) | lyric align={melody_align:.2f}")
     print("Grupo 1:", [names.get(s["channel"]) for s in group1])
     print("Grupo 2:", [names.get(s["channel"]) for s in group2])
+    print("Violões com tratamento acústico aberto:", sorted(ch + 1 for ch in acoustic_guitar_channels))
 
     reveal_audio = Path(args.reveal_audio).resolve() if str(args.reveal_audio).strip() else None
 
@@ -562,7 +650,10 @@ def main():
                 "-c:a", "libvorbis", "-q:a", "5", out,
             ])
         else:
-            render_round(mid, records, item["channels"], clip_start, out, soundfont, melody["channel"], style["program"])
+            render_round(
+                mid, records, item["channels"], clip_start, out, soundfont,
+                melody["channel"], style["program"], guitar_channels=acoustic_guitar_channels,
+            )
         item["audio"] = f"midi-lab/round-{item['number']}.ogg"
 
     channel_rows = []
@@ -596,6 +687,11 @@ def main():
         "ticksPerBeat": mid.ticks_per_beat,
         "melodyStyle": style_id,
         "melodyStyleName": style["name"],
+        "guitarTreatment": {
+            "mode": "acoustic-open",
+            "channels": sorted(acoustic_guitar_channels),
+            "features": ["stereo-pan", "micro-strum", "velocity-humanize", "reverb"],
+        },
         "nameOverrides": name_overrides,
         "roles": {
             "drums": {"channel": drums["channel"], "name": names.get(drums["channel"], "Bateria"), "confidence": 99 if drums["channel"] == 9 else 78},

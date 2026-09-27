@@ -474,6 +474,31 @@ function renderMidiResult(data){
  var start=Number(data.clipStart||0),seconds=Number(data.clipSeconds||18);E.midiResultMeta.textContent="Trecho escolhido: "+start.toFixed(1)+"s–"+(start+seconds).toFixed(1)+"s · "+(data.melodyStyleName||"melodia padrão");E.midiClipStart.placeholder=start.toFixed(1)+" (automático)";
  E.midiRoles.innerHTML="";[["Bateria",data.roles&&data.roles.drums],["Baixo",data.roles&&data.roles.bass],["Melodia",data.roles&&data.roles.melody]].forEach(function(pair){var box=document.createElement("div");box.className="midi-role";var span=document.createElement("span");span.textContent=pair[0];var strong=document.createElement("strong");strong.textContent=pair[1]&&pair[1].name||"—";var small=document.createElement("small");small.textContent=pair[1]&&pair[1].confidence?pair[1].confidence+"% confiança":"";box.append(span,strong,small);E.midiRoles.appendChild(box)});
  E.midiRounds.innerHTML="";
+ if(data.guitarPreview){
+   var previewCard=document.createElement("div");
+   previewCard.className="midi-round guitar-preview-round";
+   previewCard.setAttribute("role","button");
+   previewCard.tabIndex=0;
+   var previewN=document.createElement("b");previewN.textContent="V";
+   var previewCopy=document.createElement("span");
+   var previewTitle=document.createElement("strong");previewTitle.textContent="Violões isolados";
+   var previewDesc=document.createElement("small");
+   previewDesc.textContent=(data.guitarSoundFont||"SoundFont acústico")+" · somente aço + nylon";
+   previewCopy.append(previewTitle,previewDesc);previewCard.append(previewN,previewCopy);
+   function playGuitarPreview(){
+     E.midiRounds.querySelectorAll(".midi-round").forEach(function(x){x.classList.remove("active")});
+     previewCard.classList.add("active");
+     E.midiNowNumber.textContent="V";
+     E.midiNowLabel.textContent="Violões isolados";
+     E.midiAudio.src="/"+String(data.guitarPreview).replace(/^\/+/, "")+"?v="+encodeURIComponent(data.createdAt||Date.now());
+     E.midiAudio.load();
+     E.midiAudioStatus.textContent="Prévia isolada do Violão aço + Violão nylon";
+     var p=E.midiAudio.play();if(p&&p.catch)p.catch(function(){})
+   }
+   previewCard.addEventListener("click",playGuitarPreview);
+   previewCard.addEventListener("keydown",function(ev){if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();playGuitarPreview()}});
+   E.midiRounds.appendChild(previewCard);
+ }
  var editableLabels=getMidiRoundLabels(data);
  data.rounds.forEach(function(round,index){
    var card=document.createElement("div");card.className="midi-round";card.setAttribute("role","button");card.tabIndex=0;

@@ -35,10 +35,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg fluidsynth fluid-soundfont-gm
           pip install "mido>=1.3,<2"
+
           SF2="$(find /usr/share/sounds -type f \( -iname '*.sf2' -o -iname '*.sf3' \) | head -n 1)"
           test -n "$SF2"
           echo "SOUNDFONT_PATH=$SF2" >> "$GITHUB_ENV"
-          echo "SoundFont: $SF2"
+          echo "Base SoundFont: $SF2"
+
+          GUITAR_SF2="$RUNNER_TEMP/GeneralUser.sf2"
+          curl -L --fail --retry 3 --retry-delay 2 \
+            "https://raw.githubusercontent.com/ad-si/GeneralUser/b9fdc98c358eeb6fb0b01f23de5eff87bfbb280b/GeneralUser.sf2" \
+            -o "$GUITAR_SF2"
+          test -s "$GUITAR_SF2"
+          echo "GUITAR_SOUNDFONT_PATH=$GUITAR_SF2" >> "$GITHUB_ENV"
+          echo "Guitar SoundFont: $GUITAR_SF2"
 
       - name: Read request and recover MIDI
         id: midi
@@ -125,12 +134,14 @@ jobs:
           CLIP_START: ${{ steps.midi.outputs.clip_start }}
           REVEAL_AUDIO: ${{ steps.midi.outputs.reveal_file }}
           REVEAL_SOURCE_PATH: ${{ steps.midi.outputs.reveal_source_path }}
+          GUITAR_SOUNDFONT_PATH: ${{ env.GUITAR_SOUNDFONT_PATH }}
         run: |
           python scripts/midi_lab.py \
             --file "$MIDI_FILE" \
             --source-path "$SOURCE_PATH" \
             --melody-style "$MELODY_STYLE" \
             --clip-start "$CLIP_START" \
+            --guitar-soundfont "$GUITAR_SOUNDFONT_PATH" \
             --reveal-audio "$REVEAL_AUDIO" \
             --reveal-source-path "$REVEAL_SOURCE_PATH"
 

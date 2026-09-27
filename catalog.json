@@ -211,6 +211,43 @@
         "piano",
         "other"
       ]
+    },
+    {
+      "date": "2026-09-27",
+      "title": "Resposta",
+      "artist": "Skank",
+      "clipStart": 118.5,
+      "source": "midi",
+      "sourceName": "1790495539764-SkankResposta.mid",
+      "version": 1,
+      "challengeRounds": 5,
+      "safeRevealRound": 5,
+      "roundLabels": [
+        "Bateria",
+        "Baixo",
+        "Violão 1 + Violão 2",
+        "Cordas",
+        "Voz",
+        "Revelação"
+      ],
+      "rounds": [
+        "songs/2026-09-27/round-1.ogg",
+        "songs/2026-09-27/round-2.ogg",
+        "songs/2026-09-27/round-3.ogg",
+        "songs/2026-09-27/round-4.ogg",
+        "songs/2026-09-27/round-5.ogg",
+        "songs/2026-09-27/round-6.ogg"
+      ],
+      "releaseYear": "1998",
+      "youtubeViews": "47M",
+      "difficulty": "Fácil",
+      "youtubeUrl": "",
+      "coverUrl": "https://images.genius.com/81c598c9db744371f229dc21d51b4f48.599x589x1.jpg",
+      "spotifyUrl": "",
+      "appleMusicUrl": "",
+      "deezerUrl": "",
+      "midiMelodyStyle": "flute",
+      "midiMelodyStyleName": "Flauta / synth suave"
     }
   ]
 }

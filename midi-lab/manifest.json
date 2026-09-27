@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-09-27T08:35:40.482195+00:00",
+  "createdAt": "2026-09-27T08:40:18.606877+00:00",
   "sourceName": "1790495539764-SkankResposta.mid",
   "sourcePath": "midi-incoming/1790495539764-SkankResposta.mid",
   "revealSourcePath": "midi-reveal-incoming/1790495539764-Skank-Resposta-Audio-Oficial-320-Kbps.mp3",
@@ -12,17 +12,16 @@
   "melodyStyle": "flute",
   "melodyStyleName": "Flauta / synth suave",
   "guitarTreatment": {
-    "mode": "acoustic-open-v6-source-resonance",
+    "mode": "acoustic-open-v4-articulated",
     "channels": [
       4,
       5
     ],
     "features": [
       "dedicated-generaluser-soundfont",
+      "physical-pluck-layer",
       "pick-attack-layer",
-      "source-derived-resonance",
-      "diffuse-body-tail",
-      "extended-release",
+      "soundboard-resonance",
       "separate-guitar-render",
       "stereo-pan",
       "micro-strum",

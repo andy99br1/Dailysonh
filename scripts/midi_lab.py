@@ -7,7 +7,6 @@ import shutil
 import statistics
 import subprocess
 import tempfile
-import wave
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,10 +31,8 @@ GUITAR_CHORUS = 8
 GUITAR_STRUM_WINDOW = 0.034
 GUITAR_STRUM_STEP = 0.010
 GUITAR_STRUM_MAX = 0.060
-GUITAR_ARTICULATION_GAIN = 0.78
+GUITAR_ARTICULATION_GAIN = 0.72
 GUITAR_SAMPLE_RATE = 44100
-GUITAR_RELEASE_MIN = 0.18
-GUITAR_RELEASE_MAX = 0.42
 
 MELODY_STYLES = {
     "bandle": {"program": 85, "name": "Lead suave (Bandle)"},
@@ -486,14 +483,7 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
         ch = msg.channel
         if msg.type == "program_change" and ch == melody_channel:
             continue
-        event_time = sec - start + strum_offsets.get(rec_index, 0.0)
-        if (
-            ch in guitar_channels
-            and (msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0))
-        ):
-            low_note_bonus = max(0.0, min(0.16, (64 - msg.note) * 0.006))
-            event_time += min(GUITAR_RELEASE_MAX, GUITAR_RELEASE_MIN + low_note_bonus)
-        tick = sec_to_tick(event_time)
+        tick = sec_to_tick(sec - start + strum_offsets.get(rec_index, 0.0))
         copy = msg.copy(time=0)
         scale = GUITAR_VOLUME_SCALE if ch in guitar_channels else INSTRUMENT_VOLUME_SCALE
         if msg.type == "program_change" and ch in guitar_channels:
@@ -575,7 +565,7 @@ def guitar_strum_offsets(records, guitar_channels, start, end):
 
 
 def synthesize_guitar_articulation(records, guitar_channels, guitar_programs, start, duration, out_path):
-    """Gera somente ruídos físicos de ataque: palheta/dedo e toque no tampo."""
+    """Cria uma camada discreta de palheta/corda/caixa para dar vida ao SoundFont."""
     sr = GUITAR_SAMPLE_RATE
     total = int(round(duration * sr))
     stereo = np.zeros((total, 2), dtype=np.float32)
@@ -584,7 +574,10 @@ def synthesize_guitar_articulation(records, guitar_channels, guitar_programs, st
     ordered_channels = sorted(guitar_channels)
     pan_map = {}
     for i, ch in enumerate(ordered_channels):
-        pan_map[ch] = 0.0 if len(ordered_channels) == 1 else (-0.34 if i % 2 == 0 else 0.34)
+        if len(ordered_channels) == 1:
+            pan_map[ch] = 0.0
+        else:
+            pan_map[ch] = (-0.34 if i % 2 == 0 else 0.34)
 
     rng = np.random.default_rng(240913)
 
@@ -609,27 +602,54 @@ def synthesize_guitar_articulation(records, guitar_channels, guitar_programs, st
             continue
 
         velocity = max(0.08, min(1.0, msg.velocity / 127.0))
-        n = min(total - i0, int(0.090 * sr))
+        freq = 440.0 * (2.0 ** ((msg.note - 69) / 12.0))
+        note_len = (1.28 if steel else 1.08) + max(0.0, (64 - msg.note) * 0.008)
+        n = min(total - i0, int(note_len * sr))
         if n <= 8:
             continue
+        t = np.arange(n, dtype=np.float32) / sr
 
-        # Ataque realista de palheta/dedo: ruído curtíssimo, sem componente tonal.
-        pick_n = min(n, int((0.024 if steel else 0.018) * sr))
-        sig = np.zeros(n, dtype=np.float32)
-        noise = rng.standard_normal(pick_n).astype(np.float32)
-        bright = np.concatenate(([noise[0]], np.diff(noise))).astype(np.float32)
-        pick_env = np.exp(-np.arange(pick_n, dtype=np.float32) / (sr * (0.0052 if steel else 0.0044)))
-        sig[:pick_n] += bright * pick_env * (0.24 if steel else 0.14)
+        # Corda: harmônicos com decaimentos diferentes para imitar uma corda pinçada.
+        harmonics = 9 if steel else 6
+        string = np.zeros(n, dtype=np.float32)
+        for h in range(1, harmonics + 1):
+            hf = freq * h
+            if hf >= sr * 0.46:
+                break
+            amp = (1.0 / (h ** (1.10 if steel else 1.34)))
+            decay = (2.2 + h * 0.48) if steel else (2.65 + h * 0.62)
+            phase = ((msg.note * 13 + h * 29 + ch * 7) % 360) * np.pi / 180.0
+            string += amp * np.sin(2.0 * np.pi * hf * t + phase) * np.exp(-decay * t)
 
-        # Pequeno "toc" do tampo, também não tonal.
-        thump_n = min(n, int(0.055 * sr))
-        thump_noise = rng.standard_normal(thump_n).astype(np.float32)
-        kernel = np.ones(19, dtype=np.float32) / 19.0
-        thump = np.convolve(thump_noise, kernel, mode="same")
-        thump *= np.exp(-np.arange(thump_n, dtype=np.float32) / (sr * 0.018))
-        sig[:thump_n] += thump * (0.045 if steel else 0.055)
+        # Palheta/dedo: ruído curtíssimo e brilhante no ataque.
+        pick_n = min(n, int((0.020 if steel else 0.014) * sr))
+        pick = np.zeros(n, dtype=np.float32)
+        if pick_n > 4:
+            noise = rng.standard_normal(pick_n).astype(np.float32)
+            noise = np.concatenate(([noise[0]], np.diff(noise))).astype(np.float32)
+            env = np.exp(-np.arange(pick_n, dtype=np.float32) / (sr * (0.0045 if steel else 0.0035)))
+            pick[:pick_n] = noise * env * (0.30 if steel else 0.17)
 
-        sig *= velocity
+        # Caixa/tampo: ressonâncias curtas e independentes da nota MIDI.
+        body = np.zeros(n, dtype=np.float32)
+        body_modes = (
+            [(98, 0.14, 2.0), (196, 0.11, 2.5), (238, 0.08, 3.0), (395, 0.055, 3.6)]
+            if steel
+            else
+            [(92, 0.16, 2.1), (184, 0.12, 2.6), (226, 0.07, 3.2), (360, 0.045, 3.9)]
+        )
+        for body_f, body_amp, body_decay in body_modes:
+            body += (
+                body_amp
+                * np.sin(2.0 * np.pi * body_f * t)
+                * np.exp(-body_decay * t)
+            )
+
+        sig = (string * (0.23 if steel else 0.25) + pick + body) * velocity
+
+        # Pequena "respiração" pós-ataque para não parecer sample estático.
+        sig *= 1.0 + 0.018 * np.sin(2.0 * np.pi * 5.2 * t)
+
         pan = pan_map.get(ch, 0.0)
         left = np.sqrt((1.0 - pan) * 0.5)
         right = np.sqrt((1.0 + pan) * 0.5)
@@ -638,94 +658,16 @@ def synthesize_guitar_articulation(records, guitar_channels, guitar_programs, st
 
     peak = float(np.max(np.abs(stereo))) if stereo.size else 0.0
     if peak > 0:
-        stereo *= min(0.72 / peak, 1.0)
+        stereo *= min(0.86 / peak, 1.0)
 
-    pcm = (np.clip(stereo, -1.0, 1.0) * 32767.0).astype("<i2")
+    pcm = np.clip(stereo, -1.0, 1.0)
+    pcm = (pcm * 32767.0).astype("<i2")
+    import wave
     with wave.open(str(out_path), "wb") as wav:
         wav.setnchannels(2)
         wav.setsampwidth(2)
         wav.setframerate(sr)
         wav.writeframes(pcm.tobytes())
-
-
-def _read_pcm16_stereo(path):
-    with wave.open(str(path), "rb") as wav:
-        channels = wav.getnchannels()
-        width = wav.getsampwidth()
-        rate = wav.getframerate()
-        frames = wav.readframes(wav.getnframes())
-    if width != 2:
-        raise RuntimeError(f"WAV de violão precisa ser PCM16; recebido {width * 8}-bit")
-    data = np.frombuffer(frames, dtype="<i2").astype(np.float32) / 32768.0
-    if channels == 1:
-        data = np.repeat(data[:, None], 2, axis=1)
-    else:
-        data = data.reshape(-1, channels)[:, :2]
-    return rate, data
-
-
-def _write_pcm16_stereo(path, rate, data):
-    pcm = (np.clip(data, -1.0, 1.0) * 32767.0).astype("<i2")
-    with wave.open(str(path), "wb") as wav:
-        wav.setnchannels(2)
-        wav.setsampwidth(2)
-        wav.setframerate(rate)
-        wav.writeframes(pcm.tobytes())
-
-
-def apply_guitar_resonance(input_wav, output_wav):
-    """Faz o próprio áudio do violão ressoar; não adiciona notas/senos artificiais."""
-    sr, audio = _read_pcm16_stereo(input_wav)
-    rng = np.random.default_rng(77123)
-
-    ir_seconds = 1.35
-    ir_n = int(sr * ir_seconds)
-    ir = np.zeros(ir_n, dtype=np.float32)
-
-    # Reflexões iniciais muito próximas simulam caixa/tampo e sala pequena.
-    early = [
-        (0.012, 0.22), (0.021, 0.18), (0.034, 0.14), (0.051, 0.11),
-        (0.076, 0.085), (0.109, 0.064), (0.153, 0.048), (0.214, 0.034),
-    ]
-    for delay, amp in early:
-        idx = min(ir_n - 1, int(delay * sr))
-        ir[idx] += amp
-
-    # Cauda difusa NÃO tonal: ruído filtrado e decrescente.
-    noise = rng.standard_normal(ir_n).astype(np.float32)
-    smooth_kernel = np.ones(37, dtype=np.float32) / 37.0
-    low = np.convolve(noise, smooth_kernel, mode="same")
-    high = noise - np.convolve(noise, np.ones(7, dtype=np.float32) / 7.0, mode="same")
-    diffuse = low * 0.72 + high * 0.10
-    t = np.arange(ir_n, dtype=np.float32) / sr
-    envelope = np.exp(-3.15 * t) * (1.0 - np.exp(-55.0 * t))
-    ir += diffuse * envelope * 0.010
-
-    # A convolução usa o próprio timbre do SoundFont como fonte da ressonância.
-    n = audio.shape[0]
-    fft_n = 1
-    target = n + ir_n - 1
-    while fft_n < target:
-        fft_n <<= 1
-    ir_fft = np.fft.rfft(ir, fft_n)
-
-    wet = np.zeros_like(audio)
-    for ch in range(2):
-        dry_fft = np.fft.rfft(audio[:, ch], fft_n)
-        conv = np.fft.irfft(dry_fft * ir_fft, fft_n)[:n]
-        wet[:, ch] = conv.astype(np.float32)
-
-    # Leve crossfeed faz a caixa soar como um único instrumento acústico.
-    wet_cross = wet.copy()
-    wet_cross[:, 0] = wet[:, 0] * 0.82 + wet[:, 1] * 0.18
-    wet_cross[:, 1] = wet[:, 1] * 0.82 + wet[:, 0] * 0.18
-
-    out = audio * 0.92 + wet_cross * 0.58
-    peak = float(np.max(np.abs(out))) if out.size else 0.0
-    if peak > 0.96:
-        out *= 0.96 / peak
-
-    _write_pcm16_stereo(output_wav, sr, out)
 
 
 def render_round(mid, records, channels, start, out_path, soundfont, melody_channel, melody_program, guitar_channels=None, guitar_soundfont=None):
@@ -748,7 +690,6 @@ def render_round(mid, records, channels, start, out_path, soundfont, melody_chan
         if guitars:
             guitar_mid = td / "guitar.mid"
             guitar_wav = td / "guitar.wav"
-            guitar_resonant_wav = td / "guitar-resonant.wav"
             articulation_wav = td / "guitar-articulation.wav"
             guitar_fx = td / "guitar-fx.wav"
 
@@ -757,7 +698,6 @@ def render_round(mid, records, channels, start, out_path, soundfont, melody_chan
                 melody_channel, melody_program, guitar_channels=guitars,
             )
             run(["fluidsynth", "-ni", "-g", "0.90", "-F", guitar_wav, "-r", "44100", guitar_sf, guitar_mid])
-            apply_guitar_resonance(guitar_wav, guitar_resonant_wav)
             synthesize_guitar_articulation(
                 records, guitars, guitar_programs, start, CLIP_SECONDS, articulation_wav
             )
@@ -769,13 +709,14 @@ def render_round(mid, records, channels, start, out_path, soundfont, melody_chan
                 "equalizer=f=820:t=q:w=1.2:g=-2.8,"
                 "equalizer=f=3350:t=q:w=0.9:g=4.2,"
                 "equalizer=f=7200:t=q:w=1.1:g=1.6,"
-                "acompressor=threshold=-21dB:ratio=1.30:attack=10:release=210:makeup=1.2,"
-                "stereotools=mlev=0.92:slev=1.32,"
+                "acompressor=threshold=-20dB:ratio=1.45:attack=7:release=110:makeup=1.5,"
+                "aecho=0.82:0.42:24|39:0.13|0.08,"
+                "stereotools=mlev=0.93:slev=1.34,"
                 "alimiter=limit=0.94"
             )
             run([
                 "ffmpeg", "-y", "-v", "error",
-                "-i", guitar_resonant_wav, "-i", articulation_wav,
+                "-i", guitar_wav, "-i", articulation_wav,
                 "-t", f"{CLIP_SECONDS:.3f}",
                 "-filter_complex",
                 "[0:a]volume=0.88[baseg];"
@@ -995,14 +936,13 @@ def main():
         "melodyStyle": style_id,
         "melodyStyleName": style["name"],
         "guitarTreatment": {
-            "mode": "acoustic-open-v6-source-resonance",
+            "mode": "acoustic-open-v4-articulated",
             "channels": sorted(acoustic_guitar_channels),
             "features": [
                 "dedicated-generaluser-soundfont",
+                "physical-pluck-layer",
                 "pick-attack-layer",
-                "source-derived-resonance",
-                "diffuse-body-tail",
-                "extended-release",
+                "soundboard-resonance",
                 "separate-guitar-render",
                 "stereo-pan",
                 "micro-strum",

@@ -519,10 +519,11 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
     out.save(out_path)
 
 
-def render_round(mid, records, channels, start, out_path, soundfont, melody_channel, melody_program, guitar_channels=None):
+def render_round(mid, records, channels, start, out_path, soundfont, melody_channel, melody_program, guitar_channels=None, guitar_soundfont=None):
     selected = set(channels)
     guitars = selected & set(guitar_channels or [])
     others = selected - guitars
+    guitar_sf = str(guitar_soundfont or soundfont)
 
     with tempfile.TemporaryDirectory(prefix="mdd-midi-round-") as td:
         td = Path(td)
@@ -539,7 +540,7 @@ def render_round(mid, records, channels, start, out_path, soundfont, melody_chan
                 mid, records, guitars, start, CLIP_SECONDS, guitar_mid,
                 melody_channel, melody_program, guitar_channels=guitars,
             )
-            run(["fluidsynth", "-ni", "-g", "0.90", "-F", guitar_wav, "-r", "44100", soundfont, guitar_mid])
+            run(["fluidsynth", "-ni", "-g", "0.90", "-F", guitar_wav, "-r", "44100", guitar_sf, guitar_mid])
 
             guitar_filter = (
                 "highpass=f=72,"
@@ -607,6 +608,7 @@ def main():
     ap.add_argument("--melody-style", default="bandle")
     ap.add_argument("--clip-start", default="")
     ap.add_argument("--soundfont", default=os.environ.get("SOUNDFONT_PATH", ""))
+    ap.add_argument("--guitar-soundfont", default=os.environ.get("GUITAR_SOUNDFONT_PATH", ""))
     ap.add_argument("--reveal-audio", default="")
     ap.add_argument("--reveal-source-path", default="")
     args = ap.parse_args()
@@ -619,6 +621,9 @@ def main():
     soundfont = Path(args.soundfont)
     if not soundfont.exists():
         raise SystemExit(f"SoundFont não encontrado: {soundfont}")
+    guitar_soundfont = Path(args.guitar_soundfont) if str(args.guitar_soundfont).strip() else soundfont
+    if not guitar_soundfont.exists():
+        raise SystemExit(f"SoundFont de violão não encontrado: {guitar_soundfont}")
 
     mid = mido.MidiFile(source)
     records, lyrics, duration = build_timeline(mid)
@@ -711,6 +716,7 @@ def main():
             mid, records, sorted(acoustic_guitar_channels), clip_start,
             guitar_preview_path, soundfont, melody["channel"], style["program"],
             guitar_channels=acoustic_guitar_channels,
+            guitar_soundfont=guitar_soundfont,
         )
         guitar_preview = "midi-lab/guitar-preview.ogg"
 
@@ -728,6 +734,7 @@ def main():
             render_round(
                 mid, records, item["channels"], clip_start, out, soundfont,
                 melody["channel"], style["program"], guitar_channels=acoustic_guitar_channels,
+                guitar_soundfont=guitar_soundfont,
             )
         item["audio"] = f"midi-lab/round-{item['number']}.ogg"
 
@@ -763,9 +770,10 @@ def main():
         "melodyStyle": style_id,
         "melodyStyleName": style["name"],
         "guitarTreatment": {
-            "mode": "acoustic-open-v2",
+            "mode": "acoustic-open-v3-generaluser",
             "channels": sorted(acoustic_guitar_channels),
             "features": [
+                "dedicated-generaluser-soundfont",
                 "separate-guitar-render",
                 "stereo-pan",
                 "micro-strum",
@@ -777,6 +785,7 @@ def main():
             ],
         },
         "guitarPreview": guitar_preview,
+        "guitarSoundFont": "GeneralUser GS",
         "nameOverrides": name_overrides,
         "roles": {
             "drums": {"channel": drums["channel"], "name": names.get(drums["channel"], "Bateria"), "confidence": 99 if drums["channel"] == 9 else 78},

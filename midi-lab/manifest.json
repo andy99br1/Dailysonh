@@ -1,14 +1,14 @@
 {
-  "createdAt": "2026-09-24T02:50:00.278281+00:00",
-  "sourceName": "1790218134845-Cleiton_e_CamargoNa_Hora_de_Amar.mid",
-  "sourcePath": "midi-incoming/1790218134845-Cleiton_e_CamargoNa_Hora_de_Amar.mid",
-  "revealSourcePath": "midi-reveal-incoming/1790218134845-Cleiton-e-Camargo-Na-Hora-De-Amar.mp3",
+  "createdAt": "2026-09-27T07:53:32.125691+00:00",
+  "sourceName": "1790495539764-SkankResposta.mid",
+  "sourcePath": "midi-incoming/1790495539764-SkankResposta.mid",
+  "revealSourcePath": "midi-reveal-incoming/1790495539764-Skank-Resposta-Audio-Oficial-320-Kbps.mp3",
   "revealMode": "original-audio",
-  "duration": 941.61,
-  "clipStart": 187.5,
+  "duration": 254.59,
+  "clipStart": 118.5,
   "clipSeconds": 18.0,
   "midiType": 1,
-  "ticksPerBeat": 192,
+  "ticksPerBeat": 120,
   "melodyStyle": "flute",
   "melodyStyleName": "Flauta / synth suave",
   "nameOverrides": {},
@@ -19,26 +19,26 @@
       "confidence": 99
     },
     "bass": {
-      "channel": 6,
+      "channel": 1,
       "name": "Baixo fretless",
       "confidence": 99
     },
     "melody": {
       "channel": 0,
       "name": "Melodia da voz",
-      "sourceInstrument": "Voz Oohs",
+      "sourceInstrument": "Flauta / sopro",
       "confidence": 73,
       "lyricAlignment": 0.0
     }
   },
   "groups": {
     "instrument1": [
-      "Guitarra limpa",
-      "Órgão"
+      "Violão aço",
+      "Violão nylon"
     ],
     "instrument2": [
-      "Synth strings 1",
-      "Guitarra overdrive"
+      "Cordas 1",
+      "Cordas 2"
     ]
   },
   "rounds": [
@@ -60,14 +60,14 @@
       "number": 2,
       "label": "+ Baixo",
       "addedChannels": [
-        6
+        1
       ],
       "added": [
         "Baixo fretless"
       ],
       "channels": [
         9,
-        6
+        1
       ],
       "audio": "midi-lab/round-2.ogg"
     },
@@ -75,17 +75,17 @@
       "number": 3,
       "label": "+ Instrumentos 1",
       "addedChannels": [
-        3,
+        4,
         5
       ],
       "added": [
-        "Guitarra limpa",
-        "Órgão"
+        "Violão aço",
+        "Violão nylon"
       ],
       "channels": [
         9,
-        6,
-        3,
+        1,
+        4,
         5
       ],
       "audio": "midi-lab/round-3.ogg"
@@ -94,20 +94,20 @@
       "number": 4,
       "label": "+ Instrumentos 2",
       "addedChannels": [
-        1,
-        2
+        6,
+        7
       ],
       "added": [
-        "Synth strings 1",
-        "Guitarra overdrive"
+        "Cordas 1",
+        "Cordas 2"
       ],
       "channels": [
         9,
-        6,
-        3,
-        5,
         1,
-        2
+        4,
+        5,
+        6,
+        7
       ],
       "audio": "midi-lab/round-4.ogg"
     },
@@ -122,11 +122,11 @@
       ],
       "channels": [
         9,
-        6,
-        3,
-        5,
         1,
-        2,
+        4,
+        5,
+        6,
+        7,
         0
       ],
       "audio": "midi-lab/round-5.ogg"
@@ -137,29 +137,32 @@
       "addedChannels": [
         0,
         1,
-        2,
-        3,
+        4,
         5,
         6,
-        9
+        7,
+        9,
+        11
       ],
       "added": [
         "Melodia da voz",
-        "Synth strings 1",
-        "Guitarra overdrive",
-        "Guitarra limpa",
-        "Órgão",
         "Baixo fretless",
-        "Bateria"
+        "Violão aço",
+        "Violão nylon",
+        "Cordas 1",
+        "Cordas 2",
+        "Bateria",
+        "Percussão"
       ],
       "channels": [
         0,
         1,
-        2,
-        3,
+        4,
         5,
         6,
-        9
+        7,
+        9,
+        11
       ],
       "audio": "midi-lab/round-6.ogg"
     }
@@ -168,78 +171,100 @@
     {
       "channel": 0,
       "name": "Melodia da voz",
-      "program": 53,
-      "family": "Ensemble",
-      "notes": 312,
-      "notesInClip": 24,
-      "activeInClip": 13.23,
-      "monophony": 0.994,
+      "program": 76,
+      "family": "Flauta / sopro",
+      "notes": 463,
+      "notesInClip": 48,
+      "activeInClip": 15.41,
+      "monophony": 0.975,
       "pitchBends": 0
     },
     {
       "channel": 1,
-      "name": "Synth strings 1",
-      "program": 50,
-      "family": "Ensemble",
-      "notes": 188,
-      "notesInClip": 20,
-      "activeInClip": 18.0,
-      "monophony": 0.009,
+      "name": "Baixo fretless",
+      "program": 35,
+      "family": "Baixo",
+      "notes": 324,
+      "notesInClip": 24,
+      "activeInClip": 12.2,
+      "monophony": 0.979,
       "pitchBends": 0
     },
     {
-      "channel": 2,
-      "name": "Guitarra overdrive",
-      "program": 29,
+      "channel": 4,
+      "name": "Violão aço",
+      "program": 25,
       "family": "Guitarra",
-      "notes": 86,
-      "notesInClip": 12,
+      "notes": 2844,
+      "notesInClip": 211,
       "activeInClip": 18.0,
-      "monophony": 0.052,
-      "pitchBends": 44
-    },
-    {
-      "channel": 3,
-      "name": "Guitarra limpa",
-      "program": 27,
-      "family": "Guitarra",
-      "notes": 1009,
-      "notesInClip": 96,
-      "activeInClip": 18.0,
-      "monophony": 0.32,
-      "pitchBends": 0
+      "monophony": 0.012,
+      "pitchBends": 80
     },
     {
       "channel": 5,
-      "name": "Órgão",
-      "program": 18,
-      "family": "Órgão",
-      "notes": 163,
-      "notesInClip": 23,
+      "name": "Violão nylon",
+      "program": 24,
+      "family": "Guitarra",
+      "notes": 2073,
+      "notesInClip": 153,
       "activeInClip": 18.0,
-      "monophony": 0.046,
+      "monophony": 0.058,
       "pitchBends": 0
     },
     {
       "channel": 6,
-      "name": "Baixo fretless",
-      "program": 35,
-      "family": "Baixo",
-      "notes": 133,
-      "notesInClip": 16,
-      "activeInClip": 15.57,
-      "monophony": 0.999,
+      "name": "Cordas 1",
+      "program": 48,
+      "family": "Ensemble",
+      "notes": 215,
+      "notesInClip": 22,
+      "activeInClip": 18.0,
+      "monophony": 0.997,
       "pitchBends": 0
+    },
+    {
+      "channel": 7,
+      "name": "Cordas 2",
+      "program": 49,
+      "family": "Ensemble",
+      "notes": 140,
+      "notesInClip": 13,
+      "activeInClip": 17.99,
+      "monophony": 1.0,
+      "pitchBends": 0
+    },
+    {
+      "channel": 8,
+      "name": "Guitarra jazz",
+      "program": 26,
+      "family": "Guitarra",
+      "notes": 62,
+      "notesInClip": 0,
+      "activeInClip": 0.0,
+      "monophony": 0.413,
+      "pitchBends": 543
     },
     {
       "channel": 9,
       "name": "Bateria",
-      "program": 17,
+      "program": 0,
       "family": "Bateria",
-      "notes": 1025,
-      "notesInClip": 136,
-      "activeInClip": 16.96,
-      "monophony": 0.525,
+      "notes": 2306,
+      "notesInClip": 250,
+      "activeInClip": 1.69,
+      "monophony": 0.139,
+      "pitchBends": 0
+    },
+    {
+      "channel": 11,
+      "name": "Percussão",
+      "program": 119,
+      "family": "Percussão",
+      "notes": 4,
+      "notesInClip": 1,
+      "activeInClip": 0.08,
+      "monophony": 1.0,
       "pitchBends": 0
     }
   ],

@@ -31,8 +31,10 @@ GUITAR_CHORUS = 8
 GUITAR_STRUM_WINDOW = 0.034
 GUITAR_STRUM_STEP = 0.010
 GUITAR_STRUM_MAX = 0.060
-GUITAR_ARTICULATION_GAIN = 0.72
+GUITAR_ARTICULATION_GAIN = 0.78
 GUITAR_SAMPLE_RATE = 44100
+GUITAR_RELEASE_MIN = 0.18
+GUITAR_RELEASE_MAX = 0.42
 
 MELODY_STYLES = {
     "bandle": {"program": 85, "name": "Lead suave (Bandle)"},
@@ -483,7 +485,14 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
         ch = msg.channel
         if msg.type == "program_change" and ch == melody_channel:
             continue
-        tick = sec_to_tick(sec - start + strum_offsets.get(rec_index, 0.0))
+        event_time = sec - start + strum_offsets.get(rec_index, 0.0)
+        if (
+            ch in guitar_channels
+            and (msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0))
+        ):
+            low_note_bonus = max(0.0, min(0.16, (64 - msg.note) * 0.006))
+            event_time += min(GUITAR_RELEASE_MAX, GUITAR_RELEASE_MIN + low_note_bonus)
+        tick = sec_to_tick(event_time)
         copy = msg.copy(time=0)
         scale = GUITAR_VOLUME_SCALE if ch in guitar_channels else INSTRUMENT_VOLUME_SCALE
         if msg.type == "program_change" and ch in guitar_channels:
@@ -603,7 +612,7 @@ def synthesize_guitar_articulation(records, guitar_channels, guitar_programs, st
 
         velocity = max(0.08, min(1.0, msg.velocity / 127.0))
         freq = 440.0 * (2.0 ** ((msg.note - 69) / 12.0))
-        note_len = (1.28 if steel else 1.08) + max(0.0, (64 - msg.note) * 0.008)
+        note_len = (3.10 if steel else 2.70) + max(0.0, (64 - msg.note) * 0.018)
         n = min(total - i0, int(note_len * sr))
         if n <= 8:
             continue
@@ -617,7 +626,7 @@ def synthesize_guitar_articulation(records, guitar_channels, guitar_programs, st
             if hf >= sr * 0.46:
                 break
             amp = (1.0 / (h ** (1.10 if steel else 1.34)))
-            decay = (2.2 + h * 0.48) if steel else (2.65 + h * 0.62)
+            decay = (0.72 + h * 0.16) if steel else (0.86 + h * 0.19)
             phase = ((msg.note * 13 + h * 29 + ch * 7) % 360) * np.pi / 180.0
             string += amp * np.sin(2.0 * np.pi * hf * t + phase) * np.exp(-decay * t)
 
@@ -630,13 +639,13 @@ def synthesize_guitar_articulation(records, guitar_channels, guitar_programs, st
             env = np.exp(-np.arange(pick_n, dtype=np.float32) / (sr * (0.0045 if steel else 0.0035)))
             pick[:pick_n] = noise * env * (0.30 if steel else 0.17)
 
-        # Caixa/tampo: ressonâncias curtas e independentes da nota MIDI.
+        # Caixa/tampo: ressonâncias mais longas, como o corpo físico do violão.
         body = np.zeros(n, dtype=np.float32)
         body_modes = (
-            [(98, 0.14, 2.0), (196, 0.11, 2.5), (238, 0.08, 3.0), (395, 0.055, 3.6)]
+            [(98, 0.15, 0.72), (196, 0.12, 0.88), (238, 0.085, 1.02), (395, 0.060, 1.18)]
             if steel
             else
-            [(92, 0.16, 2.1), (184, 0.12, 2.6), (226, 0.07, 3.2), (360, 0.045, 3.9)]
+            [(92, 0.17, 0.76), (184, 0.13, 0.92), (226, 0.080, 1.08), (360, 0.052, 1.24)]
         )
         for body_f, body_amp, body_decay in body_modes:
             body += (
@@ -645,10 +654,23 @@ def synthesize_guitar_articulation(records, guitar_channels, guitar_programs, st
                 * np.exp(-body_decay * t)
             )
 
-        sig = (string * (0.23 if steel else 0.25) + pick + body) * velocity
+        # Ressonância simpática: uma cauda discreta das cordas e do tampo que
+        # permanece depois do ataque principal e faz o acorde "respirar".
+        bloom = np.zeros(n, dtype=np.float32)
+        bloom_delay = int(0.026 * sr)
+        if bloom_delay < n:
+            bt = t[: n - bloom_delay]
+            bloom_signal = (
+                0.090 * np.sin(2.0 * np.pi * freq * bt + 0.35)
+                + 0.048 * np.sin(2.0 * np.pi * min(freq * 2.0, sr * 0.45) * bt + 1.1)
+            )
+            bloom_signal *= np.exp(-(0.48 if steel else 0.58) * bt)
+            bloom[bloom_delay:] = bloom_signal
+
+        sig = (string * (0.27 if steel else 0.29) + pick + body + bloom) * velocity
 
         # Pequena "respiração" pós-ataque para não parecer sample estático.
-        sig *= 1.0 + 0.018 * np.sin(2.0 * np.pi * 5.2 * t)
+        sig *= 1.0 + 0.024 * np.sin(2.0 * np.pi * 4.6 * t)
 
         pan = pan_map.get(ch, 0.0)
         left = np.sqrt((1.0 - pan) * 0.5)
@@ -709,9 +731,9 @@ def render_round(mid, records, channels, start, out_path, soundfont, melody_chan
                 "equalizer=f=820:t=q:w=1.2:g=-2.8,"
                 "equalizer=f=3350:t=q:w=0.9:g=4.2,"
                 "equalizer=f=7200:t=q:w=1.1:g=1.6,"
-                "acompressor=threshold=-20dB:ratio=1.45:attack=7:release=110:makeup=1.5,"
-                "aecho=0.82:0.42:24|39:0.13|0.08,"
-                "stereotools=mlev=0.93:slev=1.34,"
+                "acompressor=threshold=-21dB:ratio=1.35:attack=9:release=180:makeup=1.3,"
+                "aecho=0.88:0.48:31|67|121|203|337:0.18|0.13|0.095|0.065|0.040,"
+                "stereotools=mlev=0.91:slev=1.38,"
                 "alimiter=limit=0.94"
             )
             run([
@@ -936,13 +958,16 @@ def main():
         "melodyStyle": style_id,
         "melodyStyleName": style["name"],
         "guitarTreatment": {
-            "mode": "acoustic-open-v4-articulated",
+            "mode": "acoustic-open-v5-resonant",
             "channels": sorted(acoustic_guitar_channels),
             "features": [
                 "dedicated-generaluser-soundfont",
                 "physical-pluck-layer",
                 "pick-attack-layer",
                 "soundboard-resonance",
+                "sympathetic-string-bloom",
+                "extended-release",
+                "multi-tap-room-tail",
                 "separate-guitar-render",
                 "stereo-pan",
                 "micro-strum",

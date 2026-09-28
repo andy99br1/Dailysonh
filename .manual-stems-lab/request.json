@@ -1,0 +1,14 @@
+{
+  "mode": "manual-stems",
+  "sourcePath": "manual-stems-incoming/1790571522213-vocals-VOCALS-1.mp3",
+  "stemPaths": {
+    "drums": "manual-stems-incoming/1790571522213-drums-DRUMS_-1.mp3",
+    "bass": "manual-stems-incoming/1790571522213-bass-BASS_C-1.mp3",
+    "guitar": "manual-stems-incoming/1790571522213-guitar-GUITAR-1.mp3",
+    "piano": "manual-stems-incoming/1790571522213-piano-PIANO_-1.mp3",
+    "other": "manual-stems-incoming/1790571522213-other-OTHER_-1.mp3",
+    "vocals": "manual-stems-incoming/1790571522213-vocals-VOCALS-1.mp3",
+    "original": "manual-stems-incoming/1790571522213-original-Capital-Inicial-Primeiros-Erros-Chove-Audio-Oficial-ft.-Kiko-Zambianchi-320-Kbps-mp3cut.ne.mp3"
+  },
+  "nonce": "1790571535207"
+}

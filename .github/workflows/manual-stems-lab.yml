@@ -1,0 +1,169 @@
+name: Manual Stems + Flute laboratory
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".manual-stems-lab/request.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: stem-flute-lab
+  cancel-in-progress: false
+
+jobs:
+  process-manual-stems:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install "numpy<2" "librosa>=0.10,<0.12" "soundfile>=0.12" "scipy>=1.10" "torchcrepe==0.0.24"
+
+      - name: Recover uploaded stems
+        id: stems
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .manual-stems-lab/request.json
+
+          PATHS_JSON="$RUNNER_TEMP/manual-stems-paths.json"
+          REMOVE_LIST="$RUNNER_TEMP/manual-stems-remove.txt"
+
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          request = json.loads(Path(".manual-stems-lab/request.json").read_text(encoding="utf-8"))
+          stems = request.get("stemPaths")
+          if not isinstance(stems, dict):
+              raise SystemExit("Pedido sem stemPaths.")
+
+          required = ("drums", "bass", "vocals")
+          for key in required:
+              if not str(stems.get(key, "")).strip():
+                  raise SystemExit(f"Stem obrigatório ausente no pedido: {key}")
+
+          temp = Path(os.environ["RUNNER_TEMP"]) / "manual-stems-recovered"
+          temp.mkdir(parents=True, exist_ok=True)
+          local = {}
+          remove = []
+
+          for key, raw_path in stems.items():
+              path = str(raw_path or "").strip()
+              if not path:
+                  continue
+
+              repo_file = Path(path)
+              if repo_file.is_file():
+                  local[key] = str(repo_file)
+                  remove.append(path)
+                  continue
+
+              commits = subprocess.check_output(
+                  ["git", "log", "--format=%H", "--", path],
+                  text=True,
+              ).splitlines()
+
+              found = None
+              for commit in commits:
+                  probe = subprocess.run(
+                      ["git", "cat-file", "-e", f"{commit}:{path}"],
+                      stdout=subprocess.DEVNULL,
+                      stderr=subprocess.DEVNULL,
+                  )
+                  if probe.returncode == 0:
+                      found = commit
+                      break
+
+              if not found:
+                  raise SystemExit(f"Não encontrei o stem no histórico: {path}")
+
+              suffix = Path(path).suffix or ".audio"
+              target = temp / f"{key}{suffix}"
+              with target.open("wb") as handle:
+                  subprocess.run(
+                      ["git", "show", f"{found}:{path}"],
+                      stdout=handle,
+                      check=True,
+                  )
+              local[key] = str(target)
+
+          Path(os.environ["RUNNER_TEMP"], "manual-stems-paths.json").write_text(
+              json.dumps(local, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          Path(os.environ["RUNNER_TEMP"], "manual-stems-remove.txt").write_text(
+              "\n".join(remove) + ("\n" if remove else ""),
+              encoding="utf-8",
+          )
+          print(json.dumps(local, ensure_ascii=False, indent=2))
+          PY
+
+          echo "paths_json=$PATHS_JSON" >> "$GITHUB_OUTPUT"
+          echo "remove_list=$REMOVE_LIST" >> "$GITHUB_OUTPUT"
+
+      - name: Build cumulative game and transform vocals to flute
+        run: |
+          python scripts/manual_stems_lab.py \
+            --request-json .manual-stems-lab/request.json \
+            --paths-json "${{ steps.stems.outputs.paths_json }}"
+
+      - name: Commit isolated lab result
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "dailysonh-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add stem-flute-lab/
+
+          REMOVE_LIST="${{ steps.stems.outputs.remove_list }}"
+          if [ -f "$REMOVE_LIST" ]; then
+            while IFS= read -r FILE; do
+              [ -z "$FILE" ] && continue
+              git rm --ignore-unmatch "$FILE"
+            done < "$REMOVE_LIST"
+          fi
+
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração para publicar."
+            exit 0
+          fi
+
+          git commit -m "Update manual stems flute lab result"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
+      - name: Publish latest lab result to Pages
+        if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run pages.yml --ref main

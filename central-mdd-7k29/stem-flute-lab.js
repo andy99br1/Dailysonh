@@ -26,7 +26,10 @@ function $(id){return document.getElementById(id)}
 var E={
   labAuth:$("labAuth"),labPanel:$("labPanel"),connectionLabel:$("connectionLabel"),
   themeDayBtn:$("themeDayBtn"),themeNightBtn:$("themeNightBtn"),adminThemeColor:$("adminThemeColor"),
+  modeFullBtn:$("modeFullBtn"),modeStemsBtn:$("modeStemsBtn"),fullSongMode:$("fullSongMode"),manualStemsMode:$("manualStemsMode"),
   labForm:$("labForm"),labAudioFile:$("labAudioFile"),labUploadZone:$("labUploadZone"),labFileLabel:$("labFileLabel"),labClipStartInput:$("labClipStartInput"),labRunBtn:$("labRunBtn"),
+  manualStemsForm:$("manualStemsForm"),manualStemsRunBtn:$("manualStemsRunBtn"),manualClipStartInput:$("manualClipStartInput"),
+  manualDrumsFile:$("manualDrumsFile"),manualBassFile:$("manualBassFile"),manualGuitarFile:$("manualGuitarFile"),manualPianoFile:$("manualPianoFile"),manualOtherFile:$("manualOtherFile"),manualVocalsFile:$("manualVocalsFile"),manualOriginalFile:$("manualOriginalFile"),
   labJobBox:$("labJobBox"),labJobTitle:$("labJobTitle"),labJobPercent:$("labJobPercent"),labJobProgress:$("labJobProgress"),labJobMessage:$("labJobMessage"),labWorkflowLink:$("labWorkflowLink"),
   labResultsCard:$("labResultsCard"),labResultTitle:$("labResultTitle"),labResultMeta:$("labResultMeta"),labRefreshBtn:$("labRefreshBtn"),
   labClipStart:$("labClipStart"),labModel:$("labModel"),labVoiced:$("labVoiced"),stemTrackList:$("stemTrackList"),labAudio:$("labAudio"),labNowLabel:$("labNowLabel"),labAudioStatus:$("labAudioStatus"),
@@ -162,6 +165,38 @@ async function requestLab(path,clipStart){
     if(Number.isFinite(value)&&value>=0)payload.clipStart=value;
   }
   return putRepoText(".stem-flute-lab/request.json",payload,"Run isolated Stem + Flute Lab");
+}
+
+async function requestManualStemsLab(stemPaths,clipStart){
+  var payload={
+    mode:"manual-stems",
+    sourcePath:String(stemPaths.vocals||""),
+    stemPaths:stemPaths,
+    nonce:String(Date.now())
+  };
+  if(clipStart!==""&&clipStart!==null&&clipStart!==undefined){
+    var value=Number(clipStart);
+    if(Number.isFinite(value)&&value>=0)payload.clipStart=value;
+  }
+  return putRepoText(".manual-stems-lab/request.json",payload,"Run manual stems to flute lab");
+}
+
+function setLabMode(mode){
+  var manual=mode==="stems";
+  if(E.fullSongMode)E.fullSongMode.classList.toggle("hidden",manual);
+  if(E.manualStemsMode)E.manualStemsMode.classList.toggle("hidden",!manual);
+  if(E.modeFullBtn){
+    E.modeFullBtn.classList.toggle("active",!manual);
+    E.modeFullBtn.setAttribute("aria-selected",manual?"false":"true");
+  }
+  if(E.modeStemsBtn){
+    E.modeStemsBtn.classList.toggle("active",manual);
+    E.modeStemsBtn.setAttribute("aria-selected",manual?"true":"false");
+  }
+}
+
+function stemFile(input){
+  return input&&input.files&&input.files[0]?input.files[0]:null;
 }
 
 async function getRepoJson(path){
@@ -537,7 +572,8 @@ function renderResult(data){
   E.labResultTitle.textContent=data.sourceName||"Último teste";
   var start=Number(data.clipStart||0);
   var selectionMode=data.selection&&data.selection.mode==="manual"?"manualmente":"automaticamente";
-  E.labResultMeta.textContent="Trecho escolhido "+selectionMode+": "+start.toFixed(1)+"s–"+(start+Number(data.clipSeconds||18)).toFixed(1)+"s · voz transformada em flauta estabilizada, sem MIDI.";
+  var sourceMode=data.mode==="manual-stems"?"Stems enviados prontos · ":"";
+  E.labResultMeta.textContent=sourceMode+"Trecho escolhido "+selectionMode+": "+start.toFixed(1)+"s–"+(start+Number(data.clipSeconds||18)).toFixed(1)+"s · voz transformada em flauta estabilizada, sem MIDI.";
   E.labClipStart.textContent=start.toFixed(1)+"s";
   E.labModel.textContent=data.separationModel||"htdemucs_6s";
   E.labVoiced.textContent=data.flute&&data.flute.voicedPercent!==undefined?Number(data.flute.voicedPercent).toFixed(1)+"%":"—";
@@ -596,6 +632,9 @@ async function init(){
 
 E.themeDayBtn.addEventListener("click",function(){applyTheme("day")});
 E.themeNightBtn.addEventListener("click",function(){applyTheme("night")});
+if(E.modeFullBtn)E.modeFullBtn.addEventListener("click",function(){setLabMode("full")});
+if(E.modeStemsBtn)E.modeStemsBtn.addEventListener("click",function(){setLabMode("stems")});
+setLabMode("full");
 if(E.menuBtn)E.menuBtn.addEventListener("click",function(){document.querySelector(".sidebar").classList.toggle("open")});
 E.labAudioFile.addEventListener("change",function(){
   var file=E.labAudioFile.files&&E.labAudioFile.files[0];
@@ -641,6 +680,92 @@ E.labForm.addEventListener("submit",async function(ev){
     toast("O teste encontrou um erro.");
   }finally{
     E.labRunBtn.disabled=false;
+  }
+});
+
+
+if(E.manualStemsForm)E.manualStemsForm.addEventListener("submit",async function(ev){
+  ev.preventDefault();
+
+  var files={
+    drums:stemFile(E.manualDrumsFile),
+    bass:stemFile(E.manualBassFile),
+    guitar:stemFile(E.manualGuitarFile),
+    piano:stemFile(E.manualPianoFile),
+    other:stemFile(E.manualOtherFile),
+    vocals:stemFile(E.manualVocalsFile),
+    original:stemFile(E.manualOriginalFile)
+  };
+
+  if(!files.drums||!files.bass||!files.vocals){
+    toast("Envie pelo menos bateria, baixo e voz.");
+    return;
+  }
+  if(!files.guitar&&!files.piano&&!files.other){
+    toast("Envie pelo menos um stem de instrumentos.");
+    return;
+  }
+
+  var tooLarge=Object.keys(files).find(function(key){
+    return files[key]&&files[key].size>MAX_FILE_MB*1024*1024;
+  });
+  if(tooLarge){
+    toast("O arquivo de "+tooLarge+" passa de "+MAX_FILE_MB+" MB.");
+    return;
+  }
+
+  E.manualStemsRunBtn.disabled=true;
+  E.labWorkflowLink.classList.add("hidden");
+
+  try{
+    var stamp=Date.now();
+    var stemPaths={};
+    var uploadOrder=["drums","bass","guitar","piano","other","vocals","original"];
+    var present=uploadOrder.filter(function(key){return Boolean(files[key])});
+
+    for(var i=0;i<present.length;i++){
+      var key=present[i];
+      var file=files[key];
+      var path="manual-stems-incoming/"+stamp+"-"+key+"-"+sanitizeFilename(file.name);
+      var pct=8+Math.round((i/Math.max(1,present.length))*38);
+      setJob(pct,"Enviando stems","Upload "+(i+1)+" de "+present.length+" · "+key+".");
+      await uploadAudio(file,path);
+      stemPaths[key]=path;
+    }
+
+    setJob(50,"Stems enviados","Criando o jogo cumulativo e transformando a voz em flauta.");
+    var requestedStart=E.manualClipStartInput?E.manualClipStartInput.value:"";
+    await requestManualStemsLab(stemPaths,requestedStart);
+
+    setJob(
+      62,
+      "Processamento iniciado",
+      requestedStart!==""?
+        "Cortando todos os stems nos mesmos 18s a partir de "+Number(requestedStart).toFixed(1)+"s e criando as fases cumulativas.":
+        "Escolhendo os 18s, transformando a voz em flauta e criando as fases cumulativas."
+    );
+
+    var result=await waitPublishedResult(stemPaths.vocals);
+    if(result){
+      setJob(100,"Jogo pronto","As fases já estão somando as camadas anteriores. Ouça e publique quando aprovar.");
+      toast("Jogo montado a partir dos stems.");
+    }else{
+      setJob(100,"Ainda processando","O GitHub pode estar terminando. Use Recarregar em alguns instantes.");
+    }
+
+    E.manualStemsForm.reset();
+  }catch(err){
+    console.error("manual stems lab",err);
+    setJob(
+      100,
+      "Não foi possível concluir",
+      err&&err.status===403?
+        "O token do painel precisa de permissão de Contents em leitura e escrita.":
+        "Confira os stems e tente novamente."
+    );
+    toast("O processamento dos stems encontrou um erro.");
+  }finally{
+    E.manualStemsRunBtn.disabled=false;
   }
 });
 

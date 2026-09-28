@@ -14,6 +14,11 @@
     themeColor: el("themeColor"),
     themeOptions: Array.prototype.slice.call(document.querySelectorAll("[data-theme-choice]")),
     playBtn: el("playBtn"),
+    volumeControl: el("volumeControl"),
+    volumeBtn: el("volumeBtn"),
+    volumePopover: el("volumePopover"),
+    volumeSlider: el("volumeSlider"),
+    volumeValue: el("volumeValue"),
     rewindBtn: el("rewindBtn"),
     forwardBtn: el("forwardBtn"),
     skipBtn: el("skipBtn"),
@@ -65,6 +70,11 @@
   var analyticsVisitorId = "";
   var adminPreviewDate = "";
   var adminPreviewMode = false;
+  var playerVolume = 1;
+  try {
+    var storedVolume = Number(localStorage.getItem("musicadodia:volume"));
+    if (Number.isFinite(storedVolume)) playerVolume = Math.max(0, Math.min(1, storedVolume));
+  } catch (_) {}
   try {
     var previewParams = new URLSearchParams(window.location.search);
     adminPreviewDate = String(previewParams.get("previewDate") || "").trim();
@@ -738,6 +748,37 @@
     return song.rounds[index] || "";
   }
 
+  function updateVolumeUi() {
+    if (!E.volumeBtn || !E.volumeSlider || !E.volumeValue) return;
+    var percent = Math.round(playerVolume * 100);
+    E.volumeSlider.value = String(percent);
+    E.volumeValue.textContent = percent + "%";
+    E.volumeBtn.setAttribute("data-volume-level", percent === 0 ? "muted" : percent < 55 ? "low" : "high");
+    E.volumeBtn.setAttribute("aria-label", "Ajustar volume, " + percent + "%");
+  }
+
+  function closeVolumePopover() {
+    if (!E.volumePopover || !E.volumeBtn) return;
+    E.volumePopover.classList.add("hidden");
+    E.volumeBtn.setAttribute("aria-expanded", "false");
+  }
+
+  function toggleVolumePopover() {
+    if (!E.volumePopover || !E.volumeBtn) return;
+    var willOpen = E.volumePopover.classList.contains("hidden");
+    E.volumePopover.classList.toggle("hidden", !willOpen);
+    E.volumeBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+  }
+
+  function setPlayerVolume(value) {
+    var next = Number(value);
+    if (!Number.isFinite(next)) return;
+    playerVolume = Math.max(0, Math.min(1, next));
+    try { localStorage.setItem("musicadodia:volume", String(playerVolume)); } catch (_) {}
+    if (audio) audio.volume = playerVolume;
+    updateVolumeUi();
+  }
+
   function resetProgress() {
     E.seekBar.value = 0;
     E.elapsedTime.textContent = "0:00";
@@ -809,6 +850,7 @@
 
     var currentAudio = new Audio(src);
     currentAudio.preload = "auto";
+    currentAudio.volume = playerVolume;
     audio = currentAudio;
 
     function isCurrentAudio() {
@@ -1155,6 +1197,20 @@
   }
 
   E.playBtn.addEventListener("click", toggleAudio);
+  if (E.volumeBtn) {
+    E.volumeBtn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      toggleVolumePopover();
+    });
+  }
+  if (E.volumePopover) {
+    E.volumePopover.addEventListener("click", function (event) { event.stopPropagation(); });
+  }
+  if (E.volumeSlider) {
+    E.volumeSlider.addEventListener("input", function () {
+      setPlayerVolume(Number(E.volumeSlider.value) / 100);
+    });
+  }
   E.rewindBtn.addEventListener("click", function () { seekBy(-5); });
   E.forwardBtn.addEventListener("click", function () { seekBy(5); });
   E.skipBtn.addEventListener("click", nextOrSkip);
@@ -1191,10 +1247,17 @@
     gameMenu.open = false;
   });
 
+  document.addEventListener("click", function (event) {
+    if (!E.volumePopover || E.volumePopover.classList.contains("hidden")) return;
+    if (event.target.closest && event.target.closest(".volume-control")) return;
+    closeVolumePopover();
+  });
+
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
       closeThemeMenu();
       if (gameMenu) gameMenu.open = false;
+      closeVolumePopover();
       closeGuessForm();
     }
   });
@@ -1233,6 +1296,8 @@
     E.guessForm.classList.add("hidden");
     advance("Não foi dessa vez. Uma nova camada foi liberada.");
   });
+
+  updateVolumeUi();
 
   E.shareBtn.addEventListener("click", share);
   E.restartBtn.addEventListener("click", restartGame);

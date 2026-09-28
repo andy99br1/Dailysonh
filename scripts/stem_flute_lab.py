@@ -13,6 +13,12 @@ from pathlib import Path
 import librosa
 import numpy as np
 import soundfile as sf
+try:
+    import torch
+    import torchcrepe
+except Exception:
+    torch = None
+    torchcrepe = None
 from scipy.ndimage import gaussian_filter1d, median_filter
 from scipy.signal import butter, sosfiltfilt
 
@@ -353,12 +359,50 @@ def _count_note_segments(notes):
     return count
 
 
+def _fit_frame_array(values, length, fill=np.nan):
+    arr = np.asarray(values, dtype=np.float64).reshape(-1)
+    if len(arr) >= length:
+        return arr[:length]
+    out = np.full(length, fill, dtype=np.float64)
+    out[:len(arr)] = arr
+    return out
+
+
+def _estimate_crepe(y, sr, hop):
+    if torch is None or torchcrepe is None:
+        return None, None
+
+    try:
+        audio = torch.tensor(np.asarray(y, dtype=np.float32))[None]
+        with torch.no_grad():
+            pitch, periodicity = torchcrepe.predict(
+                audio,
+                sr,
+                hop,
+                65.0,
+                1100.0,
+                "full",
+                batch_size=512,
+                device="cpu",
+                return_periodicity=True,
+            )
+            periodicity = torchcrepe.filter.median(periodicity, 3)
+            pitch = torchcrepe.filter.mean(pitch, 3)
+
+        return (
+            pitch.detach().cpu().numpy().reshape(-1).astype(np.float64),
+            periodicity.detach().cpu().numpy().reshape(-1).astype(np.float64),
+        )
+    except Exception as exc:
+        print(f"Aviso: TorchCrepe falhou; usando pYIN como fallback: {exc}", flush=True)
+        return None, None
+
+
 def synthesize_flute(vocal_path, out_path):
     """
-    Faz a voz virar uma linha de flauta estável.
-    O vibrato da cantora NÃO é copiado quadro a quadro: usamos o pitch para
-    descobrir a nota musical, estabilizamos notas curtas e só então criamos
-    transições suaves. Isso evita a flauta 'tremendo' ou falhando junto da voz.
+    Converte a voz isolada em flauta usando rastreamento neural de pitch
+    (TorchCrepe) com pYIN como verificação/fallback. A melodia final mantém
+    continuidade e pequenas nuances, mas remove erros de oitava e notas espúrias.
     """
     y, sr = librosa.load(vocal_path, sr=TARGET_SR, mono=True)
     target_len = int(round(CLIP_SECONDS * sr))
@@ -369,7 +413,8 @@ def synthesize_flute(vocal_path, out_path):
 
     hop = 256
     frame_length = 2048
-    f0, voiced_flag, voiced_prob = librosa.pyin(
+
+    pyin_f0, pyin_voiced, pyin_prob = librosa.pyin(
         y,
         fmin=65.0,
         fmax=1100.0,
@@ -379,36 +424,145 @@ def synthesize_flute(vocal_path, out_path):
         center=True,
     )
 
-    if f0 is None or len(f0) == 0:
-        sf.write(out_path, np.zeros((target_len, 2), dtype=np.float32), sr, subtype="PCM_16")
-        return {"voicedPercent": 0.0, "medianHz": 0.0, "noteSegments": 0}
+    crepe_f0, crepe_periodicity = _estimate_crepe(y, sr, hop)
 
-    voiced_prob = np.asarray(
-        voiced_prob if voiced_prob is not None else np.zeros_like(f0),
-        dtype=np.float64,
-    )
-    voiced_flag = np.asarray(
-        voiced_flag if voiced_flag is not None else np.isfinite(f0),
-        dtype=bool,
+    frame_count = max(
+        len(pyin_f0) if pyin_f0 is not None else 0,
+        len(crepe_f0) if crepe_f0 is not None else 0,
+        1,
     )
 
-    raw_valid = voiced_flag & np.isfinite(f0) & (voiced_prob >= 0.38)
+    pyin_f0 = _fit_frame_array(
+        pyin_f0 if pyin_f0 is not None else [],
+        frame_count,
+    )
+    pyin_prob = _fit_frame_array(
+        pyin_prob if pyin_prob is not None else [],
+        frame_count,
+        fill=0.0,
+    )
+    pyin_voiced = _fit_frame_array(
+        np.asarray(pyin_voiced, dtype=np.float64) if pyin_voiced is not None else [],
+        frame_count,
+        fill=0.0,
+    ) > 0.5
 
-    midi_curve = np.full(len(f0), np.nan, dtype=np.float64)
-    finite_f0 = np.isfinite(f0) & (f0 > 0)
-    midi_curve[finite_f0] = 69.0 + 12.0 * np.log2(f0[finite_f0] / 440.0)
-    midi_curve = _fix_octaves(midi_curve, raw_valid & np.isfinite(midi_curve))
+    if crepe_f0 is None:
+        crepe_f0 = np.full(frame_count, np.nan, dtype=np.float64)
+        crepe_periodicity = np.zeros(frame_count, dtype=np.float64)
+    else:
+        crepe_f0 = _fit_frame_array(crepe_f0, frame_count)
+        crepe_periodicity = _fit_frame_array(crepe_periodicity, frame_count, fill=0.0)
 
-    good = raw_valid & np.isfinite(midi_curve)
-    if np.count_nonzero(good) < 3:
+    rms = librosa.feature.rms(
+        y=y,
+        frame_length=frame_length,
+        hop_length=hop,
+        center=True,
+    )[0]
+    rms = _fit_frame_array(rms, frame_count, fill=0.0)
+    rms_peak = max(float(np.max(rms)), 1e-9)
+    rms_db = 20.0 * np.log10(np.maximum(rms, 1e-9) / rms_peak)
+    energy_good = rms_db > -44.0
+
+    pyin_good = (
+        pyin_voiced
+        & np.isfinite(pyin_f0)
+        & (pyin_f0 > 0)
+        & (pyin_prob >= 0.24)
+        & energy_good
+    )
+    crepe_good = (
+        np.isfinite(crepe_f0)
+        & (crepe_f0 > 0)
+        & (crepe_periodicity >= 0.14)
+        & energy_good
+    )
+
+    pyin_midi = np.full(frame_count, np.nan, dtype=np.float64)
+    crepe_midi = np.full(frame_count, np.nan, dtype=np.float64)
+
+    good = np.isfinite(pyin_f0) & (pyin_f0 > 0)
+    pyin_midi[good] = 69.0 + 12.0 * np.log2(pyin_f0[good] / 440.0)
+
+    good = np.isfinite(crepe_f0) & (crepe_f0 > 0)
+    crepe_midi[good] = 69.0 + 12.0 * np.log2(crepe_f0[good] / 440.0)
+
+    combined = np.full(frame_count, np.nan, dtype=np.float64)
+    confidence = np.zeros(frame_count, dtype=np.float64)
+
+    for i in range(frame_count):
+        c_ok = bool(crepe_good[i])
+        p_ok = bool(pyin_good[i])
+
+        if c_ok and p_ok:
+            c = float(crepe_midi[i])
+            p = float(pyin_midi[i])
+
+            # Ajusta discrepâncias clássicas de oitava antes de combinar.
+            while p - c > 6.0:
+                p -= 12.0
+            while c - p > 6.0:
+                p += 12.0
+
+            diff = abs(c - p)
+            if diff <= 1.6:
+                cw = max(0.15, float(crepe_periodicity[i]))
+                pw = max(0.12, float(pyin_prob[i]) * 0.72)
+                combined[i] = (c * cw + p * pw) / (cw + pw)
+                confidence[i] = min(1.0, max(cw, pw))
+            elif crepe_periodicity[i] >= 0.25:
+                combined[i] = c
+                confidence[i] = float(crepe_periodicity[i])
+            elif pyin_prob[i] >= 0.50:
+                combined[i] = p
+                confidence[i] = float(pyin_prob[i]) * 0.75
+        elif c_ok:
+            combined[i] = crepe_midi[i]
+            confidence[i] = float(crepe_periodicity[i])
+        elif p_ok:
+            combined[i] = pyin_midi[i]
+            confidence[i] = float(pyin_prob[i]) * 0.75
+
+    raw_valid = np.isfinite(combined)
+    if np.count_nonzero(raw_valid) < 3:
         sf.write(out_path, np.zeros((target_len, 2), dtype=np.float32), sr, subtype="PCM_16")
-        return {"voicedPercent": 0.0, "medianHz": 0.0, "noteSegments": 0}
+        return {
+            "voicedPercent": 0.0,
+            "medianHz": 0.0,
+            "noteSegments": 0,
+            "tracker": "TorchCrepe + pYIN",
+            "crepeVoicedPercent": 0.0,
+            "pyinVoicedPercent": 0.0,
+        }
 
-    x = np.arange(len(midi_curve), dtype=np.float64)
-    filled = np.interp(x, x[good], midi_curve[good])
+    combined = _fix_octaves(combined, raw_valid)
 
-    # ~64 ms de mediana: remove vibrato/jitter sem atrasar demais a melodia.
-    smooth_midi = median_filter(filled, size=11, mode="nearest")
+    # Remove saltos isolados grandes quando a confiança está baixa.
+    x = np.arange(frame_count, dtype=np.float64)
+    filled = np.interp(x, x[raw_valid], combined[raw_valid])
+    local = median_filter(filled, size=9, mode="nearest")
+    suspicious = raw_valid & (np.abs(combined - local) > 5.5) & (confidence < 0.28)
+    combined[suspicious] = np.nan
+    raw_valid = np.isfinite(combined)
+
+    if np.count_nonzero(raw_valid) < 3:
+        sf.write(out_path, np.zeros((target_len, 2), dtype=np.float32), sr, subtype="PCM_16")
+        return {
+            "voicedPercent": 0.0,
+            "medianHz": 0.0,
+            "noteSegments": 0,
+            "tracker": "TorchCrepe + pYIN",
+            "crepeVoicedPercent": round(float(np.mean(crepe_good) * 100.0), 1),
+            "pyinVoicedPercent": round(float(np.mean(pyin_good) * 100.0), 1),
+        }
+
+    x = np.arange(frame_count, dtype=np.float64)
+    filled = np.interp(x, x[raw_valid], combined[raw_valid])
+
+    # Menos quantização agressiva: estabiliza a melodia, mas preserva nuances.
+    smooth_midi = median_filter(filled, size=7, mode="nearest")
+    smooth_midi = gaussian_filter1d(smooth_midi, sigma=0.75, mode="nearest")
 
     note_frames = np.rint(smooth_midi).astype(np.int16)
     note_frames[~raw_valid] = -1
@@ -416,69 +570,69 @@ def synthesize_flute(vocal_path, out_path):
     frames_per_second = sr / hop
     note_frames = _fill_short_note_gaps(
         note_frames,
-        max_gap=max(1, int(round(0.16 * frames_per_second))),
+        max_gap=max(1, int(round(0.28 * frames_per_second))),
     )
     note_frames = _clean_short_note_runs(
         note_frames,
-        min_frames=max(2, int(round(0.055 * frames_per_second))),
+        min_frames=max(2, int(round(0.070 * frames_per_second))),
     )
     note_frames = _fill_short_note_gaps(
         note_frames,
-        max_gap=max(1, int(round(0.10 * frames_per_second))),
+        max_gap=max(1, int(round(0.18 * frames_per_second))),
     )
 
     stable_valid = note_frames >= 0
     if np.count_nonzero(stable_valid) < 3:
         sf.write(out_path, np.zeros((target_len, 2), dtype=np.float32), sr, subtype="PCM_16")
-        return {"voicedPercent": 0.0, "medianHz": 0.0, "noteSegments": 0}
+        return {
+            "voicedPercent": 0.0,
+            "medianHz": 0.0,
+            "noteSegments": 0,
+            "tracker": "TorchCrepe + pYIN",
+            "crepeVoicedPercent": round(float(np.mean(crepe_good) * 100.0), 1),
+            "pyinVoicedPercent": round(float(np.mean(pyin_good) * 100.0), 1),
+        }
 
-    # Cria pitch constante dentro de cada nota e glides curtos nas mudanças.
     stable_pitch = note_frames.astype(np.float64)
     stable_pitch[~stable_valid] = np.nan
 
-    frame_pitch = np.full(len(stable_pitch), np.nan, dtype=np.float64)
+    # Mantém até ~20 cents da curva real para a flauta não virar um teclado.
+    expressive_residual = np.clip(
+        smooth_midi - np.rint(smooth_midi),
+        -0.20,
+        0.20,
+    )
+
+    frame_pitch = np.full(frame_count, np.nan, dtype=np.float64)
     i = 0
-    while i < len(stable_pitch):
+    while i < frame_count:
         if not np.isfinite(stable_pitch[i]):
             i += 1
             continue
         j = i + 1
-        while j < len(stable_pitch) and np.isfinite(stable_pitch[j]):
+        while j < frame_count and np.isfinite(stable_pitch[j]):
             j += 1
 
-        phrase = stable_pitch[i:j].copy()
-        phrase = gaussian_filter1d(phrase, sigma=1.45, mode="nearest")
+        phrase = stable_pitch[i:j] + 0.38 * expressive_residual[i:j]
+        phrase = gaussian_filter1d(phrase, sigma=1.10, mode="nearest")
         frame_pitch[i:j] = phrase
         i = j
 
     valid_pitch = np.isfinite(frame_pitch)
     px = np.flatnonzero(valid_pitch)
     interp_pitch = np.interp(
-        np.arange(len(frame_pitch), dtype=np.float64),
+        np.arange(frame_count, dtype=np.float64),
         px,
         frame_pitch[valid_pitch],
     )
     interp_hz = 440.0 * np.power(2.0, (interp_pitch - 69.0) / 12.0)
 
-    # Dinâmica da voz, mas bastante suavizada para não copiar falhas/sílabas.
-    rms = librosa.feature.rms(
-        y=y,
-        frame_length=frame_length,
-        hop_length=hop,
-        center=True,
-    )[0]
-    if len(rms) < len(note_frames):
-        rms = np.pad(rms, (0, len(note_frames) - len(rms)), mode="edge")
-    rms = rms[: len(note_frames)]
-    if float(np.max(rms)) > 1e-8:
-        rms = rms / float(np.max(rms))
+    rms_norm = np.clip(rms / rms_peak, 0.0, 1.0)
+    gate_frames = gaussian_filter1d(stable_valid.astype(np.float64), sigma=2.6)
+    dynamics = gaussian_filter1d(np.power(rms_norm, 0.42), sigma=8.0)
+    amp_frames = np.clip((0.50 + 0.50 * dynamics) * gate_frames, 0.0, 1.0)
 
-    gate_frames = stable_valid.astype(np.float64)
-    gate_frames = gaussian_filter1d(gate_frames, sigma=2.0)
-    dynamics = gaussian_filter1d(np.power(np.clip(rms, 0.0, 1.0), 0.45), sigma=7.0)
-    amp_frames = np.clip((0.58 + 0.42 * dynamics) * gate_frames, 0.0, 1.0)
-
-    frame_times = np.arange(len(note_frames), dtype=np.float64) * hop / sr
+    frame_times = np.arange(frame_count, dtype=np.float64) * hop / sr
     sample_times = np.arange(target_len, dtype=np.float64) / sr
     freq = np.interp(
         sample_times,
@@ -489,7 +643,10 @@ def synthesize_flute(vocal_path, out_path):
     )
     amp = np.interp(sample_times, frame_times, amp_frames, left=0.0, right=0.0)
 
-    # Fase contínua e timbre de flauta mais arredondado.
+    # Vibrato muito discreto, só para tirar a sensação de oscilador estático.
+    vibrato_cents = 3.2 * np.sin(2.0 * np.pi * 5.1 * sample_times)
+    freq = freq * np.power(2.0, vibrato_cents / 1200.0)
+
     phase = 2.0 * np.pi * np.cumsum(freq) / sr
     tone = (
         1.00 * np.sin(phase)
@@ -498,21 +655,21 @@ def synthesize_flute(vocal_path, out_path):
         + 0.009 * np.sin(4.0 * phase + 0.47)
     )
 
-    rng = np.random.default_rng(20260923)
+    rng = np.random.default_rng(20260928)
     breath = rng.standard_normal(target_len)
     breath = gaussian_filter1d(breath, sigma=3.0)
     breath /= max(float(np.max(np.abs(breath))), 1e-9)
 
-    mono = (tone + 0.010 * breath) * amp
+    mono = (tone + 0.009 * breath) * amp
 
     d1 = int(0.029 * sr)
     d2 = int(0.047 * sr)
     left = mono.copy()
     right = mono.copy()
     if d1 < target_len:
-        left[d1:] += mono[:-d1] * 0.085
+        left[d1:] += mono[:-d1] * 0.080
     if d2 < target_len:
-        right[d2:] += mono[:-d2] * 0.07
+        right[d2:] += mono[:-d2] * 0.066
 
     stereo = np.column_stack([left, right])
     peak = float(np.max(np.abs(stereo))) if stereo.size else 0.0
@@ -521,12 +678,16 @@ def synthesize_flute(vocal_path, out_path):
 
     sf.write(out_path, stereo.astype(np.float32), sr, subtype="PCM_16")
 
-    original_good_f0 = f0[good]
-    median_hz = float(np.median(original_good_f0)) if original_good_f0.size else 0.0
+    voiced_hz = 440.0 * np.power(2.0, combined[raw_valid] / 12.0 - 69.0 / 12.0)
+    median_hz = float(np.median(voiced_hz)) if voiced_hz.size else 0.0
+
     return {
         "voicedPercent": round(float(np.mean(stable_valid) * 100.0), 1),
         "medianHz": round(median_hz, 2),
         "noteSegments": int(_count_note_segments(note_frames)),
+        "tracker": "TorchCrepe full + pYIN fallback",
+        "crepeVoicedPercent": round(float(np.mean(crepe_good) * 100.0), 1),
+        "pyinVoicedPercent": round(float(np.mean(pyin_good) * 100.0), 1),
     }
 
 def encode_ogg(source, target):
@@ -804,7 +965,7 @@ def main():
             "clipSeconds": CLIP_SECONDS,
             "selection": choice,
             "separationModel": "Hybrid: htdemucs_ft (drums/bass) + BS-Roformer-SW (vocals/instruments)",
-            "voiceTransform": "stabilized-note flute (pYIN + note cleanup, no MIDI)",
+            "voiceTransform": "neural stabilized flute (TorchCrepe full + pYIN fallback, no MIDI)",
             "instrumentBody": "recombined accompaniment + filtered residual body restoration",
             "webAudioEncoding": "Ogg Vorbis q8",
             "flute": flute_stats,

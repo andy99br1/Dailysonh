@@ -525,6 +525,7 @@ body[data-theme="noite"] .song-stat:last-child strong { color: #ffd38e; }
 }
 
 .player-controls {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1533,15 +1534,18 @@ body[data-theme="grafite"] .platform-apple .platform-logo{color:#f3f3f5}
 
 /* Controle de volume do player. */
 .volume-control{
-  position:relative;
-  flex:0 0 auto;
+  position:absolute;
+  left:calc(50% - 168px);
+  top:50%;
+  z-index:4;
   display:grid;
   place-items:center;
+  transform:translateY(-50%);
 }
 
 .volume-btn{
-  width:54px;
-  height:54px;
+  width:38px;
+  height:38px;
   padding:0;
   display:grid;
   place-items:center;
@@ -1554,8 +1558,8 @@ body[data-theme="grafite"] .platform-apple .platform-logo{color:#f3f3f5}
 }
 
 .volume-icon{
-  width:27px;
-  height:27px;
+  width:21px;
+  height:21px;
   display:block;
   fill:currentColor;
 }
@@ -1624,18 +1628,18 @@ body[data-theme="grafite"] .volume-btn{
 }
 
 @media(max-width:600px){
-  .player-controls{
-    gap:15px;
+  .volume-control{
+    left:calc(50% - 145px);
   }
 
   .volume-btn{
-    width:47px;
-    height:47px;
+    width:34px;
+    height:34px;
   }
 
   .volume-icon{
-    width:24px;
-    height:24px;
+    width:19px;
+    height:19px;
   }
 
   .volume-popover{
@@ -1649,15 +1653,13 @@ body[data-theme="grafite"] .volume-btn{
   }
 }
 
-@media(max-width:390px){
-  .player-controls{
-    gap:12px;
-  }
-}
-
 @media(max-height:690px) and (max-width:600px){
+  .volume-control{
+    left:calc(50% - 135px);
+  }
+
   .volume-btn{
-    width:44px;
-    height:44px;
+    width:32px;
+    height:32px;
   }
 }

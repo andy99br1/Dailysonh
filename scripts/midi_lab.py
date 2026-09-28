@@ -12,7 +12,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import mido
-import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "midi-lab"
@@ -28,11 +27,9 @@ ACOUSTIC_GUITAR_PROGRAMS = {24, 25}
 GUITAR_VOLUME_SCALE = 0.86
 GUITAR_REVERB = 42
 GUITAR_CHORUS = 8
-GUITAR_STRUM_WINDOW = 0.034
-GUITAR_STRUM_STEP = 0.010
-GUITAR_STRUM_MAX = 0.060
-GUITAR_ARTICULATION_GAIN = 0.72
-GUITAR_SAMPLE_RATE = 44100
+GUITAR_STRUM_WINDOW = 0.018
+GUITAR_STRUM_STEP = 0.006
+GUITAR_STRUM_MAX = 0.034
 
 MELODY_STYLES = {
     "bandle": {"program": 85, "name": "Lead suave (Bandle)"},
@@ -522,164 +519,11 @@ def slice_midi(mid, records, selected_channels, start, duration, out_path, melod
     out.save(out_path)
 
 
-def guitar_strum_offsets(records, guitar_channels, start, end):
-    offsets = {}
-    for guitar_ch in guitar_channels:
-        note_events = []
-        for rec_index, rec in enumerate(records):
-            sec, msg = rec["sec"], rec["msg"]
-            if sec < start or sec >= end:
-                continue
-            if (
-                hasattr(msg, "channel")
-                and msg.channel == guitar_ch
-                and msg.type == "note_on"
-                and msg.velocity > 0
-            ):
-                note_events.append((rec_index, sec, msg.note))
-
-        groups = []
-        current = []
-        group_start = None
-        for item in note_events:
-            if group_start is None or item[1] - group_start <= GUITAR_STRUM_WINDOW:
-                current.append(item)
-                if group_start is None:
-                    group_start = item[1]
-            else:
-                if current:
-                    groups.append(current)
-                current = [item]
-                group_start = item[1]
-        if current:
-            groups.append(current)
-
-        for group_index, group in enumerate(groups):
-            if len(group) < 2:
-                continue
-            reverse = bool(group_index % 2)
-            ordered = sorted(group, key=lambda item: item[2], reverse=reverse)
-            for pos, (rec_index, _, _) in enumerate(ordered):
-                offsets[rec_index] = min(pos * GUITAR_STRUM_STEP, GUITAR_STRUM_MAX)
-    return offsets
-
-
-def synthesize_guitar_articulation(records, guitar_channels, guitar_programs, start, duration, out_path):
-    """Cria uma camada discreta de palheta/corda/caixa para dar vida ao SoundFont."""
-    sr = GUITAR_SAMPLE_RATE
-    total = int(round(duration * sr))
-    stereo = np.zeros((total, 2), dtype=np.float32)
-    end = start + duration
-    offsets = guitar_strum_offsets(records, guitar_channels, start, end)
-    ordered_channels = sorted(guitar_channels)
-    pan_map = {}
-    for i, ch in enumerate(ordered_channels):
-        if len(ordered_channels) == 1:
-            pan_map[ch] = 0.0
-        else:
-            pan_map[ch] = (-0.34 if i % 2 == 0 else 0.34)
-
-    rng = np.random.default_rng(240913)
-
-    for rec_index, rec in enumerate(records):
-        sec, msg = rec["sec"], rec["msg"]
-        if sec < start or sec >= end:
-            continue
-        if not (
-            hasattr(msg, "channel")
-            and msg.channel in guitar_channels
-            and msg.type == "note_on"
-            and msg.velocity > 0
-        ):
-            continue
-
-        ch = msg.channel
-        program = int(guitar_programs.get(ch, 25))
-        steel = program == 25
-        onset = sec - start + offsets.get(rec_index, 0.0)
-        i0 = int(round(onset * sr))
-        if i0 >= total:
-            continue
-
-        velocity = max(0.08, min(1.0, msg.velocity / 127.0))
-        freq = 440.0 * (2.0 ** ((msg.note - 69) / 12.0))
-        note_len = (1.28 if steel else 1.08) + max(0.0, (64 - msg.note) * 0.008)
-        n = min(total - i0, int(note_len * sr))
-        if n <= 8:
-            continue
-        t = np.arange(n, dtype=np.float32) / sr
-
-        # Corda: harmônicos com decaimentos diferentes para imitar uma corda pinçada.
-        harmonics = 9 if steel else 6
-        string = np.zeros(n, dtype=np.float32)
-        for h in range(1, harmonics + 1):
-            hf = freq * h
-            if hf >= sr * 0.46:
-                break
-            amp = (1.0 / (h ** (1.10 if steel else 1.34)))
-            decay = (2.2 + h * 0.48) if steel else (2.65 + h * 0.62)
-            phase = ((msg.note * 13 + h * 29 + ch * 7) % 360) * np.pi / 180.0
-            string += amp * np.sin(2.0 * np.pi * hf * t + phase) * np.exp(-decay * t)
-
-        # Palheta/dedo: ruído curtíssimo e brilhante no ataque.
-        pick_n = min(n, int((0.020 if steel else 0.014) * sr))
-        pick = np.zeros(n, dtype=np.float32)
-        if pick_n > 4:
-            noise = rng.standard_normal(pick_n).astype(np.float32)
-            noise = np.concatenate(([noise[0]], np.diff(noise))).astype(np.float32)
-            env = np.exp(-np.arange(pick_n, dtype=np.float32) / (sr * (0.0045 if steel else 0.0035)))
-            pick[:pick_n] = noise * env * (0.30 if steel else 0.17)
-
-        # Caixa/tampo: ressonâncias curtas e independentes da nota MIDI.
-        body = np.zeros(n, dtype=np.float32)
-        body_modes = (
-            [(98, 0.14, 2.0), (196, 0.11, 2.5), (238, 0.08, 3.0), (395, 0.055, 3.6)]
-            if steel
-            else
-            [(92, 0.16, 2.1), (184, 0.12, 2.6), (226, 0.07, 3.2), (360, 0.045, 3.9)]
-        )
-        for body_f, body_amp, body_decay in body_modes:
-            body += (
-                body_amp
-                * np.sin(2.0 * np.pi * body_f * t)
-                * np.exp(-body_decay * t)
-            )
-
-        sig = (string * (0.23 if steel else 0.25) + pick + body) * velocity
-
-        # Pequena "respiração" pós-ataque para não parecer sample estático.
-        sig *= 1.0 + 0.018 * np.sin(2.0 * np.pi * 5.2 * t)
-
-        pan = pan_map.get(ch, 0.0)
-        left = np.sqrt((1.0 - pan) * 0.5)
-        right = np.sqrt((1.0 + pan) * 0.5)
-        stereo[i0:i0+n, 0] += sig * left
-        stereo[i0:i0+n, 1] += sig * right
-
-    peak = float(np.max(np.abs(stereo))) if stereo.size else 0.0
-    if peak > 0:
-        stereo *= min(0.86 / peak, 1.0)
-
-    pcm = np.clip(stereo, -1.0, 1.0)
-    pcm = (pcm * 32767.0).astype("<i2")
-    import wave
-    with wave.open(str(out_path), "wb") as wav:
-        wav.setnchannels(2)
-        wav.setsampwidth(2)
-        wav.setframerate(sr)
-        wav.writeframes(pcm.tobytes())
-
-
 def render_round(mid, records, channels, start, out_path, soundfont, melody_channel, melody_program, guitar_channels=None, guitar_soundfont=None):
     selected = set(channels)
     guitars = selected & set(guitar_channels or [])
     others = selected - guitars
     guitar_sf = str(guitar_soundfont or soundfont)
-    guitar_programs = {}
-    for rec in records:
-        msg = rec["msg"]
-        if hasattr(msg, "channel") and msg.channel in guitars and msg.type == "program_change":
-            guitar_programs[msg.channel] = msg.program
 
     with tempfile.TemporaryDirectory(prefix="mdd-midi-round-") as td:
         td = Path(td)
@@ -690,7 +534,6 @@ def render_round(mid, records, channels, start, out_path, soundfont, melody_chan
         if guitars:
             guitar_mid = td / "guitar.mid"
             guitar_wav = td / "guitar.wav"
-            articulation_wav = td / "guitar-articulation.wav"
             guitar_fx = td / "guitar-fx.wav"
 
             slice_midi(
@@ -698,9 +541,6 @@ def render_round(mid, records, channels, start, out_path, soundfont, melody_chan
                 melody_channel, melody_program, guitar_channels=guitars,
             )
             run(["fluidsynth", "-ni", "-g", "0.90", "-F", guitar_wav, "-r", "44100", guitar_sf, guitar_mid])
-            synthesize_guitar_articulation(
-                records, guitars, guitar_programs, start, CLIP_SECONDS, articulation_wav
-            )
 
             guitar_filter = (
                 "highpass=f=72,"
@@ -715,15 +555,9 @@ def render_round(mid, records, channels, start, out_path, soundfont, melody_chan
                 "alimiter=limit=0.94"
             )
             run([
-                "ffmpeg", "-y", "-v", "error",
-                "-i", guitar_wav, "-i", articulation_wav,
-                "-t", f"{CLIP_SECONDS:.3f}",
-                "-filter_complex",
-                "[0:a]volume=0.88[baseg];"
-                f"[1:a]volume={GUITAR_ARTICULATION_GAIN:.2f}[art];"
-                "[baseg][art]amix=inputs=2:duration=longest:normalize=0,"
-                + guitar_filter + "[gout]",
-                "-map", "[gout]", "-c:a", "pcm_s16le", guitar_fx,
+                "ffmpeg", "-y", "-v", "error", "-i", guitar_wav,
+                "-t", f"{CLIP_SECONDS:.3f}", "-af", guitar_filter,
+                "-c:a", "pcm_s16le", guitar_fx,
             ])
 
             if others:
@@ -936,13 +770,10 @@ def main():
         "melodyStyle": style_id,
         "melodyStyleName": style["name"],
         "guitarTreatment": {
-            "mode": "acoustic-open-v4-articulated",
+            "mode": "acoustic-open-v3-generaluser",
             "channels": sorted(acoustic_guitar_channels),
             "features": [
                 "dedicated-generaluser-soundfont",
-                "physical-pluck-layer",
-                "pick-attack-layer",
-                "soundboard-resonance",
                 "separate-guitar-render",
                 "stereo-pan",
                 "micro-strum",

@@ -24,7 +24,7 @@ var E={
  analyticsWarning:$("analyticsWarning"),analyticsStatusPanel:$("analyticsStatusPanel"),analyticsStatusTitle:$("analyticsStatusTitle"),analyticsStatusText:$("analyticsStatusText"),
  dashboardDate:$("dashboardDate"),selectedDateLabel:$("selectedDateLabel"),autoRefreshStatus:$("autoRefreshStatus"),prevDateBtn:$("prevDateBtn"),nextDateBtn:$("nextDateBtn"),todayDateBtn:$("todayDateBtn"),trafficPeriodTitle:$("trafficPeriodTitle")
 };
-var token="",catalog={songs:[]},catalogSha="",termoCatalog={words:[]},termoAutomaticWords=[],termoActiveDate="",termoMidnightTimer=null,analyticsConfig=null,toastTimer=null,selectedDate="",previewSong=null,previewTrackIndex=0,dashboardRefreshTimer=null,dashboardRefreshBusy=false,lastDashboardRefreshAt=0,latestMidiManifest=null;
+var token="",catalog={songs:[]},catalogSha="",termoCatalog={words:[]},termoAutomaticWords=[],termoActiveDate="",termoMidnightTimer=null,adminTrustedServerEpochMs=null,adminTrustedServerPerfMs=0,analyticsConfig=null,toastTimer=null,selectedDate="",previewSong=null,previewTrackIndex=0,dashboardRefreshTimer=null,dashboardRefreshBusy=false,lastDashboardRefreshAt=0,latestMidiManifest=null;
 var DASHBOARD_REFRESH_MS=10000;
 var DEFAULT_ANALYTICS_CONFIG={
   endpoint:"https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-analytics",
@@ -60,7 +60,9 @@ function loadAdminTheme(){
  applyAdminTheme(saved);
 }
 
-function brazilDate(){var p=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),v={};p.forEach(function(x){if(x.type!=="literal")v[x.type]=x.value});return v.year+"-"+v.month+"-"+v.day}
+function syncAdminTrustedClock(response){var raw=response&&response.headers?response.headers.get("date"):"",parsed=raw?Date.parse(raw):NaN;if(!Number.isFinite(parsed))return false;adminTrustedServerEpochMs=parsed;adminTrustedServerPerfMs=performance.now();return true}
+function adminTrustedNow(){return Number.isFinite(adminTrustedServerEpochMs)?new Date(adminTrustedServerEpochMs+(performance.now()-adminTrustedServerPerfMs)):new Date()}
+function brazilDate(){var p=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(adminTrustedNow()),v={};p.forEach(function(x){if(x.type!=="literal")v[x.type]=x.value});return v.year+"-"+v.month+"-"+v.day}
 function addDays(date,days){var p=String(date||"").split("-").map(Number);if(p.length!==3||!p[0])return brazilDate();var d=new Date(Date.UTC(p[0],p[1]-1,p[2]));d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
 function longDate(date){if(!date)return"—";var p=date.split("-").map(Number);return new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",weekday:"short",day:"2-digit",month:"short",year:"numeric"}).format(new Date(Date.UTC(p[0],p[1]-1,p[2]))).replace(/\./g,"")}
 function prettyDate(date){if(!date)return"—";var p=date.split("-").map(Number);return new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(Date.UTC(p[0],p[1]-1,p[2])))}
@@ -198,11 +200,13 @@ async function loadTermoCatalog(showToast){
  try{
    var results=await Promise.all([
      getRepoFile("termo/catalog.json"),
-     fetch("/termo/palavras-sorteio-ptbr.txt?v=1",{cache:"force-cache"})
+     fetch("/termo/palavras-sorteio-ptbr.txt?v=1",{cache:"force-cache"}),
+     fetch("/termo/catalog.json?clock="+Date.now(),{cache:"no-store"})
    ]);
    termoCatalog=decodeRepoContent(results[0]);
    if(!Array.isArray(termoCatalog.words))termoCatalog.words=[];
    if(!results[1].ok)throw new Error("automatic word list "+results[1].status);
+   if(!results[2].ok||!syncAdminTrustedClock(results[2]))throw new Error("official clock");
    var autoText=await results[1].text();
    termoAutomaticWords=Array.from(new Set(
      autoText.split(/\r?\n/)

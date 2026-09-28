@@ -1,19 +1,23 @@
 {
-  "createdAt": "2026-09-28T04:10:42.875022+00:00",
-  "sourceName": "1790568564969-Legiao_UrbanaTempo_perdido.mid",
-  "sourcePath": "midi-incoming/1790568564969-Legiao_UrbanaTempo_perdido.mid",
-  "revealSourcePath": "midi-reveal-incoming/1790568564969-Legiao-Urbana-Tempo-Perdido-320-Kbps.mp3",
+  "createdAt": "2026-09-28T04:33:38.840939+00:00",
+  "sourceName": "1790569952670-Capital_InicialPrimeiros_Erros.mid",
+  "sourcePath": "midi-incoming/1790569952670-Capital_InicialPrimeiros_Erros.mid",
+  "revealSourcePath": "midi-reveal-incoming/1790569952670-Capital-Inicial-Primeiros-Erros-Chove-Audio-Oficial-ft.-Kiko-Zambianchi-320-Kbps.mp3",
   "revealMode": "original-audio",
-  "duration": 233.56,
-  "clipStart": 61.0,
+  "duration": 239.0,
+  "clipStart": 110.5,
   "clipSeconds": 18.0,
-  "midiType": 1,
-  "ticksPerBeat": 384,
+  "midiType": 0,
+  "ticksPerBeat": 120,
   "melodyStyle": "flute",
   "melodyStyleName": "Flauta / synth suave",
   "guitarTreatment": {
     "mode": "acoustic-open-v4-articulated",
-    "channels": [],
+    "channels": [
+      2,
+      5,
+      7
+    ],
     "features": [
       "dedicated-generaluser-soundfont",
       "physical-pluck-layer",
@@ -29,7 +33,7 @@
       "stereo-width"
     ]
   },
-  "guitarPreview": "",
+  "guitarPreview": "midi-lab/guitar-preview.ogg",
   "guitarSoundFont": "GeneralUser GS",
   "nameOverrides": {},
   "roles": {
@@ -44,19 +48,21 @@
       "confidence": 99
     },
     "melody": {
-      "channel": 4,
+      "channel": 3,
       "name": "Melodia da voz",
-      "sourceInstrument": "Lead calliope",
-      "confidence": 74,
-      "lyricAlignment": 0.0
+      "sourceInstrument": "Sax soprano",
+      "confidence": 97,
+      "lyricAlignment": 1.0
     }
   },
   "groups": {
     "instrument1": [
-      "Guitarra abafada"
+      "Violão aço 3",
+      "Violão aço 1"
     ],
     "instrument2": [
-      "Synth strings 1"
+      "Piano",
+      "Coro Aahs"
     ]
   },
   "rounds": [
@@ -93,15 +99,18 @@
       "number": 3,
       "label": "+ Instrumentos 1",
       "addedChannels": [
-        3
+        7,
+        2
       ],
       "added": [
-        "Guitarra abafada"
+        "Violão aço 3",
+        "Violão aço 1"
       ],
       "channels": [
         9,
         1,
-        3
+        7,
+        2
       ],
       "audio": "midi-lab/round-3.ogg"
     },
@@ -109,16 +118,20 @@
       "number": 4,
       "label": "+ Instrumentos 2",
       "addedChannels": [
-        2
+        0,
+        11
       ],
       "added": [
-        "Synth strings 1"
+        "Piano",
+        "Coro Aahs"
       ],
       "channels": [
         9,
         1,
-        3,
-        2
+        7,
+        2,
+        0,
+        11
       ],
       "audio": "midi-lab/round-4.ogg"
     },
@@ -126,7 +139,7 @@
       "number": 5,
       "label": "+ Melodia",
       "addedChannels": [
-        4
+        3
       ],
       "added": [
         "Melodia da voz"
@@ -134,9 +147,11 @@
       "channels": [
         9,
         1,
-        3,
+        7,
         2,
-        4
+        0,
+        11,
+        3
       ],
       "audio": "midi-lab/round-5.ogg"
     },
@@ -144,72 +159,136 @@
       "number": 6,
       "label": "Revelação",
       "addedChannels": [
+        0,
         1,
         2,
         3,
-        4,
-        9
+        5,
+        7,
+        9,
+        11
       ],
       "added": [
+        "Piano",
         "Baixo elétrico",
-        "Synth strings 1",
-        "Guitarra abafada",
+        "Violão aço 1",
         "Melodia da voz",
-        "Bateria"
+        "Violão aço 2",
+        "Violão aço 3",
+        "Bateria",
+        "Coro Aahs"
       ],
       "channels": [
+        0,
         1,
         2,
         3,
-        4,
-        9
+        5,
+        7,
+        9,
+        11
       ],
       "audio": "midi-lab/round-6.ogg"
     }
   ],
   "channels": [
     {
+      "channel": 0,
+      "name": "Piano",
+      "program": 4,
+      "family": "Piano",
+      "notes": 441,
+      "notesInClip": 22,
+      "activeInClip": 18.0,
+      "monophony": 0.05,
+      "pitchBends": 0
+    },
+    {
       "channel": 1,
       "name": "Baixo elétrico",
       "program": 33,
       "family": "Baixo",
-      "notes": 636,
-      "notesInClip": 55,
-      "activeInClip": 12.57,
-      "monophony": 1.0,
-      "pitchBends": 66
+      "notes": 664,
+      "notesInClip": 63,
+      "activeInClip": 17.6,
+      "monophony": 0.991,
+      "pitchBends": 27
     },
     {
       "channel": 2,
-      "name": "Synth strings 1",
-      "program": 50,
-      "family": "Ensemble",
-      "notes": 225,
-      "notesInClip": 21,
-      "activeInClip": 18.0,
-      "monophony": 0.0,
+      "name": "Violão aço 1",
+      "program": 25,
+      "family": "Guitarra",
+      "notes": 2059,
+      "notesInClip": 191,
+      "activeInClip": 13.77,
+      "monophony": 0.427,
       "pitchBends": 0
     },
     {
       "channel": 3,
-      "name": "Guitarra abafada",
-      "program": 28,
-      "family": "Guitarra",
-      "notes": 1199,
-      "notesInClip": 66,
-      "activeInClip": 18.0,
-      "monophony": 0.28,
-      "pitchBends": 35
+      "name": "Melodia da voz",
+      "program": 64,
+      "family": "Sopros",
+      "notes": 272,
+      "notesInClip": 34,
+      "activeInClip": 11.61,
+      "monophony": 0.985,
+      "pitchBends": 0
     },
     {
       "channel": 4,
-      "name": "Melodia da voz",
-      "program": 82,
-      "family": "Synth lead",
-      "notes": 272,
-      "notesInClip": 26,
-      "activeInClip": 14.75,
-      "monophony": 0.895,
+      "name": "Synth strings 1",
+      "program": 50,
+      "family": "Ensemble",
+      "notes": 8,
+      "notesInClip": 0,
+      "activeInClip": 0.0,
+      "monophony": 0.02,
+      "pitchBends": 0
+    },
+    {
+      "channel": 5,
+      "name": "Violão aço 2",
+      "program": 25,
+      "family": "Guitarra",
+      "notes": 291,
+      "notesInClip": 5,
+      "activeInClip": 1.74,
+      "monophony": 0.697,
+      "pitchBends": 0
+    },
+    {
+      "channel": 6,
+      "name": "Violão aço",
+      "program": 25,
+      "family": "Guitarra",
+      "notes": 26,
+      "notesInClip": 0,
+      "activeInClip": 0.0,
+      "monophony": 1.0,
+      "pitchBends": 0
+    },
+    {
+      "channel": 7,
+      "name": "Violão aço 3",
+      "program": 25,
+      "family": "Guitarra",
+      "notes": 1185,
+      "notesInClip": 102,
+      "activeInClip": 18.0,
+      "monophony": 0.208,
+      "pitchBends": 0
+    },
+    {
+      "channel": 8,
+      "name": "Guitarra distorcida",
+      "program": 30,
+      "family": "Guitarra",
+      "notes": 64,
+      "notesInClip": 0,
+      "activeInClip": 0.0,
+      "monophony": 0.604,
       "pitchBends": 0
     },
     {
@@ -217,14 +296,36 @@
       "name": "Bateria",
       "program": 0,
       "family": "Bateria",
-      "notes": 2321,
-      "notesInClip": 180,
-      "activeInClip": 14.32,
-      "monophony": 0.34,
+      "notes": 2257,
+      "notesInClip": 166,
+      "activeInClip": 13.76,
+      "monophony": 0.41,
+      "pitchBends": 0
+    },
+    {
+      "channel": 10,
+      "name": "Violão nylon",
+      "program": 24,
+      "family": "Guitarra",
+      "notes": 173,
+      "notesInClip": 0,
+      "activeInClip": 0.0,
+      "monophony": 0.969,
+      "pitchBends": 0
+    },
+    {
+      "channel": 11,
+      "name": "Coro Aahs",
+      "program": 52,
+      "family": "Ensemble",
+      "notes": 32,
+      "notesInClip": 7,
+      "activeInClip": 12.05,
+      "monophony": 0.998,
       "pitchBends": 0
     }
   ],
-  "lyricsDetected": 0,
+  "lyricsDetected": 272,
   "availableMelodyStyles": [
     {
       "id": "bandle",

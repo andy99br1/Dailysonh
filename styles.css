@@ -1529,3 +1529,135 @@ body[data-theme="grafite"] .platform-apple .platform-logo{color:#f3f3f5}
     font-size:11px;
   }
 }
+
+
+/* Controle de volume do player. */
+.volume-control{
+  position:relative;
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+}
+
+.volume-btn{
+  width:54px;
+  height:54px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  cursor:pointer;
+  color:#191713;
+  background:var(--control-bg);
+  border:1px solid #c7b99f;
+  box-shadow:0 2px 0 var(--shadow);
+}
+
+.volume-icon{
+  width:27px;
+  height:27px;
+  display:block;
+  fill:currentColor;
+}
+
+.volume-wave{
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.1;
+  stroke-linecap:round;
+}
+
+.volume-btn[data-volume-level="low"] .volume-wave-2,
+.volume-btn[data-volume-level="muted"] .volume-wave{
+  display:none;
+}
+
+.volume-btn[data-volume-level="muted"] .volume-icon{
+  opacity:.58;
+}
+
+.volume-popover{
+  position:absolute;
+  z-index:140;
+  left:50%;
+  bottom:calc(100% + 10px);
+  width:166px;
+  min-height:42px;
+  padding:8px 10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  transform:translateX(-50%);
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);
+  box-shadow:0 10px 28px var(--shadow);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+
+.volume-popover.hidden{
+  display:none;
+}
+
+.volume-slider{
+  min-width:0;
+  width:112px;
+  height:5px;
+  accent-color:var(--green);
+  cursor:pointer;
+}
+
+.volume-value{
+  width:34px;
+  flex:0 0 34px;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+}
+
+body[data-theme="noite"] .volume-btn,
+body[data-theme="grafite"] .volume-btn{
+  color:#111;
+}
+
+@media(max-width:600px){
+  .player-controls{
+    gap:15px;
+  }
+
+  .volume-btn{
+    width:47px;
+    height:47px;
+  }
+
+  .volume-icon{
+    width:24px;
+    height:24px;
+  }
+
+  .volume-popover{
+    width:154px;
+    bottom:calc(100% + 8px);
+    padding:7px 9px;
+  }
+
+  .volume-slider{
+    width:101px;
+  }
+}
+
+@media(max-width:390px){
+  .player-controls{
+    gap:12px;
+  }
+}
+
+@media(max-height:690px) and (max-width:600px){
+  .volume-btn{
+    width:44px;
+    height:44px;
+  }
+}

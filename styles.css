@@ -475,7 +475,7 @@ body[data-theme="noite"] .song-stat:last-child strong { color: #ffd38e; }
   font-weight: 900;
 }
 
-.round.done::after {
+.round.wrong::after {
   content: "×";
   position: absolute;
   right: 17px;
@@ -484,7 +484,16 @@ body[data-theme="noite"] .song-stat:last-child strong { color: #ffd38e; }
   font-weight: 900;
 }
 
-.round.done.active::after {
+.round.correct::after {
+  content: "✓";
+  position: absolute;
+  right: 16px;
+  color: var(--green);
+  font-size: 21px;
+  font-weight: 1000;
+}
+
+.round.active:not(.wrong):not(.correct)::after {
   content: "♫";
   color: var(--green);
 }

@@ -8,7 +8,7 @@
   <title>Stem + Flauta · Central MDD</title>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
   <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=16">
-  <link rel="stylesheet" href="/central-mdd-7k29/stem-flute-lab.css?v=8">
+  <link rel="stylesheet" href="/central-mdd-7k29/stem-flute-lab.css?v=9">
 </head>
 <body data-admin-theme="night">
   <div class="app-shell">
@@ -64,7 +64,13 @@
               <span class="lab-safe-chip">TESTE ANTES DE PUBLICAR</span>
             </div>
 
-            <p class="muted">Envie apenas o MP3. O GitHub escolhe automaticamente um trecho de 18 segundos. Bateria e baixo ficam no Demucs FT; voz, guitarra/violão, piano/teclas e outros usam BS-RoFormer-SW. Depois a voz vira uma flauta estabilizada, sem copiar o vibrato quadro a quadro e sem usar MIDI.</p>
+            <div class="lab-mode-switch" role="tablist" aria-label="Modo do laboratório">
+              <button class="lab-mode-btn active" id="modeFullBtn" type="button" role="tab" aria-selected="true">Música completa</button>
+              <button class="lab-mode-btn" id="modeStemsBtn" type="button" role="tab" aria-selected="false">Enviar stems prontos</button>
+            </div>
+
+            <div id="fullSongMode">
+              <p class="muted">Envie apenas o MP3. O GitHub escolhe automaticamente um trecho de 18 segundos. Bateria e baixo ficam no Demucs FT; voz, guitarra/violão, piano/teclas e outros usam BS-RoFormer-SW. Depois a voz vira uma flauta estabilizada, sem copiar o vibrato quadro a quadro e sem usar MIDI.</p>
 
             <form id="labForm">
               <div class="upload-zone lab-upload-zone" id="labUploadZone">
@@ -80,6 +86,53 @@
               </div>
               <button class="btn primary wide" id="labRunBtn" type="submit">Processar teste de 18s</button>
             </form>
+            </div>
+
+            <div class="hidden" id="manualStemsMode">
+              <p class="muted">Envie os stems já separados. O sistema corta todos no mesmo ponto, transforma o stem de voz em flauta e monta automaticamente as fases cumulativas: cada fase soma a camada anterior. Se você enviar o mix original, ele será usado na revelação; caso contrário, a revelação é reconstruída somando os stems.</p>
+
+              <form id="manualStemsForm">
+                <div class="manual-stems-grid">
+                  <label class="manual-stem-field required">Bateria *
+                    <input id="manualDrumsFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*" required>
+                    <small>Stem de bateria</small>
+                  </label>
+                  <label class="manual-stem-field required">Baixo *
+                    <input id="manualBassFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*" required>
+                    <small>Stem de baixo</small>
+                  </label>
+                  <label class="manual-stem-field">Guitarra / violão
+                    <input id="manualGuitarFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*">
+                    <small>Opcional</small>
+                  </label>
+                  <label class="manual-stem-field">Piano / teclas
+                    <input id="manualPianoFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*">
+                    <small>Opcional</small>
+                  </label>
+                  <label class="manual-stem-field">Outros instrumentos
+                    <input id="manualOtherFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*">
+                    <small>Opcional</small>
+                  </label>
+                  <label class="manual-stem-field required">Voz *
+                    <input id="manualVocalsFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*" required>
+                    <small>Será transformada em flauta</small>
+                  </label>
+                  <label class="manual-stem-field manual-original-field">Mix original / revelação
+                    <input id="manualOriginalFile" type="file" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,audio/*">
+                    <small>Opcional, mas recomendado</small>
+                  </label>
+                </div>
+
+                <div class="fields one lab-clip-field">
+                  <label>Início do trecho (s)
+                    <input id="manualClipStartInput" type="number" min="0" step="0.1" placeholder="Automático">
+                  </label>
+                </div>
+
+                <p class="manual-stems-tip">É obrigatório enviar bateria, baixo, voz e pelo menos um stem de instrumentos entre guitarra, piano ou outros. Todos os stems precisam começar no mesmo ponto da música.</p>
+                <button class="btn primary wide" id="manualStemsRunBtn" type="submit">Montar jogo a partir dos stems</button>
+              </form>
+            </div>
 
             <div class="job-box hidden" id="labJobBox">
               <div class="job-line"><strong id="labJobTitle">Preparando...</strong><span id="labJobPercent">0%</span></div>
@@ -229,6 +282,6 @@
   </div>
 
   <div class="toast hidden" id="toast"></div>
-  <script src="/central-mdd-7k29/stem-flute-lab.js?v=10"></script>
+  <script src="/central-mdd-7k29/stem-flute-lab.js?v=11"></script>
 </body>
 </html>

@@ -21,3 +21,15 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE.
+
+
+Lista usada exclusivamente para a escolha automática das respostas:
+https://github.com/hermitdave/FrequencyWords
+Arquivo de origem: content/2018/pt_br/pt_br_50k.txt
+A lista automática foi filtrada para palavras de 5 letras presentes na base de validação,
+priorizando termos de alta frequência no português do Brasil e removendo nomes próprios
+e termos inadequados conhecidos.
+
+MIT License
+
+Copyright (c) 2016 Hermit Dave

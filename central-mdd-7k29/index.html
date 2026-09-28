@@ -12,7 +12,7 @@
     }
   </script>
   <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
-  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=21">
+  <link rel="stylesheet" href="/central-mdd-7k29/panel.css?v=22">
 </head>
 <body class="auth-locked">
   <div class="app-shell">
@@ -257,7 +257,16 @@
                 <a class="btn secondary small termo-open-link" href="/termo/" target="_blank" rel="noopener">Abrir jogo</a>
               </div>
 
-              <p class="muted termo-admin-intro">Cadastre uma palavra de 5 letras para cada data. O jogo libera automaticamente a palavra correspondente no dia agendado.</p>
+              <p class="muted termo-admin-intro">Cadastre uma palavra de 5 letras para cada data. Se não houver uma palavra cadastrada, o jogo usa automaticamente uma palavra comum em PT-BR.</p>
+
+              <div class="termo-today-card" id="termoTodayCard">
+                <div>
+                  <span class="eyebrow">PALAVRA ATIVA HOJE</span>
+                  <strong id="termoTodayWord">—</strong>
+                  <small id="termoTodayDate">Carregando...</small>
+                </div>
+                <span class="termo-source-chip" id="termoTodaySource">—</span>
+              </div>
 
               <form id="termoForm">
                 <input id="termoEditDate" type="hidden">
@@ -529,6 +538,6 @@
       } catch (_) {}
     })();
   </script>
-  <script src="/central-mdd-7k29/panel.js?v=25"></script>
+  <script src="/central-mdd-7k29/panel.js?v=26"></script>
 </body>
 </html>

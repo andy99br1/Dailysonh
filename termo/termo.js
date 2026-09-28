@@ -13,7 +13,7 @@ var E={
 };
 
 var challenge=null,catalogIndex=-1,challengeNumber=0,row=0,current=["","","","",""],guesses=[],evaluations=[],finished=false,won=false,editIndex=null;
-var keyStates={},validWords=null,dictionaryWords=[];
+var keyStates={},validWords=null,dictionaryWords=[],automaticWords=[];
 var activeBrazilDate="",midnightWatchTimer=null;
 var allowedThemes=["creme","azul","verde","rosa","lilas","noite","grafite"];
 var previewDate="",adminPreview=false;
@@ -53,8 +53,8 @@ function hash32(value){
 }
 function automaticWordForDate(date,words){
   var used=new Set((words||[]).map(function(item){return normalizeWord(item.word)}).filter(function(word){return word.length===5}));
-  var pool=dictionaryWords.filter(function(word){return !used.has(word)});
-  if(!pool.length)pool=dictionaryWords.slice();
+  var pool=automaticWords.filter(function(word){return !used.has(word)});
+  if(!pool.length)pool=automaticWords.slice();
   if(!pool.length)return"";
   pool.sort(function(a,b){
     var ah=hash32("mdd-termo|"+a),bh=hash32("mdd-termo|"+b);
@@ -357,19 +357,28 @@ async function init(){
   try{
     var responses=await Promise.all([
       fetch("/termo/catalog.json?v="+Date.now(),{cache:"no-store"}),
-      fetch("/termo/palavras-ptbr.txt?v=1",{cache:"force-cache"})
+      fetch("/termo/palavras-ptbr.txt?v=1",{cache:"force-cache"}),
+      fetch("/termo/palavras-sorteio-ptbr.txt?v=1",{cache:"force-cache"})
     ]);
     if(!responses[0].ok)throw new Error("catalog");
     if(!responses[1].ok)throw new Error("dictionary");
+    if(!responses[2].ok)throw new Error("automatic dictionary");
     var data=await responses[0].json(),words=Array.isArray(data.words)?data.words:[];
     words=words.slice().sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""))});
     var dictionaryText=await responses[1].text();
+    var automaticText=await responses[2].text();
     dictionaryWords=Array.from(new Set(
       dictionaryText.split(/\r?\n/)
         .map(function(word){return normalizeWord(word)})
         .filter(function(word){return word.length===5})
     ));
     validWords=new Set(dictionaryWords);
+    automaticWords=Array.from(new Set(
+      automaticText.split(/\r?\n/)
+        .map(function(word){return normalizeWord(word)})
+        .filter(function(word){return word.length===5&&validWords.has(word)})
+    ));
+    if(!automaticWords.length)throw new Error("empty automatic dictionary");
 
     var targetDate=adminPreview?previewDate:brazilDate();
     challenge=words.find(function(item){return String(item.date||"")===targetDate})||null;

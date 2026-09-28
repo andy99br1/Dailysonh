@@ -208,7 +208,7 @@ async function saveTermoCatalog(data,sha,message){
 }
 function resetTermoForm(){
  if(!E.termoForm)return;
- E.termoForm.reset();E.termoDate.value=brazilDate();E.termoEditDate.value="";E.termoSaveBtn.textContent="Salvar palavra do dia";E.termoCancelEditBtn.classList.add("hidden");E.termoFormStatus.textContent="Acentos são aceitos; o jogo compara as letras sem diferenciar acento.";
+ E.termoForm.reset();E.termoDate.value=brazilDate();E.termoEditDate.value="";E.termoSaveBtn.textContent="Salvar palavra do dia";E.termoCancelEditBtn.classList.add("hidden");E.termoFormStatus.textContent="Acentos são aceitos. Se você não cadastrar uma palavra para uma data, o Termo escolhe automaticamente uma palavra PT-BR de 5 letras às 0:00 (Brasília).";
 }
 
 function songForDate(date){var eligible=catalog.songs.filter(function(s){return String(s.date||"")<=String(date||"")});return eligible.length?eligible[eligible.length-1]:null}

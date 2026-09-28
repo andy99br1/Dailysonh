@@ -21,6 +21,7 @@
     volumeValue: el("volumeValue"),
     rewindBtn: el("rewindBtn"),
     forwardBtn: el("forwardBtn"),
+    repeatBtn: el("repeatBtn"),
     skipBtn: el("skipBtn"),
     openGuessBtn: el("openGuessBtn"),
     seekBar: el("seekBar"),
@@ -71,9 +72,11 @@
   var adminPreviewDate = "";
   var adminPreviewMode = false;
   var playerVolume = 1;
+  var repeatEnabled = false;
   try {
     var storedVolume = Number(localStorage.getItem("musicadodia:volume"));
     if (Number.isFinite(storedVolume)) playerVolume = Math.max(0, Math.min(1, storedVolume));
+    repeatEnabled = localStorage.getItem("musicadodia:repeat") === "1";
   } catch (_) {}
   try {
     var previewParams = new URLSearchParams(window.location.search);
@@ -779,6 +782,20 @@
     updateVolumeUi();
   }
 
+  function updateRepeatUi() {
+    if (!E.repeatBtn) return;
+    E.repeatBtn.setAttribute("aria-pressed", repeatEnabled ? "true" : "false");
+    E.repeatBtn.setAttribute("aria-label", repeatEnabled ? "Desativar repetição" : "Ativar repetição");
+    E.repeatBtn.setAttribute("title", repeatEnabled ? "Repetição ativada" : "Repetir faixa");
+  }
+
+  function setRepeatEnabled(enabled) {
+    repeatEnabled = Boolean(enabled);
+    try { localStorage.setItem("musicadodia:repeat", repeatEnabled ? "1" : "0"); } catch (_) {}
+    if (audio) audio.loop = repeatEnabled;
+    updateRepeatUi();
+  }
+
   function resetProgress() {
     E.seekBar.value = 0;
     E.elapsedTime.textContent = "0:00";
@@ -851,6 +868,7 @@
     var currentAudio = new Audio(src);
     currentAudio.preload = "auto";
     currentAudio.volume = playerVolume;
+    currentAudio.loop = repeatEnabled;
     audio = currentAudio;
 
     function isCurrentAudio() {
@@ -1211,6 +1229,11 @@
       setPlayerVolume(Number(E.volumeSlider.value) / 100);
     });
   }
+  if (E.repeatBtn) {
+    E.repeatBtn.addEventListener("click", function () {
+      setRepeatEnabled(!repeatEnabled);
+    });
+  }
   E.rewindBtn.addEventListener("click", function () { seekBy(-5); });
   E.forwardBtn.addEventListener("click", function () { seekBy(5); });
   E.skipBtn.addEventListener("click", nextOrSkip);
@@ -1298,6 +1321,7 @@
   });
 
   updateVolumeUi();
+  updateRepeatUi();
 
   E.shareBtn.addEventListener("click", share);
   E.restartBtn.addEventListener("click", restartGame);

@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "createdAt": "2026-09-28T04:05:19.412646+00:00",
-  "sourceName": "1790567935506-Legiao-Urbana-Tempo-Perdido-320-Kbps.mp3",
-  "sourcePath": "stem-flute-incoming/1790567935506-Legiao-Urbana-Tempo-Perdido-320-Kbps.mp3",
-  "clipStart": 128.0,
+  "createdAt": "2026-09-28T04:25:32.188125+00:00",
+  "sourceName": "1790569043384-Capital-Inicial-Primeiros-Erros-Chove-Audio-Oficial-ft.-Kiko-Zambianchi-320-Kbps.mp3",
+  "sourcePath": "stem-flute-incoming/1790569043384-Capital-Inicial-Primeiros-Erros-Chove-Audio-Oficial-ft.-Kiko-Zambianchi-320-Kbps.mp3",
+  "clipStart": 98.0,
   "clipSeconds": 18.0,
   "selection": {
-    "duration": 302.254,
-    "candidates": 182,
-    "score": 0.7656,
+    "duration": 245.853,
+    "candidates": 149,
+    "score": 0.8371,
     "mode": "automatic"
   },
   "separationModel": "Hybrid: htdemucs_ft (drums/bass) + BS-Roformer-SW (vocals/instruments)",
@@ -16,9 +16,9 @@
   "instrumentBody": "recombined accompaniment + filtered residual body restoration",
   "webAudioEncoding": "Ogg Vorbis q8",
   "flute": {
-    "voicedPercent": 68.7,
-    "medianHz": 291.84,
-    "noteSegments": 55
+    "voicedPercent": 23.4,
+    "medianHz": 165.69,
+    "noteSegments": 23
   },
   "tracks": [
     {

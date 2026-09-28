@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-from scripts import stem_flute_lab as base
+import stem_flute_lab as base
 
 
 ROOT = Path(__file__).resolve().parents[1]

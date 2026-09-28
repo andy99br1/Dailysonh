@@ -1663,3 +1663,63 @@ body[data-theme="grafite"] .volume-btn{
     height:32px;
   }
 }
+
+
+/* Repeat fica simétrico ao volume sem mexer nos três controles centrais. */
+.repeat-btn{
+  position:absolute;
+  right:calc(50% - 168px);
+  top:50%;
+  z-index:4;
+  width:38px;
+  height:38px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  transform:translateY(-50%);
+  border-radius:50%;
+  cursor:pointer;
+  color:#191713;
+  background:var(--control-bg);
+  border:1px solid #c7b99f;
+  box-shadow:0 2px 0 var(--shadow);
+}
+
+.repeat-icon{
+  width:21px;
+  height:21px;
+  display:block;
+  fill:currentColor;
+}
+
+.repeat-btn[aria-pressed="true"]{
+  color:#fff;
+  background:var(--green);
+  border-color:color-mix(in srgb,var(--green) 78%,#fff);
+}
+
+body[data-theme="noite"] .repeat-btn:not([aria-pressed="true"]),
+body[data-theme="grafite"] .repeat-btn:not([aria-pressed="true"]){
+  color:#111;
+}
+
+@media(max-width:600px){
+  .repeat-btn{
+    right:calc(50% - 145px);
+    width:34px;
+    height:34px;
+  }
+
+  .repeat-icon{
+    width:19px;
+    height:19px;
+  }
+}
+
+@media(max-height:690px) and (max-width:600px){
+  .repeat-btn{
+    right:calc(50% - 135px);
+    width:32px;
+    height:32px;
+  }
+}

@@ -1535,7 +1535,7 @@ body[data-theme="grafite"] .platform-apple .platform-logo{color:#f3f3f5}
 /* Controle de volume do player. */
 .volume-control{
   position:absolute;
-  left:calc(50% - 168px);
+  left:calc(50% - 152px);
   top:50%;
   z-index:4;
   display:grid;
@@ -1629,7 +1629,7 @@ body[data-theme="grafite"] .volume-btn{
 
 @media(max-width:600px){
   .volume-control{
-    left:calc(50% - 145px);
+    left:calc(50% - 132px);
   }
 
   .volume-btn{
@@ -1655,7 +1655,7 @@ body[data-theme="grafite"] .volume-btn{
 
 @media(max-height:690px) and (max-width:600px){
   .volume-control{
-    left:calc(50% - 135px);
+    left:calc(50% - 124px);
   }
 
   .volume-btn{
@@ -1668,7 +1668,7 @@ body[data-theme="grafite"] .volume-btn{
 /* Repeat fica simétrico ao volume sem mexer nos três controles centrais. */
 .repeat-btn{
   position:absolute;
-  right:calc(50% - 168px);
+  right:calc(50% - 152px);
   top:50%;
   z-index:4;
   width:38px;
@@ -1705,7 +1705,7 @@ body[data-theme="grafite"] .repeat-btn:not([aria-pressed="true"]){
 
 @media(max-width:600px){
   .repeat-btn{
-    right:calc(50% - 145px);
+    right:calc(50% - 132px);
     width:34px;
     height:34px;
   }
@@ -1718,7 +1718,7 @@ body[data-theme="grafite"] .repeat-btn:not([aria-pressed="true"]){
 
 @media(max-height:690px) and (max-width:600px){
   .repeat-btn{
-    right:calc(50% - 135px);
+    right:calc(50% - 124px);
     width:32px;
     height:32px;
   }

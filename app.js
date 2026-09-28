@@ -74,6 +74,8 @@
   var adminPreviewMode = false;
   var playerVolume = 1;
   var repeatEnabled = false;
+  var trustedServerEpochMs = null;
+  var trustedServerPerfMs = 0;
   try {
     var storedVolumeRaw = localStorage.getItem("musicadodia:volume");
     if (storedVolumeRaw !== null && storedVolumeRaw !== "") {
@@ -226,13 +228,29 @@
     }, true);
   }
 
+  function syncTrustedClock(response) {
+    var raw = response && response.headers ? response.headers.get("date") : "";
+    var parsed = raw ? Date.parse(raw) : NaN;
+    if (!Number.isFinite(parsed)) return false;
+    trustedServerEpochMs = parsed;
+    trustedServerPerfMs = performance.now();
+    return true;
+  }
+
+  function trustedNow() {
+    if (Number.isFinite(trustedServerEpochMs)) {
+      return new Date(trustedServerEpochMs + (performance.now() - trustedServerPerfMs));
+    }
+    return new Date();
+  }
+
   function brazilDate() {
     var parts = new Intl.DateTimeFormat("en", {
       timeZone: "America/Sao_Paulo",
       year: "numeric",
       month: "2-digit",
       day: "2-digit"
-    }).formatToParts(new Date());
+    }).formatToParts(trustedNow());
 
     function get(type) {
       var found = parts.find(function (p) { return p.type === type; });
@@ -562,7 +580,7 @@
       minute: "2-digit",
       second: "2-digit",
       hourCycle: "h23"
-    }).formatToParts(new Date());
+    }).formatToParts(trustedNow());
 
     var values = {};
     parts.forEach(function (part) {
@@ -1183,6 +1201,7 @@
     try {
       var response = await fetch("catalog.json?v=" + Date.now(), { cache: "no-store" });
       if (!response.ok) throw new Error("catalog");
+      if (!syncTrustedClock(response) && !adminPreviewMode) throw new Error("clock");
 
       var data = await response.json();
       var songs = Array.isArray(data.songs) ? data.songs : [];
@@ -1244,9 +1263,11 @@
         renderRounds();
         prepareAudio();
       }
-    } catch (_) {
+    } catch (error) {
       if (E.songDate) E.songDate.textContent = "Erro ao carregar";
-      E.message.textContent = "Não consegui carregar o catálogo do jogo.";
+      E.message.textContent = error && error.message === "clock"
+        ? "Não consegui validar a data oficial do jogo. Tente novamente."
+        : "Não consegui carregar o catálogo do jogo.";
     }
   }
 

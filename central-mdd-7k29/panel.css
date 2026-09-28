@@ -643,3 +643,56 @@ body[data-admin-theme="grafite"] .theme-switch button.active{
 
 body[data-admin-theme="grafite"] .side-brand{color:#f3f4f5}
 body[data-admin-theme="grafite"] .eyebrow{color:#a7adb3}
+
+
+/* Palavra ativa do Termo */
+.termo-today-card{
+  margin:0 0 14px;
+  padding:12px 13px;
+  border:1px solid rgba(35,199,217,.22);
+  border-radius:12px;
+  background:linear-gradient(135deg,rgba(35,199,217,.065),rgba(109,133,255,.035));
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px
+}
+.termo-today-card>div{display:grid;gap:3px}
+.termo-today-card strong{
+  font-size:24px;
+  line-height:1;
+  letter-spacing:.16em
+}
+.termo-today-card small{
+  color:var(--muted);
+  font-size:7.5px
+}
+.termo-source-chip{
+  flex:0 0 auto;
+  min-height:25px;
+  padding:0 9px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  border:1px solid var(--line);
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.06em
+}
+.termo-source-chip.automatic{
+  color:#76e2ec;
+  border-color:rgba(35,199,217,.28);
+  background:rgba(35,199,217,.08)
+}
+.termo-source-chip.manual{
+  color:#8de4ad;
+  border-color:rgba(79,209,139,.28);
+  background:rgba(79,209,139,.08)
+}
+body[data-admin-theme="day"] .termo-today-card{
+  background:linear-gradient(135deg,rgba(35,199,217,.055),rgba(83,105,220,.035))
+}
+@media(max-width:560px){
+  .termo-today-card{align-items:flex-start}
+  .termo-today-card strong{font-size:21px}
+}

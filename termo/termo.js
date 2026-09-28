@@ -12,8 +12,9 @@ var E={
   statPlayed:el("statPlayed"),statWinRate:el("statWinRate"),statStreak:el("statStreak"),statBest:el("statBest")
 };
 
-var challenge=null,catalogIndex=-1,row=0,current=["","","","",""],guesses=[],evaluations=[],finished=false,won=false,editIndex=null;
-var keyStates={},validWords=null;
+var challenge=null,catalogIndex=-1,challengeNumber=0,row=0,current=["","","","",""],guesses=[],evaluations=[],finished=false,won=false,editIndex=null;
+var keyStates={},validWords=null,dictionaryWords=[];
+var activeBrazilDate="",midnightWatchTimer=null;
 var allowedThemes=["creme","azul","verde","rosa","lilas","noite","grafite"];
 var previewDate="",adminPreview=false;
 
@@ -36,6 +37,63 @@ function prettyDate(value){
   var p=String(value||"").split("-").map(Number);
   if(p.length!==3)return value||"—";
   return new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(Date.UTC(p[0],p[1]-1,p[2])));
+}
+function dateSerial(value){
+  var p=String(value||"").split("-").map(Number);
+  if(p.length!==3||!p[0]||!p[1]||!p[2])return 0;
+  return Math.floor(Date.UTC(p[0],p[1]-1,p[2])/86400000);
+}
+function hash32(value){
+  var h=2166136261>>>0,s=String(value||"");
+  for(var i=0;i<s.length;i++){
+    h^=s.charCodeAt(i);
+    h=Math.imul(h,16777619)>>>0;
+  }
+  return h>>>0;
+}
+function automaticWordForDate(date,words){
+  var used=new Set((words||[]).map(function(item){return normalizeWord(item.word)}).filter(function(word){return word.length===5}));
+  var pool=dictionaryWords.filter(function(word){return !used.has(word)});
+  if(!pool.length)pool=dictionaryWords.slice();
+  if(!pool.length)return"";
+  pool.sort(function(a,b){
+    var ah=hash32("mdd-termo|"+a),bh=hash32("mdd-termo|"+b);
+    return ah===bh?a.localeCompare(b):ah-bh;
+  });
+  var serial=dateSerial(date);
+  var index=((serial%pool.length)+pool.length)%pool.length;
+  return pool[index];
+}
+function automaticChallengeNumber(date,words){
+  var before=(words||[]).filter(function(item){return String(item.date||"")<String(date||"")}).length;
+  var previous=(words||[]).filter(function(item){return String(item.date||"")<String(date||"")}).sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""))});
+  if(!previous.length)return 1;
+  var last=previous[previous.length-1];
+  var lastIndex=(words||[]).indexOf(last)+1;
+  var delta=Math.max(1,dateSerial(date)-dateSerial(last.date));
+  return Math.max(before+1,lastIndex+delta);
+}
+function buildAutomaticChallenge(date,words){
+  var word=automaticWordForDate(date,words);
+  if(!word)return null;
+  return{
+    date:date,
+    word:word,
+    version:"auto-"+hash32(date+"|"+word).toString(16),
+    source:"auto"
+  };
+}
+function startMidnightWatcher(today){
+  if(adminPreview)return;
+  activeBrazilDate=today;
+  if(midnightWatchTimer)clearInterval(midnightWatchTimer);
+  midnightWatchTimer=setInterval(function(){
+    var now=brazilDate();
+    if(now!==activeBrazilDate){
+      clearInterval(midnightWatchTimer);
+      location.reload();
+    }
+  },1000);
 }
 function applyTheme(theme){
   if(allowedThemes.indexOf(theme)<0)theme="grafite";
@@ -274,7 +332,7 @@ function resultGrid(){
 }
 async function share(){
   if(!challenge||!finished)return;
-  var text="Termo do Dia #"+(catalogIndex+1)+" "+(won?guesses.length+"/6":"X/6")+"\n\n"+resultGrid()+"\n\nhttps://musicadodia.com/termo/";
+  var text="Termo do Dia #"+challengeNumber+" "+(won?guesses.length+"/6":"X/6")+"\n\n"+resultGrid()+"\n\nhttps://musicadodia.com/termo/";
   if(navigator.share){try{await navigator.share({title:"Termo do Dia",text:text});return}catch(_){}}
   try{await navigator.clipboard.writeText(text);setMessage("Resultado copiado.","success")}catch(_){setMessage(text)}
 }
@@ -304,25 +362,37 @@ async function init(){
     if(!responses[0].ok)throw new Error("catalog");
     if(!responses[1].ok)throw new Error("dictionary");
     var data=await responses[0].json(),words=Array.isArray(data.words)?data.words:[];
+    words=words.slice().sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""))});
     var dictionaryText=await responses[1].text();
-    validWords=new Set(dictionaryText.split(/\r?\n/).map(function(word){return normalizeWord(word)}).filter(function(word){return word.length===5}));
+    dictionaryWords=Array.from(new Set(
+      dictionaryText.split(/\r?\n/)
+        .map(function(word){return normalizeWord(word)})
+        .filter(function(word){return word.length===5})
+    ));
+    validWords=new Set(dictionaryWords);
 
-    if(adminPreview){
-      challenge=words.find(function(item){return String(item.date||"")===previewDate})||null;
-    }else{
-      var today=brazilDate(),eligible=words.filter(function(item){return String(item.date||"")<=today});
-      challenge=eligible.length?eligible[eligible.length-1]:null;
+    var targetDate=adminPreview?previewDate:brazilDate();
+    challenge=words.find(function(item){return String(item.date||"")===targetDate})||null;
+
+    if(!challenge){
+      challenge=buildAutomaticChallenge(targetDate,words);
     }
     if(!challenge){
-      if(E.termDate)E.termDate.textContent="Nenhuma palavra publicada";
+      if(E.termDate)E.termDate.textContent="Sem palavras disponíveis";
       if(E.attemptLabel)E.attemptLabel.textContent="Aguardando";
-      setMessage("Cadastre a primeira palavra no painel administrativo.");return;
+      setMessage("Não consegui escolher uma palavra automática.","error");return;
     }
+
     if(normalizeWord(challenge.word).length!==5)throw new Error("invalid word");
     catalogIndex=words.indexOf(challenge);
-    E.dayChip.textContent="#"+(catalogIndex+1);
-    if(E.challengeNumber)E.challengeNumber.textContent="#"+(catalogIndex+1);
+    challengeNumber=catalogIndex>=0?catalogIndex+1:automaticChallengeNumber(targetDate,words);
+
+    E.dayChip.textContent="#"+challengeNumber;
+    if(E.challengeNumber)E.challengeNumber.textContent="#"+challengeNumber;
     if(E.termDate)E.termDate.textContent=prettyDate(challenge.date);
+
+    if(!adminPreview)startMidnightWatcher(targetDate);
+
     load();renderSaved();if(finished)finish(won);
   }catch(_){
     if(E.termDate)E.termDate.textContent="Erro ao carregar";

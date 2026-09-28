@@ -75,8 +75,11 @@
   var playerVolume = 1;
   var repeatEnabled = false;
   try {
-    var storedVolume = Number(localStorage.getItem("musicadodia:volume"));
-    if (Number.isFinite(storedVolume)) playerVolume = Math.max(0, Math.min(1, storedVolume));
+    var storedVolumeRaw = localStorage.getItem("musicadodia:volume");
+    if (storedVolumeRaw !== null && storedVolumeRaw !== "") {
+      var storedVolume = Number(storedVolumeRaw);
+      if (Number.isFinite(storedVolume)) playerVolume = Math.max(0, Math.min(1, storedVolume));
+    }
     repeatEnabled = localStorage.getItem("musicadodia:repeat") === "1";
   } catch (_) {}
   try {

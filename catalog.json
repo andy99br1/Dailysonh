@@ -248,6 +248,43 @@
       "deezerUrl": "",
       "midiMelodyStyle": "flute",
       "midiMelodyStyleName": "Flauta / synth suave"
+    },
+    {
+      "date": "2026-09-28",
+      "title": "Tempo Perdido",
+      "artist": "Legião Urbana",
+      "clipStart": 61.0,
+      "source": "midi",
+      "sourceName": "1790568564969-Legiao_UrbanaTempo_perdido.mid",
+      "version": 1,
+      "challengeRounds": 5,
+      "safeRevealRound": 5,
+      "roundLabels": [
+        "Bateria",
+        "Baixo",
+        "Guitarra",
+        "Sintetizador",
+        "Melodia da voz",
+        "Revelação"
+      ],
+      "rounds": [
+        "songs/2026-09-28/round-1.ogg",
+        "songs/2026-09-28/round-2.ogg",
+        "songs/2026-09-28/round-3.ogg",
+        "songs/2026-09-28/round-4.ogg",
+        "songs/2026-09-28/round-5.ogg",
+        "songs/2026-09-28/round-6.ogg"
+      ],
+      "releaseYear": "1986",
+      "youtubeViews": "147M",
+      "difficulty": "Fácil",
+      "youtubeUrl": "https://www.youtube.com/watch?v=zpzoG5KGaHg",
+      "coverUrl": "https://i.ytimg.com/vi/tI9kSZgMLsc/hqdefault.jpg",
+      "spotifyUrl": "",
+      "appleMusicUrl": "",
+      "deezerUrl": "",
+      "midiMelodyStyle": "flute",
+      "midiMelodyStyleName": "Flauta / synth suave"
     }
   ]
 }

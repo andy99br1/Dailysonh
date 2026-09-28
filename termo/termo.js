@@ -15,6 +15,7 @@ var E={
 var challenge=null,catalogIndex=-1,challengeNumber=0,row=0,current=["","","","",""],guesses=[],evaluations=[],finished=false,won=false,editIndex=null;
 var keyStates={},validWords=null,dictionaryWords=[],automaticWords=[];
 var activeBrazilDate="",midnightWatchTimer=null;
+var trustedServerEpochMs=null,trustedServerPerfMs=0;
 var allowedThemes=["creme","azul","verde","rosa","lilas","noite","grafite"];
 var previewDate="",adminPreview=false;
 
@@ -28,8 +29,20 @@ try{
 function normalizeWord(value){
   return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z]/g,"").toUpperCase();
 }
+function syncTrustedClock(response){
+  var raw=response&&response.headers?response.headers.get("date"):"";
+  var parsed=raw?Date.parse(raw):NaN;
+  if(!Number.isFinite(parsed))return false;
+  trustedServerEpochMs=parsed;
+  trustedServerPerfMs=performance.now();
+  return true;
+}
+function trustedNow(){
+  if(Number.isFinite(trustedServerEpochMs))return new Date(trustedServerEpochMs+(performance.now()-trustedServerPerfMs));
+  return new Date();
+}
 function brazilDate(){
-  var parts=new Intl.DateTimeFormat("en",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),o={};
+  var parts=new Intl.DateTimeFormat("en",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(trustedNow()),o={};
   parts.forEach(function(p){if(p.type!=="literal")o[p.type]=p.value});
   return o.year+"-"+o.month+"-"+o.day;
 }
@@ -363,6 +376,7 @@ async function init(){
     if(!responses[0].ok)throw new Error("catalog");
     if(!responses[1].ok)throw new Error("dictionary");
     if(!responses[2].ok)throw new Error("automatic dictionary");
+    if(!syncTrustedClock(responses[0])&&!adminPreview)throw new Error("clock");
     var data=await responses[0].json(),words=Array.isArray(data.words)?data.words:[];
     words=words.slice().sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""))});
     var dictionaryText=await responses[1].text();
@@ -403,9 +417,9 @@ async function init(){
     if(!adminPreview)startMidnightWatcher(targetDate);
 
     load();renderSaved();if(finished)finish(won);
-  }catch(_){
+  }catch(err){
     if(E.termDate)E.termDate.textContent="Erro ao carregar";
-    setMessage("Não consegui carregar o desafio de hoje.","error");
+    setMessage(err&&err.message==="clock"?"Não consegui validar a data oficial do jogo. Tente novamente.":"Não consegui carregar o desafio de hoje.","error");
   }
 }
 

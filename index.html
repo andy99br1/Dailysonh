@@ -55,7 +55,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=20260925-7">
+  <link rel="stylesheet" href="styles.css?v=20260928-1">
 </head>
 <body data-theme="grafite">
   <main class="shell">
@@ -131,6 +131,20 @@
         </div>
 
         <div class="player-controls">
+          <div class="volume-control" id="volumeControl">
+            <button class="volume-btn" id="volumeBtn" type="button" aria-label="Ajustar volume" aria-expanded="false" aria-controls="volumePopover" title="Volume">
+              <svg class="volume-icon" viewBox="0 0 32 32" aria-hidden="true">
+                <path d="M5 13h6l7-6v18l-7-6H5z"></path>
+                <path class="volume-wave volume-wave-1" d="M21 12a6 6 0 0 1 0 8"></path>
+                <path class="volume-wave volume-wave-2" d="M24 9a10 10 0 0 1 0 14"></path>
+              </svg>
+            </button>
+            <div class="volume-popover hidden" id="volumePopover">
+              <input class="volume-slider" id="volumeSlider" type="range" min="0" max="100" step="1" value="100" aria-label="Volume do áudio">
+              <span class="volume-value" id="volumeValue">100%</span>
+            </div>
+          </div>
+
           <button class="seek-circle seek-back" id="rewindBtn" type="button" disabled aria-label="Voltar 5 segundos">
             <svg class="seek-arrow-svg" viewBox="0 0 32 32" aria-hidden="true">
               <path class="seek-arc" d="M9.5 8.5H4.5V3.5"></path>
@@ -236,6 +250,6 @@
     </footer>
   </main>
 
-  <script src="app.js?v=20260925-5"></script>
+  <script src="app.js?v=20260928-1"></script>
 </body>
 </html>

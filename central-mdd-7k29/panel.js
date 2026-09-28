@@ -17,14 +17,14 @@ var E={
  editIndex:$("editIndex"),editTitle:$("editTitle"),editArtist:$("editArtist"),editReleaseYear:$("editReleaseYear"),editYoutubeViews:$("editYoutubeViews"),editDifficulty:$("editDifficulty"),
  editYoutubeUrl:$("editYoutubeUrl"),editSpotifyUrl:$("editSpotifyUrl"),editAppleMusicUrl:$("editAppleMusicUrl"),editDeezerUrl:$("editDeezerUrl"),editCoverUrl:$("editCoverUrl"),saveEditBtn:$("saveEditBtn"),toast:$("toast"),
  previewDialog:$("previewDialog"),previewCloseBtn:$("previewCloseBtn"),previewFrame:$("previewFrame"),
- termoForm:$("termoForm"),termoDate:$("termoDate"),termoWord:$("termoWord"),termoEditDate:$("termoEditDate"),termoSaveBtn:$("termoSaveBtn"),termoCancelEditBtn:$("termoCancelEditBtn"),termoFormStatus:$("termoFormStatus"),termoRefreshBtn:$("termoRefreshBtn"),termoWordsList:$("termoWordsList"),termoWordsEmpty:$("termoWordsEmpty"),
+ termoForm:$("termoForm"),termoDate:$("termoDate"),termoWord:$("termoWord"),termoEditDate:$("termoEditDate"),termoSaveBtn:$("termoSaveBtn"),termoCancelEditBtn:$("termoCancelEditBtn"),termoFormStatus:$("termoFormStatus"),termoRefreshBtn:$("termoRefreshBtn"),termoWordsList:$("termoWordsList"),termoWordsEmpty:$("termoWordsEmpty"),termoTodayCard:$("termoTodayCard"),termoTodayWord:$("termoTodayWord"),termoTodayDate:$("termoTodayDate"),termoTodaySource:$("termoTodaySource"),
  metricPlayers:$("metricPlayers"),metricPlayersSub:$("metricPlayersSub"),metricOnline:$("metricOnline"),metricOnlineSub:$("metricOnlineSub"),metricUnique:$("metricUnique"),metricUniqueSub:$("metricUniqueSub"),metricDuration:$("metricDuration"),metricDurationSub:$("metricDurationSub"),trafficTotal:$("trafficTotal"),
  trafficChart:$("trafficChart"),todaySongTitle:$("todaySongTitle"),todayChallenge:$("todayChallenge"),todayWins:$("todayWins"),todayFails:$("todayFails"),todayRate:$("todayRate"),
  roundBars:$("roundBars"),commonGuesses:$("commonGuesses"),audioErrors:$("audioErrors"),abandonRate:$("abandonRate"),completionRate:$("completionRate"),pageViews:$("pageViews"),
  analyticsWarning:$("analyticsWarning"),analyticsStatusPanel:$("analyticsStatusPanel"),analyticsStatusTitle:$("analyticsStatusTitle"),analyticsStatusText:$("analyticsStatusText"),
  dashboardDate:$("dashboardDate"),selectedDateLabel:$("selectedDateLabel"),autoRefreshStatus:$("autoRefreshStatus"),prevDateBtn:$("prevDateBtn"),nextDateBtn:$("nextDateBtn"),todayDateBtn:$("todayDateBtn"),trafficPeriodTitle:$("trafficPeriodTitle")
 };
-var token="",catalog={songs:[]},catalogSha="",termoCatalog={words:[]},analyticsConfig=null,toastTimer=null,selectedDate="",previewSong=null,previewTrackIndex=0,dashboardRefreshTimer=null,dashboardRefreshBusy=false,lastDashboardRefreshAt=0,latestMidiManifest=null;
+var token="",catalog={songs:[]},catalogSha="",termoCatalog={words:[]},termoAutomaticWords=[],termoActiveDate="",termoMidnightTimer=null,analyticsConfig=null,toastTimer=null,selectedDate="",previewSong=null,previewTrackIndex=0,dashboardRefreshTimer=null,dashboardRefreshBusy=false,lastDashboardRefreshAt=0,latestMidiManifest=null;
 var DASHBOARD_REFRESH_MS=10000;
 var DEFAULT_ANALYTICS_CONFIG={
   endpoint:"https://kxoxlgiktwumooixedgu.supabase.co/functions/v1/musicadodia-analytics",
@@ -147,16 +147,75 @@ function renderSongs(){
 function normalizeTermoWord(value){
  return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z]/g,"").toUpperCase()
 }
+function termoDateSerial(value){
+ var p=String(value||"").split("-").map(Number);
+ if(p.length!==3||!p[0]||!p[1]||!p[2])return 0;
+ return Math.floor(Date.UTC(p[0],p[1]-1,p[2])/86400000)
+}
+function termoHash32(value){
+ var h=2166136261>>>0,s=String(value||"");
+ for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0}
+ return h>>>0
+}
+function automaticTermoWordForDate(date){
+ var used=new Set((termoCatalog.words||[]).map(function(item){return normalizeTermoWord(item.word)}).filter(function(word){return word.length===5}));
+ var pool=(termoAutomaticWords||[]).filter(function(word){return !used.has(word)});
+ if(!pool.length)pool=(termoAutomaticWords||[]).slice();
+ if(!pool.length)return"";
+ pool.sort(function(a,b){
+   var ah=termoHash32("mdd-termo|"+a),bh=termoHash32("mdd-termo|"+b);
+   return ah===bh?a.localeCompare(b):ah-bh
+ });
+ var serial=termoDateSerial(date);
+ var index=((serial%pool.length)+pool.length)%pool.length;
+ return pool[index]
+}
+function renderTermoToday(){
+ if(!E.termoTodayWord||!E.termoTodaySource||!E.termoTodayDate)return;
+ var today=brazilDate();
+ termoActiveDate=today;
+ var manual=(termoCatalog.words||[]).find(function(item){return String(item.date||"")===today})||null;
+ var word=manual?normalizeTermoWord(manual.word):automaticTermoWordForDate(today);
+ E.termoTodayWord.textContent=word||"—";
+ E.termoTodayDate.textContent="Hoje · "+prettyDate(today)+" · troca às 0:00 (Brasília)";
+ E.termoTodaySource.textContent=manual?"CADASTRADA":"AUTOMÁTICA";
+ E.termoTodaySource.classList.toggle("manual",Boolean(manual));
+ E.termoTodaySource.classList.toggle("automatic",!manual);
+}
+function startTermoMidnightWatch(){
+ if(termoMidnightTimer)return;
+ termoActiveDate=brazilDate();
+ termoMidnightTimer=setInterval(function(){
+   var now=brazilDate();
+   if(now!==termoActiveDate){
+     termoActiveDate=now;
+     renderTermoToday();
+     if(E.termoDate&&!E.termoEditDate.value)E.termoDate.value=now;
+   }
+ },1000)
+}
 async function loadTermoCatalog(showToast){
  try{
-   var file=await getRepoFile("termo/catalog.json");
-   termoCatalog=decodeRepoContent(file);
+   var results=await Promise.all([
+     getRepoFile("termo/catalog.json"),
+     fetch("/termo/palavras-sorteio-ptbr.txt?v=1",{cache:"force-cache"})
+   ]);
+   termoCatalog=decodeRepoContent(results[0]);
    if(!Array.isArray(termoCatalog.words))termoCatalog.words=[];
+   if(!results[1].ok)throw new Error("automatic word list "+results[1].status);
+   var autoText=await results[1].text();
+   termoAutomaticWords=Array.from(new Set(
+     autoText.split(/\r?\n/)
+       .map(function(word){return normalizeTermoWord(word)})
+       .filter(function(word){return word.length===5})
+   ));
    renderTermoWords();
+   renderTermoToday();
+   startTermoMidnightWatch();
    if(showToast)toast("Palavras do Termo atualizadas.");
  }catch(err){
    console.error("termo catalog",err);
-   termoCatalog={words:[]};renderTermoWords();
+   termoCatalog={words:[]};termoAutomaticWords=[];renderTermoWords();renderTermoToday();
    if(showToast)toast("Não consegui carregar o Termo.");
  }
 }
@@ -196,7 +255,7 @@ function renderTermoWords(){
      var file=await getRepoFile("termo/catalog.json"),fresh=decodeRepoContent(file);
      fresh.words=(fresh.words||[]).filter(function(w){return String(w.date||"")!==String(item.date||"")});
      await saveTermoCatalog(fresh,file.sha,"Delete Termo word "+item.date);
-     termoCatalog=fresh;renderTermoWords();toast("Palavra excluída.");
+     termoCatalog=fresh;renderTermoWords();renderTermoToday();toast("Palavra excluída.");
    };
    actions.append(test,edit,del);row.append(date,word,actions);E.termoWordsList.appendChild(row);
  })
@@ -828,7 +887,7 @@ if(E.termoForm)E.termoForm.addEventListener("submit",async function(ev){
    if(index>=0)fresh.words[index]=item;else fresh.words.push(item);
    fresh.words.sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""))});
    await saveTermoCatalog(fresh,file.sha,"Publish Termo word for "+date);
-   termoCatalog=fresh;renderTermoWords();resetTermoForm();toast("Palavra do Termo salva.");
+   termoCatalog=fresh;renderTermoWords();renderTermoToday();resetTermoForm();toast("Palavra do Termo salva.");
  }catch(err){
    console.error("save termo",err);E.termoFormStatus.textContent="Não foi possível salvar.";toast("Falha ao salvar o Termo.");
  }finally{E.termoSaveBtn.disabled=false}

@@ -1,11 +1,11 @@
 {
-  "createdAt": "2026-09-28T03:53:00.960443+00:00",
-  "sourceName": "1790567532139-Legiao_UrbanaTempo_perdido.mid",
-  "sourcePath": "midi-incoming/1790567532139-Legiao_UrbanaTempo_perdido.mid",
-  "revealSourcePath": "midi-reveal-incoming/1790567532139-Legiao-Urbana-Tempo-Perdido-320-Kbps.mp3",
+  "createdAt": "2026-09-28T04:10:42.875022+00:00",
+  "sourceName": "1790568564969-Legiao_UrbanaTempo_perdido.mid",
+  "sourcePath": "midi-incoming/1790568564969-Legiao_UrbanaTempo_perdido.mid",
+  "revealSourcePath": "midi-reveal-incoming/1790568564969-Legiao-Urbana-Tempo-Perdido-320-Kbps.mp3",
   "revealMode": "original-audio",
   "duration": 233.56,
-  "clipStart": 108.0,
+  "clipStart": 61.0,
   "clipSeconds": 18.0,
   "midiType": 1,
   "ticksPerBeat": 384,
@@ -174,8 +174,8 @@
       "program": 33,
       "family": "Baixo",
       "notes": 636,
-      "notesInClip": 56,
-      "activeInClip": 12.47,
+      "notesInClip": 55,
+      "activeInClip": 12.57,
       "monophony": 1.0,
       "pitchBends": 66
     },
@@ -196,7 +196,7 @@
       "program": 28,
       "family": "Guitarra",
       "notes": 1199,
-      "notesInClip": 70,
+      "notesInClip": 66,
       "activeInClip": 18.0,
       "monophony": 0.28,
       "pitchBends": 35
@@ -207,8 +207,8 @@
       "program": 82,
       "family": "Synth lead",
       "notes": 272,
-      "notesInClip": 25,
-      "activeInClip": 16.08,
+      "notesInClip": 26,
+      "activeInClip": 14.75,
       "monophony": 0.895,
       "pitchBends": 0
     },
@@ -219,7 +219,7 @@
       "family": "Bateria",
       "notes": 2321,
       "notesInClip": 180,
-      "activeInClip": 14.25,
+      "activeInClip": 14.32,
       "monophony": 0.34,
       "pitchBends": 0
     }

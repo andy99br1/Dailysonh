@@ -285,6 +285,43 @@
       "deezerUrl": "",
       "midiMelodyStyle": "flute",
       "midiMelodyStyleName": "Flauta / synth suave"
+    },
+    {
+      "date": "2026-09-29",
+      "title": "Primeiros Erros",
+      "artist": "Capital Inicial",
+      "clipStart": 110.5,
+      "source": "midi",
+      "sourceName": "1790570408894-Capital_InicialPrimeiros_Erros.mid",
+      "version": 1,
+      "challengeRounds": 5,
+      "safeRevealRound": 5,
+      "roundLabels": [
+        "Bateria",
+        "Baixo elétrico",
+        "Violão",
+        "Piano + Coro",
+        "Melodia da voz",
+        "Revelação"
+      ],
+      "rounds": [
+        "songs/2026-09-29/round-1.ogg",
+        "songs/2026-09-29/round-2.ogg",
+        "songs/2026-09-29/round-3.ogg",
+        "songs/2026-09-29/round-4.ogg",
+        "songs/2026-09-29/round-5.ogg",
+        "songs/2026-09-29/round-6.ogg"
+      ],
+      "releaseYear": "",
+      "youtubeViews": "380M",
+      "difficulty": "",
+      "youtubeUrl": "https://www.youtube.com/watch?v=qiU_XXucYBE&list=RDqiU_XXucYBE&start_radio=1",
+      "coverUrl": "https://i.ytimg.com/vi/fX3ix7rFp9U/maxresdefault.jpg",
+      "spotifyUrl": "",
+      "appleMusicUrl": "",
+      "deezerUrl": "",
+      "midiMelodyStyle": "flute",
+      "midiMelodyStyleName": "Flauta / synth suave"
     }
   ]
 }

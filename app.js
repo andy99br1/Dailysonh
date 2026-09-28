@@ -61,6 +61,7 @@
   var finished = false;
   var won = false;
   var solvedRound = null;
+  var roundResults = [];
   var catalogIndex = -1;
   var countdownInterval = null;
   var countdownDate = "";
@@ -633,7 +634,8 @@
       guesses: guesses,
       finished: finished,
       won: won,
-      solvedRound: solvedRound
+      solvedRound: solvedRound,
+      roundResults: roundResults
     }));
   }
 
@@ -668,6 +670,26 @@
       finished = Boolean(state.finished);
       won = Boolean(state.won);
       solvedRound = Number.isFinite(Number(state.solvedRound)) ? Number(state.solvedRound) : null;
+      roundResults = Array.isArray(state.roundResults)
+        ? state.roundResults.slice(0, playableRoundCount())
+        : [];
+
+      // Migração dos jogos já salvos antes do status por faixa existir.
+      if (!roundResults.length) {
+        roundResults = Array.from({ length: playableRoundCount() }, function () { return ""; });
+        if (finished && won && solvedRound) {
+          for (var ri = 0; ri < Math.min(playableRoundCount(), solvedRound - 1); ri += 1) {
+            roundResults[ri] = "wrong";
+          }
+          if (solvedRound - 1 < playableRoundCount()) roundResults[solvedRound - 1] = "correct";
+        } else if (finished && !won) {
+          for (var rj = 0; rj < playableRoundCount(); rj += 1) roundResults[rj] = "wrong";
+        } else {
+          for (var rk = 0; rk < Math.min(playableRoundCount(), highestUnlockedRound); rk += 1) {
+            roundResults[rk] = "wrong";
+          }
+        }
+      }
 
       if (migratedLegacy) {
         save();
@@ -927,10 +949,15 @@
     var revealIndex = revealRoundIndex();
     var playable = playableRoundCount();
 
+    while (roundResults.length < playable) roundResults.push("");
+
     E.rounds.forEach(function (node, i) {
       var unlocked = finished ? i <= revealIndex : i <= highestUnlockedRound;
+      var result = i < playable ? roundResults[i] : "";
       node.classList.toggle("active", i === roundIndex);
-      node.classList.toggle("done", finished ? i <= revealIndex : i < highestUnlockedRound);
+      node.classList.toggle("done", i < highestUnlockedRound || Boolean(result));
+      node.classList.toggle("wrong", result === "wrong");
+      node.classList.toggle("correct", result === "correct");
       node.classList.toggle("unlocked", unlocked);
       node.setAttribute("aria-disabled", unlocked ? "false" : "true");
       node.tabIndex = unlocked ? 0 : -1;
@@ -1040,6 +1067,10 @@
 
   function nextOrSkip() {
     if (!song || finished) return;
+    while (roundResults.length < playableRoundCount()) roundResults.push("");
+    if (highestUnlockedRound < playableRoundCount()) {
+      roundResults[highestUnlockedRound] = "wrong";
+    }
     advance("Rodada pulada.");
   }
 
@@ -1092,6 +1123,7 @@
     finished = false;
     won = false;
     solvedRound = null;
+    roundResults = [];
 
     E.reveal.classList.add("hidden");
     E.resultStatus.textContent = "";
@@ -1191,6 +1223,7 @@
       ensureRoundNodes();
       load();
       highestUnlockedRound = Math.max(highestUnlockedRound, roundIndex);
+      while (roundResults.length < playableRoundCount()) roundResults.push("");
       renderAttempts();
 
       E.playBtn.disabled = false;
@@ -1308,12 +1341,20 @@
       correct: isCorrect(guess, song.title)
     });
 
+    while (roundResults.length < playableRoundCount()) roundResults.push("");
+
     if (isCorrect(guess, song.title)) {
       solvedRound = highestUnlockedRound + 1;
+      if (highestUnlockedRound < playableRoundCount()) {
+        roundResults[highestUnlockedRound] = "correct";
+      }
       reveal(true, true);
       return;
     }
 
+    if (highestUnlockedRound < playableRoundCount()) {
+      roundResults[highestUnlockedRound] = "wrong";
+    }
     guesses.push(guess);
     renderAttempts();
     E.guessForm.classList.add("hidden");

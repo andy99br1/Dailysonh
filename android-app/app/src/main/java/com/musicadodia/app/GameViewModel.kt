@@ -49,6 +49,7 @@ data class TermoUiState(
     val challengeNumber: Int,
     val guesses: List<TermoGuess> = emptyList(),
     val input: String = "",
+    val cursorIndex: Int = 0,
     val finished: Boolean = false,
     val won: Boolean = false,
     val message: String = "Digite uma palavra de 5 letras.",
@@ -222,29 +223,84 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         state = state.copy(repeat = enabled)
     }
 
+    fun restartMusicGame() {
+        val music = state.music ?: return
+        prefs.edit().remove(musicKey(music.song)).apply()
+
+        state = state.copy(
+            music = MusicUiState(
+                song = music.song,
+                challengeNumber = music.challengeNumber,
+                results = List(music.song.challengeRounds) { RoundMark.NONE },
+                message = "Jogo reiniciado. Ouça a primeira faixa e tente novamente."
+            )
+        )
+    }
+
     fun setTermoInput(value: String) {
         val termo = state.termo ?: return
-        if (!termo.finished) state = state.copy(termo = termo.copy(input = normalizeWord(value).take(5)))
+        if (termo.finished) return
+        val clean = normalizeWord(value).take(5)
+        state = state.copy(
+            termo = termo.copy(
+                input = clean,
+                cursorIndex = clean.length.coerceIn(0, 4)
+            )
+        )
+    }
+
+    fun setTermoCursor(index: Int) {
+        val termo = state.termo ?: return
+        if (termo.finished) return
+        state = state.copy(termo = termo.copy(cursorIndex = index.coerceIn(0, 4)))
     }
 
     fun appendTermoLetter(letter: Char) {
         val termo = state.termo ?: return
-        if (!termo.finished && termo.input.length < 5) setTermoInput(termo.input + letter)
+        if (termo.finished) return
+
+        val slots = termo.input.padEnd(5, ' ').take(5).toCharArray()
+        val index = termo.cursorIndex.coerceIn(0, 4)
+        slots[index] = letter.uppercaseChar()
+
+        val next = (index + 1).coerceAtMost(4)
+        state = state.copy(
+            termo = termo.copy(
+                input = String(slots).trimEnd(),
+                cursorIndex = next,
+                message = "Digite uma palavra de 5 letras."
+            )
+        )
     }
 
     fun backspaceTermo() {
         val termo = state.termo ?: return
-        if (!termo.finished && termo.input.isNotEmpty()) setTermoInput(termo.input.dropLast(1))
+        if (termo.finished) return
+
+        val slots = termo.input.padEnd(5, ' ').take(5).toCharArray()
+        var index = termo.cursorIndex.coerceIn(0, 4)
+
+        if (slots[index] == ' ' && index > 0) index -= 1
+        slots[index] = ' '
+
+        state = state.copy(
+            termo = termo.copy(
+                input = String(slots).trimEnd(),
+                cursorIndex = index,
+                message = "Digite uma palavra de 5 letras."
+            )
+        )
     }
 
     fun submitTermo() {
         val termo = state.termo ?: return
         if (termo.finished) return
-        val guess = normalizeWord(termo.input)
-        if (guess.length != 5) {
+        val rawGuess = termo.input.padEnd(5, ' ').take(5)
+        if (rawGuess.any { it !in 'A'..'Z' }) {
             state = state.copy(termo = termo.copy(message = "Preencha as 5 letras."))
             return
         }
+        val guess = rawGuess
         if (guess != termo.targetWord && guess !in validWords) {
             state = state.copy(termo = termo.copy(message = "Essa palavra não existe em português."))
             return
@@ -256,6 +312,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         var updated = termo.copy(
             guesses = guesses,
             input = "",
+            cursorIndex = 0,
             finished = finished,
             won = won,
             message = when {

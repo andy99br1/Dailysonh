@@ -98,6 +98,7 @@ fun MusicScreen(viewModel: GameViewModel) {
     var guessOpen by remember { mutableStateOf(false) }
     var volumeOpen by remember { mutableStateOf(false) }
     var previousFinished by remember(song.date) { mutableStateOf(music.finished) }
+    var pendingRevealAutoplay by remember(song.date) { mutableStateOf(false) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -107,6 +108,13 @@ fun MusicScreen(viewModel: GameViewModel) {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 val duration = player.duration
                 if (duration != C.TIME_UNSET && duration > 0) durationMs = duration
+
+                if (playbackState == Player.STATE_READY && pendingRevealAutoplay) {
+                    pendingRevealAutoplay = false
+                    player.seekTo(0L)
+                    player.playWhenReady = true
+                    player.play()
+                }
             }
         }
         player.addListener(listener)
@@ -121,17 +129,13 @@ fun MusicScreen(viewModel: GameViewModel) {
         previousFinished = music.finished
 
         if (!audioUrl.isNullOrBlank()) {
+            pendingRevealAutoplay = shouldAutoPlayReveal
+
             player.stop()
             player.clearMediaItems()
             player.setMediaItem(MediaItem.fromUri(audioUrl))
             player.prepare()
             positionMs = 0L
-
-            if (shouldAutoPlayReveal) {
-                player.seekTo(0L)
-                player.playWhenReady = true
-                player.play()
-            }
         }
     }
 

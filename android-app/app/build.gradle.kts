@@ -33,6 +33,10 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    sourceSets {
+        getByName("main").java.setSrcDirs(listOf("src/main/appcode"))
+    }
 }
 
 val syncGameUi by tasks.registering(Copy::class) {

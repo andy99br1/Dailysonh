@@ -11,7 +11,11 @@ data class Song(
     val releaseYear: String,
     val youtubeViews: String,
     val difficulty: String,
-    val coverUrl: String
+    val coverUrl: String,
+    val youtubeUrl: String,
+    val spotifyUrl: String,
+    val appleMusicUrl: String,
+    val deezerUrl: String
 ) {
     val revealIndex: Int
         get() = if (challengeRounds < rounds.size) challengeRounds else (rounds.size - 1).coerceAtLeast(0)

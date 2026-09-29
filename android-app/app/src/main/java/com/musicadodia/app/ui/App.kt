@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -141,7 +142,7 @@ fun MusicaDoDiaApp(viewModel: GameViewModel) {
 }
 
 private fun Modifier.widthInSite(): Modifier =
-    this.fillMaxWidth().then(Modifier)
+    this.widthIn(max = 600.dp).fillMaxWidth()
 
 private fun Modifier.siteTexture(): Modifier = this.drawBehind {
     val dot = Color.White.copy(alpha = 0.025f)
@@ -183,7 +184,7 @@ private fun NativeHomeScreen(
             color = p.text,
             fontSize = 28.sp,
             fontWeight = FontWeight.Black,
-            letterSpacing = (-0.5).sp
+            letterSpacing = (-0.5f).sp
         )
         Text(
             "Escolha um jogo",

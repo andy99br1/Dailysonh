@@ -1,0 +1,62 @@
+name: Fix current reveal audio
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fix-current-reveal.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-reveal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Re-encode current reveal as audio-only Vorbis
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET="songs/2026-09-29/round-6.ogg"
+          TMP="$RUNNER_TEMP/round-6-audio-only.ogg"
+
+          echo "--- Before ---"
+          ffprobe -v error -show_entries stream=index,codec_name,codec_type,sample_rate,channels -of default=noprint_wrappers=1 "$TARGET"
+
+          ffmpeg -y -v error             -i "$TARGET"             -map 0:a:0 -vn             -ac 2 -ar 44100             -c:a libvorbis -q:a 5             "$TMP"
+
+          echo "--- After ---"
+          ffprobe -v error -show_entries stream=index,codec_name,codec_type,sample_rate,channels -of default=noprint_wrappers=1 "$TMP"
+
+          mv "$TMP" "$TARGET"
+
+      - name: Commit repaired reveal
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "dailysonh-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add songs/2026-09-29/round-6.ogg
+
+          if git diff --cached --quiet; then
+            echo "Reveal already audio-only; nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "Fix 2026-09-29 reveal audio for Android"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main

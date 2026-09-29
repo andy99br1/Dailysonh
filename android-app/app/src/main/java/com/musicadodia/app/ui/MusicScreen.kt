@@ -45,7 +45,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -413,7 +416,7 @@ private fun SongStatsRow(release: String, views: String, difficulty: String) {
 private fun SongStat(label: String, value: String, modifier: Modifier) {
     val p = LocalAppPalette.current
     Surface(
-        modifier = modifier.height(42.dp),
+        modifier = modifier.height(50.dp),
         color = p.surface2,
         shape = RoundedCornerShape(10.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, p.line)
@@ -421,13 +424,21 @@ private fun SongStat(label: String, value: String, modifier: Modifier) {
         Column(
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 5.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically)
         ) {
-            Text(label, color = p.muted, fontSize = 8.5.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+            Text(
+                label,
+                color = p.muted,
+                fontSize = 8.5.sp,
+                lineHeight = 10.sp,
+                fontWeight = FontWeight.ExtraBold,
+                maxLines = 1
+            )
             Text(
                 value,
                 color = p.text,
                 fontSize = 12.5.sp,
+                lineHeight = 14.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -549,9 +560,64 @@ private fun SeekControl(
 ) {
     val p = LocalAppPalette.current
     CircleControl(size, enabled, p.controlBackground, Color(0xFFC7B99F), onClick = onClick) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Text(if (backwards) "↶" else "↷", color = Color(0xFF191713), fontSize = 22.sp, lineHeight = 18.sp)
-            Text("5s", color = Color(0xFF191713), fontSize = 8.sp, fontWeight = FontWeight.Black)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            SeekBrowserIcon(backwards = backwards)
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    "5",
+                    color = Color(0xFF191713),
+                    fontSize = 9.sp,
+                    lineHeight = 9.sp,
+                    fontWeight = FontWeight.Black
+                )
+                Text(
+                    "s",
+                    color = Color(0xFF191713),
+                    fontSize = 6.5.sp,
+                    lineHeight = 8.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SeekBrowserIcon(backwards: Boolean) {
+    val iconColor = Color(0xFF191713)
+    Canvas(Modifier.size(24.dp)) {
+        val sx = size.width / 32f
+        val sy = size.height / 32f
+        val stroke = Stroke(
+            width = 2.6f * sx,
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
+
+        scale(
+            scaleX = if (backwards) 1f else -1f,
+            scaleY = 1f,
+            pivot = center
+        ) {
+            val corner = Path().apply {
+                moveTo(9.5f * sx, 8.5f * sy)
+                lineTo(4.5f * sx, 8.5f * sy)
+                lineTo(4.5f * sx, 3.5f * sy)
+            }
+            drawPath(corner, iconColor, style = stroke)
+
+            drawArc(
+                color = iconColor,
+                startAngle = 218f,
+                sweepAngle = 302f,
+                useCenter = false,
+                topLeft = Offset(4f * sx, 5f * sy),
+                size = Size(22f * sx, 22f * sy),
+                style = stroke
+            )
         }
     }
 }
@@ -601,22 +667,50 @@ private fun SpeakerIcon(color: Color) {
 
 @Composable
 private fun RepeatIcon(color: Color) {
-    Canvas(Modifier.size(22.dp)) {
-        drawArc(color, 205f, 235f, false, topLeft = Offset(2.dp.toPx(), 4.dp.toPx()), size = Size(size.width - 4.dp.toPx(), size.height - 8.dp.toPx()), style = Stroke(2.dp.toPx()))
-        val a = Path().apply {
-            moveTo(size.width * 0.80f, size.height * 0.16f)
-            lineTo(size.width * 0.93f, size.height * 0.31f)
-            lineTo(size.width * 0.72f, size.height * 0.32f)
-            close()
+    Canvas(Modifier.size(21.dp)) {
+        val sx = size.width / 32f
+        val sy = size.height / 32f
+        val stroke = Stroke(
+            width = 2.7f * sx,
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
+
+        val top = Path().apply {
+            moveTo(8f * sx, 10f * sy)
+            lineTo(23.3f * sx, 10f * sy)
+            moveTo(19.2f * sx, 6.1f * sy)
+            lineTo(23.6f * sx, 10f * sy)
+            lineTo(19.2f * sx, 14f * sy)
         }
-        drawPath(a, color)
-        val b = Path().apply {
-            moveTo(size.width * 0.20f, size.height * 0.84f)
-            lineTo(size.width * 0.07f, size.height * 0.69f)
-            lineTo(size.width * 0.28f, size.height * 0.68f)
-            close()
+        drawPath(top, color, style = stroke)
+        drawArc(
+            color = color,
+            startAngle = 180f,
+            sweepAngle = 90f,
+            useCenter = false,
+            topLeft = Offset(1.5f * sx, 9.2f * sy),
+            size = Size(13f * sx, 13f * sy),
+            style = stroke
+        )
+
+        val bottom = Path().apply {
+            moveTo(24f * sx, 22f * sy)
+            lineTo(8.7f * sx, 22f * sy)
+            moveTo(12.8f * sx, 18f * sy)
+            lineTo(8.4f * sx, 22f * sy)
+            lineTo(12.8f * sx, 25.9f * sy)
         }
-        drawPath(b, color)
+        drawPath(bottom, color, style = stroke)
+        drawArc(
+            color = color,
+            startAngle = 0f,
+            sweepAngle = 90f,
+            useCenter = false,
+            topLeft = Offset(17.5f * sx, 9.8f * sy),
+            size = Size(13f * sx, 13f * sy),
+            style = stroke
+        )
     }
 }
 

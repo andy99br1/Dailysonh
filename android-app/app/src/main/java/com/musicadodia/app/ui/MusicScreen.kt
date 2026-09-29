@@ -93,11 +93,13 @@ fun MusicScreen(viewModel: GameViewModel) {
     val revealAudioUrl = viewModel.musicRevealAudioUrl()
 
     val player = remember(song.date) { ExoPlayer.Builder(context).build() }
+    val revealPlayer = remember(song.date) { ExoPlayer.Builder(context).build() }
     var isPlaying by remember(player) { mutableStateOf(false) }
     var positionMs by remember(player) { mutableLongStateOf(0L) }
     var durationMs by remember(player) { mutableLongStateOf(18_000L) }
     var guessOpen by remember { mutableStateOf(false) }
     var volumeOpen by remember { mutableStateOf(false) }
+    var autoPlayNextChallenge by remember(song.date) { mutableStateOf(false) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -116,31 +118,61 @@ fun MusicScreen(viewModel: GameViewModel) {
         }
     }
 
+    DisposableEffect(revealPlayer) {
+        val revealListener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) {
+                    revealPlayer.seekTo(0L)
+                    revealPlayer.playWhenReady = true
+                    revealPlayer.play()
+                }
+            }
+        }
+        revealPlayer.addListener(revealListener)
+        onDispose {
+            revealPlayer.removeListener(revealListener)
+            revealPlayer.release()
+        }
+    }
+
     LaunchedEffect(audioUrl, music.finished) {
         if (!music.finished && !audioUrl.isNullOrBlank()) {
-            player.playWhenReady = false
+            val shouldPlay = autoPlayNextChallenge || player.isPlaying || player.playWhenReady
+
             player.stop()
             player.clearMediaItems()
             player.setMediaItem(MediaItem.fromUri(audioUrl))
+            player.playWhenReady = shouldPlay
             player.prepare()
             positionMs = 0L
+
+            if (shouldPlay) {
+                player.play()
+            }
+            autoPlayNextChallenge = false
         }
     }
 
     LaunchedEffect(music.finished, revealAudioUrl, song.date) {
         if (music.finished && !revealAudioUrl.isNullOrBlank()) {
-            player.stop()
-            player.clearMediaItems()
-            player.setMediaItem(MediaItem.fromUri(revealAudioUrl))
-            player.playWhenReady = true
-            player.prepare()
-            player.seekTo(0L)
-            player.play()
-            positionMs = 0L
+            player.pause()
+            player.playWhenReady = false
+
+            revealPlayer.stop()
+            revealPlayer.clearMediaItems()
+            revealPlayer.setMediaItem(MediaItem.fromUri(revealAudioUrl))
+            revealPlayer.playWhenReady = true
+            revealPlayer.prepare()
+        } else if (!music.finished) {
+            revealPlayer.stop()
+            revealPlayer.clearMediaItems()
         }
     }
 
-    LaunchedEffect(app.volume) { player.volume = app.volume }
+    LaunchedEffect(app.volume) {
+        player.volume = app.volume
+        revealPlayer.volume = app.volume
+    }
     LaunchedEffect(app.repeat) {
         player.repeatMode = if (app.repeat) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
     }
@@ -270,7 +302,12 @@ fun MusicScreen(viewModel: GameViewModel) {
                             border = p.playBorder,
                             borderWidth = 3.dp,
                             onClick = {
-                                if (player.isPlaying) player.pause() else player.play()
+                                if (player.isPlaying) {
+                                    player.pause()
+                                } else {
+                                    player.playWhenReady = true
+                                    player.play()
+                                }
                             }
                         ) {
                             PlayPauseIcon(isPlaying)
@@ -344,7 +381,10 @@ fun MusicScreen(viewModel: GameViewModel) {
                             text = "PULAR",
                             background = p.skipBackground,
                             modifier = Modifier.weight(1f),
-                            onClick = viewModel::skipMusicRound
+                            onClick = {
+                                autoPlayNextChallenge = true
+                                viewModel.skipMusicRound()
+                            }
                         )
                         SiteActionButton(
                             text = "ADIVINHAR",
@@ -412,6 +452,7 @@ fun MusicScreen(viewModel: GameViewModel) {
                     onGuess = viewModel::setMusicGuess,
                     onClose = { guessOpen = false },
                     onSubmit = {
+                        autoPlayNextChallenge = true
                         viewModel.submitMusicGuess()
                         guessOpen = false
                     }

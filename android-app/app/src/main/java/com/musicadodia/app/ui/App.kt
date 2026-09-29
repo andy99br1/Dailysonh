@@ -1,5 +1,6 @@
 package com.musicadodia.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,6 +56,10 @@ fun MusicaDoDiaApp(viewModel: GameViewModel) {
     val app = viewModel.state
     val p = LocalAppPalette.current
     var destination by remember { mutableStateOf(AppDestination.HOME) }
+
+    BackHandler(enabled = destination != AppDestination.HOME) {
+        destination = AppDestination.HOME
+    }
 
     Box(
         modifier = Modifier

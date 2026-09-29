@@ -94,8 +94,11 @@ fun MusicScreen(viewModel: GameViewModel) {
 
     val player = remember(song.date) { ExoPlayer.Builder(context).build() }
     val revealPlayer = remember(song.date) { ExoPlayer.Builder(context).build() }
-    var isPlaying by remember(player) { mutableStateOf(false) }
-    var positionMs by remember(player) { mutableLongStateOf(0L) }
+    var challengePlaying by remember(player) { mutableStateOf(false) }
+    var revealPlaying by remember(revealPlayer) { mutableStateOf(false) }
+    val isPlaying = if (music.finished) revealPlaying else challengePlaying
+    val activePlayer = if (music.finished) revealPlayer else player
+    var positionMs by remember(player, revealPlayer) { mutableLongStateOf(0L) }
     var durationMs by remember(player) { mutableLongStateOf(18_000L) }
     var guessOpen by remember { mutableStateOf(false) }
     var volumeOpen by remember { mutableStateOf(false) }
@@ -104,7 +107,7 @@ fun MusicScreen(viewModel: GameViewModel) {
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(value: Boolean) {
-                isPlaying = value
+                challengePlaying = value
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
                 val duration = player.duration
@@ -120,12 +123,13 @@ fun MusicScreen(viewModel: GameViewModel) {
 
     DisposableEffect(revealPlayer) {
         val revealListener = object : Player.Listener {
+            override fun onIsPlayingChanged(value: Boolean) {
+                revealPlaying = value
+            }
+
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) {
-                    revealPlayer.seekTo(0L)
-                    revealPlayer.playWhenReady = true
-                    revealPlayer.play()
-                }
+                val duration = revealPlayer.duration
+                if (duration != C.TIME_UNSET && duration > 0) durationMs = duration
             }
         }
         revealPlayer.addListener(revealListener)
@@ -161,9 +165,12 @@ fun MusicScreen(viewModel: GameViewModel) {
             revealPlayer.stop()
             revealPlayer.clearMediaItems()
             revealPlayer.setMediaItem(MediaItem.fromUri(revealAudioUrl))
+            revealPlayer.seekTo(0L)
             revealPlayer.playWhenReady = true
             revealPlayer.prepare()
+            positionMs = 0L
         } else if (!music.finished) {
+            revealPlayer.playWhenReady = false
             revealPlayer.stop()
             revealPlayer.clearMediaItems()
         }
@@ -174,13 +181,15 @@ fun MusicScreen(viewModel: GameViewModel) {
         revealPlayer.volume = app.volume
     }
     LaunchedEffect(app.repeat) {
-        player.repeatMode = if (app.repeat) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+        val mode = if (app.repeat) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+        player.repeatMode = mode
+        revealPlayer.repeatMode = mode
     }
 
-    LaunchedEffect(player, audioUrl) {
+    LaunchedEffect(player, revealPlayer, music.finished, audioUrl, revealAudioUrl) {
         while (true) {
-            positionMs = player.currentPosition.coerceAtLeast(0L)
-            val d = player.duration
+            positionMs = activePlayer.currentPosition.coerceAtLeast(0L)
+            val d = activePlayer.duration
             if (d != C.TIME_UNSET && d > 0) durationMs = d
             delay(200)
         }
@@ -290,7 +299,7 @@ fun MusicScreen(viewModel: GameViewModel) {
                             size = seekSize,
                             backwards = true,
                             enabled = audioUrl != null,
-                            onClick = { player.seekTo((player.currentPosition - 5_000L).coerceAtLeast(0L)) }
+                            onClick = { activePlayer.seekTo((activePlayer.currentPosition - 5_000L).coerceAtLeast(0L)) }
                         )
 
                         Spacer(Modifier.width(if (compact) 12.dp else 14.dp))
@@ -302,11 +311,11 @@ fun MusicScreen(viewModel: GameViewModel) {
                             border = p.playBorder,
                             borderWidth = 3.dp,
                             onClick = {
-                                if (player.isPlaying) {
-                                    player.pause()
+                                if (activePlayer.isPlaying) {
+                                    activePlayer.pause()
                                 } else {
-                                    player.playWhenReady = true
-                                    player.play()
+                                    activePlayer.playWhenReady = true
+                                    activePlayer.play()
                                 }
                             }
                         ) {
@@ -320,8 +329,8 @@ fun MusicScreen(viewModel: GameViewModel) {
                             backwards = false,
                             enabled = audioUrl != null,
                             onClick = {
-                                val end = if (player.duration > 0) player.duration else Long.MAX_VALUE
-                                player.seekTo((player.currentPosition + 5_000L).coerceAtMost(end))
+                                val end = if (activePlayer.duration > 0) activePlayer.duration else Long.MAX_VALUE
+                                activePlayer.seekTo((activePlayer.currentPosition + 5_000L).coerceAtMost(end))
                             }
                         )
 
@@ -346,7 +355,7 @@ fun MusicScreen(viewModel: GameViewModel) {
                     value = positionMs.coerceAtMost(durationMs).toFloat(),
                     onValueChange = {
                         positionMs = it.toLong()
-                        player.seekTo(positionMs)
+                        activePlayer.seekTo(positionMs)
                     },
                     valueRange = 0f..durationMs.coerceAtLeast(1L).toFloat(),
                     colors = SliderDefaults.colors(

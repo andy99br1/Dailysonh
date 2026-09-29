@@ -41,33 +41,43 @@ jobs:
           PY
           )
           echo "Reveal file: $REVEAL_FILE"
-          if command -v ffprobe >/dev/null 2>&1; then
-            echo "--- Repository file ---"
-            ffprobe -v error \
-              -show_entries stream=codec_name,codec_type,sample_rate,channels \
-              -show_entries format=duration,size,bit_rate \
-              -of default=noprint_wrappers=1 "$REVEAL_FILE"
-            ffmpeg -hide_banner -nostats -i "$REVEAL_FILE" -af volumedetect -f null - 2>&1 \
-              | grep -E "mean_volume|max_volume" || true
+          echo "--- Repository file ---"
+          ls -lh "$REVEAL_FILE"
+          file "$REVEAL_FILE" || true
+          sha256sum "$REVEAL_FILE"
 
-            PUBLIC_URL="https://musicadodia.com/$REVEAL_FILE"
-            echo "--- Public URL: $PUBLIC_URL ---"
-            if curl -L --fail --silent --show-error -D /tmp/reveal-headers.txt \
-              "$PUBLIC_URL?native-diagnostic=1" -o /tmp/reveal-public.ogg; then
-              cat /tmp/reveal-headers.txt
-              ls -lh /tmp/reveal-public.ogg
-              ffprobe -v error \
-                -show_entries stream=codec_name,codec_type,sample_rate,channels \
-                -show_entries format=duration,size,bit_rate \
-                -of default=noprint_wrappers=1 /tmp/reveal-public.ogg
-              ffmpeg -hide_banner -nostats -i /tmp/reveal-public.ogg -af volumedetect -f null - 2>&1 \
-                | grep -E "mean_volume|max_volume" || true
-            else
-              echo "PUBLIC_REVEAL_DOWNLOAD_FAILED"
-            fi
+          PUBLIC_URL="https://musicadodia.com/$REVEAL_FILE"
+          echo "--- Public URL: $PUBLIC_URL ---"
+          if curl -L --fail --silent --show-error -D /tmp/reveal-headers.txt \
+            "$PUBLIC_URL?native-diagnostic=1" -o /tmp/reveal-public.ogg; then
+            cat /tmp/reveal-headers.txt
+            ls -lh /tmp/reveal-public.ogg
+            file /tmp/reveal-public.ogg || true
+            sha256sum /tmp/reveal-public.ogg
           else
-            echo "ffprobe not available on runner"
+            echo "PUBLIC_REVEAL_DOWNLOAD_FAILED"
+            exit 1
           fi
+
+          python3 -m pip install --quiet soundfile numpy
+          REVEAL_FILE="$REVEAL_FILE" python3 - <<'PY'
+          import os, hashlib
+          import numpy as np
+          import soundfile as sf
+
+          for label, path in [
+              ("repository", os.environ["REVEAL_FILE"]),
+              ("public", "/tmp/reveal-public.ogg"),
+          ]:
+              data, rate = sf.read(path, always_2d=True, dtype="float32")
+              peak = float(np.max(np.abs(data))) if data.size else 0.0
+              rms = float(np.sqrt(np.mean(np.square(data)))) if data.size else 0.0
+              duration = len(data) / rate if rate else 0.0
+              print(
+                  f"AUDIO {label}: rate={rate} channels={data.shape[1]} "
+                  f"frames={len(data)} duration={duration:.3f}s peak={peak:.6f} rms={rms:.6f}"
+              )
+          PY
 
       - name: Java 17
         uses: actions/setup-java@v4

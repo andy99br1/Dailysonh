@@ -1,34 +1,45 @@
-# Música do Dia — Android independente
+# Música do Dia — aplicativo Android nativo
 
-Este app **não abre a página do site pela internet**.
+O aplicativo Android é um projeto independente do site.
 
-A interface do Música do Dia e do Termo é empacotada dentro do próprio APK usando os mesmos arquivos de interface do projeto:
+## Tecnologia
 
-- `index.html`
-- `styles.css`
-- `app.js`
-- `logo.svg`
-- `termo/index.html`
-- `termo/termo.css`
-- `termo/termo.js`
+- Kotlin
+- Jetpack Compose
+- AndroidX Media3 / ExoPlayer
+- OkHttp
+- SharedPreferences para progresso e preferências
+- Package ID: `com.musicadodia.app`
 
-Por isso o visual, controles, temas, player, fases e Termo permanecem iguais aos jogos do site.
+**Não existe WebView na interface atual.** As telas do Música do Dia, Termo, seletor de jogos, player, teclado, resultados e temas são componentes Android nativos em Compose.
 
-O Android apenas usa `musicadodia.com` como origem para os **dados compartilhados** que não ficam presos no APK:
+## Relação com o site
 
-- `catalog.json`
-- `termo/catalog.json`
-- dicionários do Termo
-- áudios de `songs/`
-- capas, links e configurações online
+O visual do app é recriado nativamente para acompanhar a identidade do site, mas os dois códigos de interface são independentes.
 
-Resultado:
+O que é compartilhado são os dados publicados pelo projeto:
 
-- a interface do app é própria e continua dentro do APK;
-- o site continua independente;
-- publicar música/palavra pelo painel alimenta site e app;
-- mudar somente o conteúdo diário não exige novo APK;
-- mudar a interface gera uma nova build do APK automaticamente;
-- o app mantém armazenamento local próprio, separado do navegador.
+- `https://musicadodia.com/catalog.json`
+- `https://musicadodia.com/termo/catalog.json`
+- listas de palavras do Termo
+- áudios em `/songs/`
+- capas e links de plataformas
 
-O renderizador da interface é o WebView do Android, mas ele renderiza **arquivos locais do APK**, não a página remota do site.
+Assim, publicar uma música ou palavra pelo painel continua alimentando site e app sem exigir uma nova versão do APK.
+
+Alterações de interface do app ficam em `android-app/` e não alteram o GitHub Pages.
+
+## Arquitetura de telas
+
+O app tem navegação própria, começando por um seletor entre:
+
+- Música do Dia
+- Termo do Dia
+
+Novas áreas podem ser adicionadas sem depender do site, por exemplo uma futura página de compras/loja, conta, notificações ou recursos exclusivos do aplicativo.
+
+## Data diária
+
+A data usada para liberar os desafios é validada pelo cabeçalho HTTP `Date` do servidor e avançada pelo relógio monotônico do Android, evitando que simplesmente adiantar a data do celular libere jogos futuros.
+
+O workflow `.github/workflows/android-apk.yml` gera o APK nativo de teste.

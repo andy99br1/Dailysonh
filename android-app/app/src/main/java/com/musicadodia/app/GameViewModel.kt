@@ -132,13 +132,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun musicAudioUrl(): String? {
         val music = state.music ?: return null
         val path = music.song.rounds.getOrNull(music.selectedIndex) ?: return null
-        return repository.absoluteUrl(path)
+        return repository.absoluteUrl(path) + "?v=" + music.song.version
     }
 
     fun musicRevealAudioUrl(): String? {
         val music = state.music ?: return null
         val revealPath = music.song.rounds.getOrNull(music.song.revealIndex) ?: return null
-        return repository.absoluteUrl(revealPath)
+        return repository.absoluteUrl(revealPath) + "?v=" + music.song.version
     }
 
     fun setTheme(key: String) {

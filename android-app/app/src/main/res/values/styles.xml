@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.MusicaDoDia" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#202428</item>
+        <item name="android:navigationBarColor">#202428</item>
+        <item name="android:windowBackground">#202428</item>
+    </style>
+</resources>

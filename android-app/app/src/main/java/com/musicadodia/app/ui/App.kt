@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -302,15 +303,10 @@ fun NativeGameTopBar(
                 containerColor = p.surface
             ) {
                 AppThemeChoices.forEach { (key, label) ->
-                    val swatch = paletteFor(key)
                     DropdownMenuItem(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    Modifier
-                                        .size(18.dp)
-                                        .background(swatch.background, CircleShape)
-                                )
+                                ThemeSwatch(key = key, size = 22.dp)
                                 Spacer(Modifier.width(10.dp))
                                 Text(
                                     label,
@@ -416,18 +412,39 @@ fun NativeGameTopBar(
 
 @Composable
 private fun PaletteIcon() {
-    val p = LocalAppPalette.current
     Box(contentAlignment = Alignment.Center) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                Box(Modifier.size(7.dp).background(p.peach, CircleShape))
-                Box(Modifier.size(7.dp).background(p.green, CircleShape))
+                Box(Modifier.size(8.dp).background(Color(0xFFE9AD6E), CircleShape))
+                Box(Modifier.size(8.dp).background(Color(0xFF65A9D7), CircleShape))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                Box(Modifier.size(7.dp).background(p.guessBackground, CircleShape))
-                Box(Modifier.size(7.dp).background(p.red, CircleShape))
+                Box(Modifier.size(8.dp).background(Color(0xFF78AA78), CircleShape))
+                Box(Modifier.size(8.dp).background(Color(0xFFA486D2), CircleShape))
             }
         }
+    }
+}
+
+@Composable
+private fun ThemeSwatch(key: String, size: androidx.compose.ui.unit.Dp) {
+    val modifier = Modifier.size(size)
+    when (key) {
+        "creme" -> Box(modifier.background(Color(0xFFE9AD6E), CircleShape))
+        "azul" -> Box(modifier.background(Color(0xFF65A9D7), CircleShape))
+        "verde" -> Box(modifier.background(Color(0xFF78AA78), CircleShape))
+        "rosa" -> Box(modifier.background(Color(0xFFD88499), CircleShape))
+        "lilas" -> Box(modifier.background(Color(0xFF9A7BC9), CircleShape))
+        "noite" -> Box(modifier.background(Color(0xFF0D244A), CircleShape))
+        "grafite" -> Box(
+            modifier.background(
+                Brush.linearGradient(
+                    colors = listOf(Color(0xFF353B41), Color(0xFF15191D))
+                ),
+                CircleShape
+            )
+        )
+        else -> Box(modifier.background(Color(0xFF353B41), CircleShape))
     }
 }
 

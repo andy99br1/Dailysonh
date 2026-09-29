@@ -1,24 +1,34 @@
-# Música do Dia — Android nativo
+# Música do Dia — Android independente
 
-Aplicativo Android nativo e separado do site, feito em Kotlin + Jetpack Compose.
+Este app **não abre a página do site pela internet**.
 
-O app **não abre o site em um WebView**. Ele busca os mesmos dados publicados pelo projeto:
+A interface do Música do Dia e do Termo é empacotada dentro do próprio APK usando os mesmos arquivos de interface do projeto:
 
-- `https://musicadodia.com/catalog.json`
-- `https://musicadodia.com/termo/catalog.json`
-- áudios em `/songs/AAAA-MM-DD/`
-- listas do Termo em `/termo/`
+- `index.html`
+- `styles.css`
+- `app.js`
+- `logo.svg`
+- `termo/index.html`
+- `termo/termo.css`
+- `termo/termo.js`
 
-Assim, o painel continua publicando uma vez e o conteúdo alimenta tanto o site quanto o app.
+Por isso o visual, controles, temas, player, fases e Termo permanecem iguais aos jogos do site.
 
-A pasta `android-app/` não faz parte do workflow do GitHub Pages e não interfere no site.
+O Android apenas usa `musicadodia.com` como origem para os **dados compartilhados** que não ficam presos no APK:
 
-## Identidade
+- `catalog.json`
+- `termo/catalog.json`
+- dicionários do Termo
+- áudios de `songs/`
+- capas, links e configurações online
 
-- Nome: Música do Dia
-- Package: `com.musicadodia.app`
-- UI: Jetpack Compose
-- Áudio: AndroidX Media3 / ExoPlayer
-- Relógio diário: cabeçalho HTTP `Date` do servidor + relógio monotônico do Android
+Resultado:
 
-O workflow `.github/workflows/android-apk.yml` gera o APK de teste.
+- a interface do app é própria e continua dentro do APK;
+- o site continua independente;
+- publicar música/palavra pelo painel alimenta site e app;
+- mudar somente o conteúdo diário não exige novo APK;
+- mudar a interface gera uma nova build do APK automaticamente;
+- o app mantém armazenamento local próprio, separado do navegador.
+
+O renderizador da interface é o WebView do Android, mas ele renderiza **arquivos locais do APK**, não a página remota do site.

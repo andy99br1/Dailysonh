@@ -1,6 +1,7 @@
 package com.musicadodia.app.ui
 
 import android.content.Intent
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.animateColorAsState
@@ -35,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -78,11 +80,12 @@ fun TermoScreen(viewModel: GameViewModel) {
                 .padding(top = 1.dp, bottom = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(if (compact) 10.dp else 16.dp))
+            Spacer(Modifier.height(if (compact) 18.dp else 30.dp))
 
             TermoBoard(
                 termo = termo,
                 cellSize = cellSize,
+                onSelectCell = viewModel::setTermoCursor,
                 modifier = Modifier.offset { IntOffset(shakeX.value.roundToInt(), 0) }
             )
 
@@ -167,6 +170,7 @@ fun TermoScreen(viewModel: GameViewModel) {
 private fun TermoBoard(
     termo: com.musicadodia.app.TermoUiState,
     cellSize: Dp,
+    onSelectCell: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -176,7 +180,8 @@ private fun TermoBoard(
     ) {
         repeat(6) { row ->
             val saved = termo.guesses.getOrNull(row)
-            val active = if (saved == null && row == termo.guesses.size && !termo.finished) termo.input else ""
+            val isActiveRow = saved == null && row == termo.guesses.size && !termo.finished
+            val active = if (isActiveRow) termo.input.padEnd(5, ' ').take(5) else ""
 
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 repeat(5) { col ->
@@ -186,7 +191,14 @@ private fun TermoBoard(
                         else -> ""
                     }
                     val mark = saved?.marks?.getOrNull(col) ?: LetterMark.EMPTY
-                    TermoCell(letter, mark, cellSize)
+                    TermoCell(
+                        letter = letter,
+                        mark = mark,
+                        size = cellSize,
+                        selected = isActiveRow && col == termo.cursorIndex,
+                        clickable = isActiveRow,
+                        onClick = { onSelectCell(col) }
+                    )
                 }
             }
         }
@@ -197,7 +209,10 @@ private fun TermoBoard(
 private fun TermoCell(
     letter: String,
     mark: LetterMark,
-    size: Dp
+    size: Dp,
+    selected: Boolean,
+    clickable: Boolean,
+    onClick: () -> Unit
 ) {
     val p = LocalAppPalette.current
     val graphite = p.key == "grafite"
@@ -225,6 +240,7 @@ private fun TermoCell(
     }
 
     val border = when {
+        selected -> p.green
         mark != LetterMark.EMPTY -> background
         graphite && letter.isNotBlank() -> Color(0xFF3D454C)
         graphite -> Color(0xFF252B30)
@@ -240,7 +256,8 @@ private fun TermoCell(
                 scaleY = pop.value
             }
             .background(background, RoundedCornerShape(5.dp))
-            .border(2.dp, border, RoundedCornerShape(5.dp)),
+            .border(if (selected) 3.dp else 2.dp, border, RoundedCornerShape(5.dp))
+            .clickable(enabled = clickable, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -259,6 +276,7 @@ private fun TermoKeyboard(
     keyHeight: Dp
 ) {
     val termo = viewModel.state.termo ?: return
+    val view = LocalView.current
     val rows = listOf("QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM")
     val states = keyboardStates(termo.guesses)
 
@@ -272,13 +290,17 @@ private fun TermoKeyboard(
                 horizontalArrangement = Arrangement.spacedBy(3.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val rowHeight = if (rowIndex == 0) keyHeight + 10.dp else keyHeight
                 letters.forEach { letter ->
                     TermoKey(
                         label = letter.toString(),
                         state = states[letter] ?: LetterMark.EMPTY,
-                        height = keyHeight,
+                        height = rowHeight,
                         modifier = Modifier.weight(1f),
-                        onClick = { viewModel.appendTermoLetter(letter) }
+                        onClick = {
+                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            viewModel.appendTermoLetter(letter)
+                        }
                     )
                 }
                 if (rowIndex == 2) {
@@ -287,7 +309,10 @@ private fun TermoKeyboard(
                         state = LetterMark.EMPTY,
                         height = keyHeight,
                         modifier = Modifier.weight(1.45f),
-                        onClick = viewModel::backspaceTermo
+                        onClick = {
+                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            viewModel.backspaceTermo()
+                        }
                     )
                 }
             }

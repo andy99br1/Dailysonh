@@ -174,7 +174,7 @@ jobs:
               render_mix(cumulative, dest / f"round-{index}.ogg")
 
           reveal_index = len(selected_layers) + 1
-          shutil.copy2(reveal, dest / f"round-{reveal_index}.ogg")
+          render_mix([reveal], dest / f"round-{reveal_index}.ogg")
 
           incoming_labels = request.get("selectedLayerLabels")
           if not isinstance(incoming_labels, list):

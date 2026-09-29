@@ -694,6 +694,8 @@ def encode_ogg(source, target):
     run([
         "ffmpeg", "-y", "-v", "error",
         "-i", source,
+        "-map", "0:a:0", "-vn",
+        "-ac", "2", "-ar", str(TARGET_SR),
         "-c:a", "libvorbis", "-q:a", "8",
         target,
     ])

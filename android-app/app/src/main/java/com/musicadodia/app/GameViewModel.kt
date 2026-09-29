@@ -27,11 +27,21 @@ data class MusicUiState(
     val unlockedIndex: Int = 0,
     val selectedIndex: Int = 0,
     val results: List<RoundMark>,
+    val attempts: List<String> = emptyList(),
     val finished: Boolean = false,
     val won: Boolean = false,
     val guess: String = "",
     val message: String = "Ouça a primeira faixa e tente descobrir a música."
 )
+
+data class TermoStats(
+    val played: Int = 0,
+    val wins: Int = 0,
+    val streak: Int = 0,
+    val best: Int = 0
+) {
+    val winRate: Int get() = if (played == 0) 0 else ((wins.toDouble() / played.toDouble()) * 100.0).toInt()
+}
 
 data class TermoUiState(
     val date: String,
@@ -41,7 +51,8 @@ data class TermoUiState(
     val input: String = "",
     val finished: Boolean = false,
     val won: Boolean = false,
-    val message: String = "Digite uma palavra de 5 letras."
+    val message: String = "Digite uma palavra de 5 letras.",
+    val stats: TermoStats = TermoStats()
 )
 
 data class AppUiState(
@@ -51,7 +62,8 @@ data class AppUiState(
     val music: MusicUiState? = null,
     val termo: TermoUiState? = null,
     val volume: Float = 1f,
-    val repeat: Boolean = false
+    val repeat: Boolean = false,
+    val themeKey: String = "grafite"
 )
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
@@ -61,7 +73,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     var state by mutableStateOf(
         AppUiState(
             volume = prefs.getFloat("player_volume", 1f).coerceIn(0f, 1f),
-            repeat = prefs.getBoolean("player_repeat", false)
+            repeat = prefs.getBoolean("player_repeat", false),
+            themeKey = prefs.getString("theme_key", "grafite") ?: "grafite"
         )
     )
         private set
@@ -71,46 +84,34 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var validWords: Set<String> = emptySet()
 
     init {
-        viewModelScope.launch {
-            loadAll()
-        }
+        viewModelScope.launch { loadAll() }
         viewModelScope.launch {
             while (true) {
                 delay(1000)
                 val current = repository.officialDate()?.toString()
-                if (!current.isNullOrBlank() && state.officialDate.isNotBlank() && current != state.officialDate) {
-                    loadAll()
-                }
+                if (!current.isNullOrBlank() && state.officialDate.isNotBlank() && current != state.officialDate) loadAll()
             }
         }
     }
 
-    fun refresh() {
-        viewModelScope.launch { loadAll() }
-    }
+    fun refresh() { viewModelScope.launch { loadAll() } }
 
     private suspend fun loadAll() {
         val oldVolume = state.volume
         val oldRepeat = state.repeat
+        val oldTheme = state.themeKey
         state = state.copy(loading = true, error = "")
-
         try {
             val songs = repository.fetchMusicCatalog().sortedBy { it.date }
             termoCatalog = repository.fetchTermoCatalog().sortedBy { it.date }
             automaticWords = repository.fetchTermoAutomaticWords()
             validWords = repository.fetchTermoValidationWords()
-
-            val date = repository.officialDate()
-                ?: throw IllegalStateException("Não foi possível validar a data oficial")
+            val date = repository.officialDate() ?: throw IllegalStateException("Não foi possível validar a data oficial")
             val today = date.toString()
-
             val eligibleSongs = songs.filter { it.date <= today }
-            val activeSong = eligibleSongs.lastOrNull()
-                ?: throw IllegalStateException("Ainda não há música liberada para hoje")
+            val activeSong = eligibleSongs.lastOrNull() ?: throw IllegalStateException("Ainda não há música liberada para hoje")
             val musicNumber = songs.indexOfFirst { it.date == activeSong.date }.let { if (it >= 0) it + 1 else 1 }
-
-            val target = termoForDate(today)
-                ?: throw IllegalStateException("Não foi possível escolher a palavra de hoje")
+            val target = termoForDate(today) ?: throw IllegalStateException("Não foi possível escolher a palavra de hoje")
             val termoNumber = termoChallengeNumber(today, target)
 
             state = AppUiState(
@@ -119,13 +120,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 music = restoreMusic(activeSong, musicNumber),
                 termo = restoreTermo(today, target, termoNumber),
                 volume = oldVolume,
-                repeat = oldRepeat
+                repeat = oldRepeat,
+                themeKey = oldTheme
             )
         } catch (e: Exception) {
-            state = state.copy(
-                loading = false,
-                error = e.message ?: "Não foi possível carregar os desafios."
-            )
+            state = state.copy(loading = false, error = e.message ?: "Não foi possível carregar os desafios.")
         }
     }
 
@@ -135,10 +134,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         return repository.absoluteUrl(path)
     }
 
+    fun setTheme(key: String) {
+        val allowed = setOf("creme", "azul", "verde", "rosa", "lilas", "noite", "grafite")
+        val value = if (key in allowed) key else "grafite"
+        prefs.edit().putString("theme_key", value).apply()
+        state = state.copy(themeKey = value)
+    }
+
     fun setMusicGuess(value: String) {
         val music = state.music ?: return
-        if (music.finished) return
-        state = state.copy(music = music.copy(guess = value.take(80)))
+        if (!music.finished) state = state.copy(music = music.copy(guess = value.take(80)))
     }
 
     fun submitMusicGuess() {
@@ -149,7 +154,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             state = state.copy(music = music.copy(message = "Digite o nome da música."))
             return
         }
-
         val currentRound = music.unlockedIndex.coerceIn(0, music.song.challengeRounds - 1)
         val results = music.results.toMutableList()
 
@@ -170,30 +174,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         results[currentRound] = RoundMark.WRONG
-        if (currentRound + 1 >= music.song.challengeRounds) {
-            val updated = music.copy(
-                unlockedIndex = music.song.revealIndex,
-                selectedIndex = music.song.revealIndex,
-                results = results,
-                finished = true,
-                won = false,
-                guess = "",
-                message = "Não foi dessa vez."
-            )
-            state = state.copy(music = updated)
-            saveMusic(updated)
+        val newAttempts = music.attempts + guess
+        val updated = if (currentRound + 1 >= music.song.challengeRounds) {
+            music.copy(unlockedIndex = music.song.revealIndex, selectedIndex = music.song.revealIndex, results = results, attempts = newAttempts, finished = true, won = false, guess = "", message = "Não foi dessa vez.")
         } else {
             val next = currentRound + 1
-            val updated = music.copy(
-                unlockedIndex = next,
-                selectedIndex = next,
-                results = results,
-                guess = "",
-                message = "Não foi dessa vez. Uma nova camada foi liberada."
-            )
-            state = state.copy(music = updated)
-            saveMusic(updated)
+            music.copy(unlockedIndex = next, selectedIndex = next, results = results, attempts = newAttempts, guess = "", message = "Não foi dessa vez. Uma nova camada foi liberada.")
         }
+        state = state.copy(music = updated)
+        saveMusic(updated)
     }
 
     fun skipMusicRound() {
@@ -202,26 +191,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val currentRound = music.unlockedIndex.coerceIn(0, music.song.challengeRounds - 1)
         val results = music.results.toMutableList()
         results[currentRound] = RoundMark.WRONG
-
+        val newAttempts = music.attempts + "Pulou"
         val updated = if (currentRound + 1 >= music.song.challengeRounds) {
-            music.copy(
-                unlockedIndex = music.song.revealIndex,
-                selectedIndex = music.song.revealIndex,
-                results = results,
-                finished = true,
-                won = false,
-                guess = "",
-                message = "Fim das tentativas."
-            )
+            music.copy(unlockedIndex = music.song.revealIndex, selectedIndex = music.song.revealIndex, results = results, attempts = newAttempts, finished = true, won = false, guess = "", message = "Fim das tentativas.")
         } else {
             val next = currentRound + 1
-            music.copy(
-                unlockedIndex = next,
-                selectedIndex = next,
-                results = results,
-                guess = "",
-                message = "Rodada pulada."
-            )
+            music.copy(unlockedIndex = next, selectedIndex = next, results = results, attempts = newAttempts, guess = "", message = "Rodada pulada.")
         }
         state = state.copy(music = updated)
         saveMusic(updated)
@@ -249,32 +224,36 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setTermoInput(value: String) {
         val termo = state.termo ?: return
-        if (termo.finished) return
-        val clean = normalizeWord(value).take(5)
-        state = state.copy(termo = termo.copy(input = clean))
+        if (!termo.finished) state = state.copy(termo = termo.copy(input = normalizeWord(value).take(5)))
+    }
+
+    fun appendTermoLetter(letter: Char) {
+        val termo = state.termo ?: return
+        if (!termo.finished && termo.input.length < 5) setTermoInput(termo.input + letter)
+    }
+
+    fun backspaceTermo() {
+        val termo = state.termo ?: return
+        if (!termo.finished && termo.input.isNotEmpty()) setTermoInput(termo.input.dropLast(1))
     }
 
     fun submitTermo() {
         val termo = state.termo ?: return
         if (termo.finished) return
         val guess = normalizeWord(termo.input)
-
         if (guess.length != 5) {
             state = state.copy(termo = termo.copy(message = "Preencha as 5 letras."))
             return
         }
-
         if (guess != termo.targetWord && guess !in validWords) {
             state = state.copy(termo = termo.copy(message = "Essa palavra não existe em português."))
             return
         }
-
         val marks = evaluateTermo(guess, termo.targetWord)
         val guesses = termo.guesses + TermoGuess(guess, marks)
         val won = guess == termo.targetWord
         val finished = won || guesses.size >= 6
-
-        val updated = termo.copy(
+        var updated = termo.copy(
             guesses = guesses,
             input = "",
             finished = finished,
@@ -285,6 +264,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 else -> "Tente outra palavra."
             }
         )
+        if (finished) updated = updated.copy(stats = updateTermoStatsIfNeeded(updated))
         state = state.copy(termo = updated)
         saveTermo(updated)
     }
@@ -292,27 +272,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun termoForDate(date: String): String? {
         val manual = termoCatalog.firstOrNull { it.date == date }
         if (manual != null) return normalizeWord(manual.word)
-
         val used = termoCatalog.map { normalizeWord(it.word) }.filter { it.length == 5 }.toSet()
         var pool = automaticWords.filterNot { it in used }
         if (pool.isEmpty()) pool = automaticWords
         if (pool.isEmpty()) return null
-
         pool = pool.sortedWith { a, b ->
             val ah = fnv1a32("mdd-termo|$a")
             val bh = fnv1a32("mdd-termo|$b")
             if (ah == bh) a.compareTo(b) else java.lang.Long.compareUnsigned(ah, bh)
         }
-
         val serial = LocalDate.parse(date).toEpochDay()
-        val index = Math.floorMod(serial, pool.size.toLong()).toInt()
-        return pool[index]
+        return pool[Math.floorMod(serial, pool.size.toLong()).toInt()]
     }
 
     private fun termoChallengeNumber(date: String, target: String): Int {
         val manualIndex = termoCatalog.indexOfFirst { it.date == date && normalizeWord(it.word) == target }
         if (manualIndex >= 0) return manualIndex + 1
-
         val previous = termoCatalog.filter { it.date < date }.sortedBy { it.date }
         if (previous.isEmpty()) return 1
         val last = previous.last()
@@ -333,15 +308,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun evaluateTermo(guess: String, answer: String): List<LetterMark> {
         val result = MutableList(5) { LetterMark.ABSENT }
         val remaining = mutableMapOf<Char, Int>()
-
         for (i in 0 until 5) {
-            if (guess[i] == answer[i]) {
-                result[i] = LetterMark.CORRECT
-            } else {
-                remaining[answer[i]] = (remaining[answer[i]] ?: 0) + 1
-            }
+            if (guess[i] == answer[i]) result[i] = LetterMark.CORRECT
+            else remaining[answer[i]] = (remaining[answer[i]] ?: 0) + 1
         }
-
         for (i in 0 until 5) {
             if (result[i] == LetterMark.CORRECT) continue
             val count = remaining[guess[i]] ?: 0
@@ -356,36 +326,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun musicKey(song: Song) = "music:${song.date}:v${song.version}"
 
     private fun restoreMusic(song: Song, challengeNumber: Int): MusicUiState {
-        val blank = MusicUiState(
-            song = song,
-            challengeNumber = challengeNumber,
-            results = List(song.challengeRounds) { RoundMark.NONE }
-        )
+        val blank = MusicUiState(song = song, challengeNumber = challengeNumber, results = List(song.challengeRounds) { RoundMark.NONE })
         val raw = prefs.getString(musicKey(song), null) ?: return blank
-
         return try {
             val obj = JSONObject(raw)
             val resultsArray = obj.optJSONArray("results") ?: JSONArray()
             val results = MutableList(song.challengeRounds) { RoundMark.NONE }
-            for (i in 0 until minOf(results.size, resultsArray.length())) {
-                results[i] = runCatching { RoundMark.valueOf(resultsArray.optString(i)) }
-                    .getOrDefault(RoundMark.NONE)
-            }
+            for (i in 0 until minOf(results.size, resultsArray.length())) results[i] = runCatching { RoundMark.valueOf(resultsArray.optString(i)) }.getOrDefault(RoundMark.NONE)
+            val attemptsArray = obj.optJSONArray("attempts") ?: JSONArray()
+            val attempts = buildList { for (i in 0 until attemptsArray.length()) add(attemptsArray.optString(i)) }
             val finished = obj.optBoolean("finished", false)
             val unlocked = obj.optInt("unlockedIndex", 0).coerceIn(0, song.revealIndex)
-            val selected = obj.optInt("selectedIndex", unlocked)
-                .coerceIn(0, if (finished) song.revealIndex else unlocked)
-            blank.copy(
-                unlockedIndex = unlocked,
-                selectedIndex = selected,
-                results = results,
-                finished = finished,
-                won = obj.optBoolean("won", false),
-                message = if (finished) "Desafio concluído." else blank.message
-            )
-        } catch (_: Exception) {
-            blank
-        }
+            val selected = obj.optInt("selectedIndex", unlocked).coerceIn(0, if (finished) song.revealIndex else unlocked)
+            blank.copy(unlockedIndex = unlocked, selectedIndex = selected, results = results, attempts = attempts, finished = finished, won = obj.optBoolean("won", false), message = if (finished) "Desafio concluído." else blank.message)
+        } catch (_: Exception) { blank }
     }
 
     private fun saveMusic(music: MusicUiState) {
@@ -395,19 +349,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             .put("finished", music.finished)
             .put("won", music.won)
             .put("results", JSONArray(music.results.map { it.name }))
+            .put("attempts", JSONArray(music.attempts))
         prefs.edit().putString(musicKey(music.song), obj.toString()).apply()
     }
 
     private fun termoKey(date: String) = "termo:$date"
 
     private fun restoreTermo(date: String, target: String, challengeNumber: Int): TermoUiState {
-        val blank = TermoUiState(
-            date = date,
-            targetWord = target,
-            challengeNumber = challengeNumber
-        )
+        val blank = TermoUiState(date = date, targetWord = target, challengeNumber = challengeNumber, stats = readTermoStats())
         val raw = prefs.getString(termoKey(date), null) ?: return blank
-
         return try {
             val obj = JSONObject(raw)
             val arr = obj.optJSONArray("guesses") ?: JSONArray()
@@ -419,22 +369,49 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             val won = guesses.any { it.word == target }
             val finished = won || guesses.size >= 6 || obj.optBoolean("finished", false)
-            blank.copy(
-                guesses = guesses.take(6),
-                finished = finished,
-                won = won,
-                message = if (finished) "Desafio concluído." else blank.message
-            )
-        } catch (_: Exception) {
-            blank
-        }
+            blank.copy(guesses = guesses.take(6), finished = finished, won = won, message = if (finished) "Desafio concluído." else blank.message, stats = readTermoStats())
+        } catch (_: Exception) { blank }
     }
 
     private fun saveTermo(termo: TermoUiState) {
+        val previous = prefs.getString(termoKey(termo.date), null)
+        val counted = try { previous?.let { JSONObject(it).optBoolean("counted", false) } ?: false } catch (_: Exception) { false }
         val obj = JSONObject()
             .put("finished", termo.finished)
             .put("won", termo.won)
             .put("guesses", JSONArray(termo.guesses.map { it.word }))
+            .put("counted", counted || termo.finished)
         prefs.edit().putString(termoKey(termo.date), obj.toString()).apply()
+    }
+
+    private fun updateTermoStatsIfNeeded(termo: TermoUiState): TermoStats {
+        val previous = prefs.getString(termoKey(termo.date), null)
+        val alreadyCounted = try { previous?.let { JSONObject(it).optBoolean("counted", false) } ?: false } catch (_: Exception) { false }
+        if (alreadyCounted) return readTermoStats()
+        val current = readTermoStats()
+        val best = if (termo.won) {
+            if (current.best == 0) termo.guesses.size else minOf(current.best, termo.guesses.size)
+        } else current.best
+        val updated = current.copy(
+            played = current.played + 1,
+            wins = current.wins + if (termo.won) 1 else 0,
+            streak = if (termo.won) current.streak + 1 else 0,
+            best = best
+        )
+        writeTermoStats(updated)
+        return updated
+    }
+
+    private fun readTermoStats(): TermoStats {
+        val raw = prefs.getString("termo_stats", null) ?: return TermoStats()
+        return try {
+            val obj = JSONObject(raw)
+            TermoStats(obj.optInt("played", 0), obj.optInt("wins", 0), obj.optInt("streak", 0), obj.optInt("best", 0))
+        } catch (_: Exception) { TermoStats() }
+    }
+
+    private fun writeTermoStats(stats: TermoStats) {
+        val obj = JSONObject().put("played", stats.played).put("wins", stats.wins).put("streak", stats.streak).put("best", stats.best)
+        prefs.edit().putString("termo_stats", obj.toString()).apply()
     }
 }

@@ -2,6 +2,18 @@ package com.musicadodia.app.ui
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateColorAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,8 +53,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -50,6 +65,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -369,7 +385,12 @@ fun MusicScreen(viewModel: GameViewModel) {
                 Spacer(Modifier.height(if (music.finished) 220.dp else 6.dp))
             }
 
-            if (guessOpen && !music.finished) {
+            AnimatedVisibility(
+                visible = guessOpen && !music.finished,
+                modifier = Modifier.align(Alignment.BottomCenter),
+                enter = slideInVertically(initialOffsetY = { it / 2 }, animationSpec = tween(180)) + fadeIn(tween(160)),
+                exit = slideOutVertically(targetOffsetY = { it / 3 }, animationSpec = tween(140)) + fadeOut(tween(120))
+            ) {
                 GuessSheet(
                     guess = music.guess,
                     onGuess = viewModel::setMusicGuess,
@@ -377,15 +398,18 @@ fun MusicScreen(viewModel: GameViewModel) {
                     onSubmit = {
                         viewModel.submitMusicGuess()
                         guessOpen = false
-                    },
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    }
                 )
             }
 
-            if (music.finished) {
+            AnimatedVisibility(
+                visible = music.finished,
+                modifier = Modifier.align(Alignment.BottomCenter),
+                enter = slideInVertically(initialOffsetY = { it / 2 }, animationSpec = tween(220)) + fadeIn(tween(180)),
+                exit = fadeOut(tween(120))
+            ) {
                 RevealSheet(
                     viewModel = viewModel,
-                    modifier = Modifier.align(Alignment.BottomCenter),
                     openUrl = { url ->
                         if (url.isNotBlank()) {
                             runCatching {
@@ -458,14 +482,29 @@ private fun MusicRoundPill(
     onClick: () -> Unit
 ) {
     val p = LocalAppPalette.current
+    val targetScale by animateFloatAsState(
+        targetValue = if (selected) 1.008f else 1f,
+        animationSpec = tween(150),
+        label = "round-scale"
+    )
+    val roundColor by animateColorAsState(
+        targetValue = if (selected) p.pillActive else p.pill,
+        animationSpec = tween(150),
+        label = "round-color"
+    )
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .height(height)
+            .graphicsLayer {
+                scaleX = targetScale
+                scaleY = targetScale
+                translationY = if (selected) -1.dp.toPx() else 0f
+            }
             .alpha(if (unlocked) 1f else 0.68f)
             .clip(RoundedCornerShape(999.dp))
             .clickable(enabled = unlocked, onClick = onClick),
-        color = if (selected) p.pillActive else p.pill,
+        color = roundColor,
         shape = RoundedCornerShape(999.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, p.line)
     ) {
@@ -510,17 +549,29 @@ private fun MusicRoundPill(
 @Composable
 private fun VisualizerBars(playing: Boolean) {
     val p = LocalAppPalette.current
+    val transition = rememberInfiniteTransition(label = "audio-visualizer")
+    val bases = listOf(3f, 7f, 5f, 9f, 4f)
+
     Row(
-        modifier = Modifier.height(8.dp),
+        modifier = Modifier.height(10.dp),
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        listOf(3, 7, 5, 8, 4).forEachIndexed { index, h ->
-            val scale = if (playing) 1f else 0.55f
+        bases.forEachIndexed { index, base ->
+            val animated by transition.animateFloat(
+                initialValue = 0.45f,
+                targetValue = 1.15f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 300 + index * 35, delayMillis = index * 55),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "bar-$index"
+            )
+            val factor = if (playing) animated else 0.45f
             Box(
                 Modifier
                     .width(3.dp)
-                    .height((h * scale).dp)
+                    .height((base * factor).dp.coerceAtLeast(2.dp))
                     .background(p.green, RoundedCornerShape(3.dp))
             )
         }
@@ -744,6 +795,15 @@ private fun GuessSheet(
     modifier: Modifier = Modifier
 ) {
     val p = LocalAppPalette.current
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        delay(100)
+        focusRequester.requestFocus()
+        keyboard?.show()
+    }
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -785,12 +845,14 @@ private fun GuessSheet(
                     onValueChange = onGuess,
                     modifier = Modifier
                         .weight(1f)
-                        .height(50.dp),
+                        .height(50.dp)
+                        .focusRequester(focusRequester)
+                        .border(2.dp, p.green, RoundedCornerShape(11.dp)),
                     placeholder = { Text("Digite o nome da música", fontSize = 11.sp, color = p.muted) },
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = p.surface,
-                        unfocusedContainerColor = p.surface,
+                        focusedContainerColor = p.surface2,
+                        unfocusedContainerColor = p.surface2,
                         focusedTextColor = p.text,
                         unfocusedTextColor = p.text,
                         focusedIndicatorColor = Color.Transparent,

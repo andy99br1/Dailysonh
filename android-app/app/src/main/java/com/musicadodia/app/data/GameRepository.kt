@@ -107,7 +107,11 @@ class GameRepository {
                         releaseYear = obj.optString("releaseYear"),
                         youtubeViews = obj.optString("youtubeViews"),
                         difficulty = obj.optString("difficulty"),
-                        coverUrl = obj.optString("coverUrl")
+                        coverUrl = obj.optString("coverUrl"),
+                        youtubeUrl = obj.optString("youtubeUrl"),
+                        spotifyUrl = obj.optString("spotifyUrl"),
+                        appleMusicUrl = obj.optString("appleMusicUrl"),
+                        deezerUrl = obj.optString("deezerUrl")
                     )
                 )
             }

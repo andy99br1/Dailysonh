@@ -181,10 +181,8 @@ fun MusicScreen(viewModel: GameViewModel) {
 
                 Spacer(Modifier.height(if (compact) 3.dp else 6.dp))
 
-                if (!compact) {
-                    VisualizerBars(isPlaying)
-                    Spacer(Modifier.height(1.dp))
-                }
+                VisualizerBars(isPlaying)
+                Spacer(Modifier.height(1.dp))
 
                 Box(
                     modifier = Modifier

@@ -128,7 +128,9 @@ fun MusicScreen(viewModel: GameViewModel) {
             positionMs = 0L
 
             if (shouldAutoPlayReveal) {
+                player.seekTo(0L)
                 player.playWhenReady = true
+                player.play()
             }
         }
     }

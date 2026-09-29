@@ -14,8 +14,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            MusicaDoDiaTheme {
-                val gameViewModel: GameViewModel = viewModel()
+            val gameViewModel: GameViewModel = viewModel()
+            MusicaDoDiaTheme(themeKey = gameViewModel.state.themeKey) {
                 MusicaDoDiaApp(gameViewModel)
             }
         }

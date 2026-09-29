@@ -135,6 +135,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         return repository.absoluteUrl(path)
     }
 
+    fun musicRevealAudioUrl(): String? {
+        val music = state.music ?: return null
+        val revealPath = music.song.rounds.getOrNull(music.song.revealIndex) ?: return null
+        return repository.absoluteUrl(revealPath)
+    }
+
     fun setTheme(key: String) {
         val allowed = setOf("creme", "azul", "verde", "rosa", "lilas", "noite", "grafite")
         val value = if (key in allowed) key else "grafite"

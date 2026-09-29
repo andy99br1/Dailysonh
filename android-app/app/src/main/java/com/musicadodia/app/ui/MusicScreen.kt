@@ -90,6 +90,7 @@ fun MusicScreen(viewModel: GameViewModel) {
     val p = LocalAppPalette.current
     val context = LocalContext.current
     val audioUrl = viewModel.musicAudioUrl()
+    val revealAudioUrl = viewModel.musicRevealAudioUrl()
 
     val player = remember(song.date) { ExoPlayer.Builder(context).build() }
     var isPlaying by remember(player) { mutableStateOf(false) }
@@ -97,8 +98,6 @@ fun MusicScreen(viewModel: GameViewModel) {
     var durationMs by remember(player) { mutableLongStateOf(18_000L) }
     var guessOpen by remember { mutableStateOf(false) }
     var volumeOpen by remember { mutableStateOf(false) }
-    var previousFinished by remember(song.date) { mutableStateOf(music.finished) }
-    var pendingRevealAutoplay by remember(song.date) { mutableStateOf(false) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -108,13 +107,6 @@ fun MusicScreen(viewModel: GameViewModel) {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 val duration = player.duration
                 if (duration != C.TIME_UNSET && duration > 0) durationMs = duration
-
-                if (playbackState == Player.STATE_READY && pendingRevealAutoplay) {
-                    pendingRevealAutoplay = false
-                    player.seekTo(0L)
-                    player.playWhenReady = true
-                    player.play()
-                }
             }
         }
         player.addListener(listener)
@@ -125,16 +117,25 @@ fun MusicScreen(viewModel: GameViewModel) {
     }
 
     LaunchedEffect(audioUrl, music.finished) {
-        val shouldAutoPlayReveal = music.finished && !previousFinished
-        previousFinished = music.finished
-
-        if (!audioUrl.isNullOrBlank()) {
-            pendingRevealAutoplay = shouldAutoPlayReveal
-
+        if (!music.finished && !audioUrl.isNullOrBlank()) {
+            player.playWhenReady = false
             player.stop()
             player.clearMediaItems()
             player.setMediaItem(MediaItem.fromUri(audioUrl))
             player.prepare()
+            positionMs = 0L
+        }
+    }
+
+    LaunchedEffect(music.finished, revealAudioUrl, song.date) {
+        if (music.finished && !revealAudioUrl.isNullOrBlank()) {
+            player.stop()
+            player.clearMediaItems()
+            player.setMediaItem(MediaItem.fromUri(revealAudioUrl))
+            player.playWhenReady = true
+            player.prepare()
+            player.seekTo(0L)
+            player.play()
             positionMs = 0L
         }
     }

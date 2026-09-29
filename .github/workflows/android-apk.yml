@@ -42,12 +42,29 @@ jobs:
           )
           echo "Reveal file: $REVEAL_FILE"
           if command -v ffprobe >/dev/null 2>&1; then
+            echo "--- Repository file ---"
             ffprobe -v error \
               -show_entries stream=codec_name,codec_type,sample_rate,channels \
               -show_entries format=duration,size,bit_rate \
               -of default=noprint_wrappers=1 "$REVEAL_FILE"
             ffmpeg -hide_banner -nostats -i "$REVEAL_FILE" -af volumedetect -f null - 2>&1 \
               | grep -E "mean_volume|max_volume" || true
+
+            PUBLIC_URL="https://musicadodia.com/$REVEAL_FILE"
+            echo "--- Public URL: $PUBLIC_URL ---"
+            if curl -L --fail --silent --show-error -D /tmp/reveal-headers.txt \
+              "$PUBLIC_URL?native-diagnostic=1" -o /tmp/reveal-public.ogg; then
+              cat /tmp/reveal-headers.txt
+              ls -lh /tmp/reveal-public.ogg
+              ffprobe -v error \
+                -show_entries stream=codec_name,codec_type,sample_rate,channels \
+                -show_entries format=duration,size,bit_rate \
+                -of default=noprint_wrappers=1 /tmp/reveal-public.ogg
+              ffmpeg -hide_banner -nostats -i /tmp/reveal-public.ogg -af volumedetect -f null - 2>&1 \
+                | grep -E "mean_volume|max_volume" || true
+            else
+              echo "PUBLIC_REVEAL_DOWNLOAD_FAILED"
+            fi
           else
             echo "ffprobe not available on runner"
           fi

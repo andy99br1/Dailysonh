@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -261,11 +263,18 @@ private fun TermoCell(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            letter,
-            color = if (mark == LetterMark.EMPTY) p.text else Color.White,
-            fontSize = (size.value * 0.50f).sp,
-            fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center
+            text = letter,
+            modifier = Modifier.offset(y = (-1).dp),
+            style = TextStyle(
+                color = if (mark == LetterMark.EMPTY) p.text else Color.White,
+                fontSize = (size.value * 0.50f).sp,
+                lineHeight = (size.value * 0.50f).sp,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
+                platformStyle = PlatformTextStyle(
+                    includeFontPadding = false
+                )
+            )
         )
     }
 }

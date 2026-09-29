@@ -727,7 +727,9 @@ def main():
                 "ffmpeg", "-y", "-v", "error",
                 "-ss", f"{clip_start:.3f}", "-i", reveal_audio,
                 "-t", f"{CLIP_SECONDS:.3f}",
+                "-map", "0:a:0", "-vn",
                 "-af", "alimiter=limit=0.96",
+                "-ac", "2", "-ar", "44100",
                 "-c:a", "libvorbis", "-q:a", "5", out,
             ])
         else:

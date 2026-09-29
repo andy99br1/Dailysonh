@@ -1,4 +1,4 @@
-name: Build Independent Android APK
+name: Build Native Android APK
 
 on:
   workflow_dispatch:
@@ -6,21 +6,13 @@ on:
     branches: [main]
     paths:
       - "android-app/**"
-      - "index.html"
-      - "styles.css"
-      - "app.js"
-      - "logo.svg"
-      - "site.webmanifest"
-      - "termo/index.html"
-      - "termo/termo.css"
-      - "termo/termo.js"
       - ".github/workflows/android-apk.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: android-independent-apk
+  group: android-native-apk
   cancel-in-progress: true
 
 jobs:
@@ -49,19 +41,19 @@ jobs:
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Build APK with bundled game interface
+      - name: Build native debug APK
         working-directory: android-app
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Prepare APK
         run: |
-          cp android-app/app/build/outputs/apk/debug/app-debug.apk musica-do-dia.apk
-          ls -lh musica-do-dia.apk
+          cp android-app/app/build/outputs/apk/debug/app-debug.apk musica-do-dia-native.apk
+          ls -lh musica-do-dia-native.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: musica-do-dia-app
-          path: musica-do-dia.apk
+          name: musica-do-dia-native-apk
+          path: musica-do-dia-native.apk
           if-no-files-found: error
           retention-days: 30

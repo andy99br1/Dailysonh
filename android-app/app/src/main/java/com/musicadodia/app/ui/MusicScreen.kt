@@ -97,6 +97,7 @@ fun MusicScreen(viewModel: GameViewModel) {
     var durationMs by remember(player) { mutableLongStateOf(18_000L) }
     var guessOpen by remember { mutableStateOf(false) }
     var volumeOpen by remember { mutableStateOf(false) }
+    var previousFinished by remember(song.date) { mutableStateOf(music.finished) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -115,13 +116,20 @@ fun MusicScreen(viewModel: GameViewModel) {
         }
     }
 
-    LaunchedEffect(audioUrl) {
+    LaunchedEffect(audioUrl, music.finished) {
+        val shouldAutoPlayReveal = music.finished && !previousFinished
+        previousFinished = music.finished
+
         if (!audioUrl.isNullOrBlank()) {
             player.stop()
             player.clearMediaItems()
             player.setMediaItem(MediaItem.fromUri(audioUrl))
             player.prepare()
             positionMs = 0L
+
+            if (shouldAutoPlayReveal) {
+                player.playWhenReady = true
+            }
         }
     }
 

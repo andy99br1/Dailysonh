@@ -1,6 +1,12 @@
 package com.musicadodia.app.ui
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,30 +27,49 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.musicadodia.app.GameViewModel
 import com.musicadodia.app.data.LetterMark
+import kotlin.math.roundToInt
 
 @Composable
 fun TermoScreen(viewModel: GameViewModel) {
     val termo = viewModel.state.termo ?: return
     val p = LocalAppPalette.current
     val context = LocalContext.current
+    val shakeX = remember { Animatable(0f) }
+
+    LaunchedEffect(termo.message, termo.input, termo.guesses.size) {
+        val shouldShake =
+            termo.message.contains("Preencha", ignoreCase = true) ||
+            termo.message.contains("não existe", ignoreCase = true)
+        if (shouldShake) {
+            shakeX.snapTo(0f)
+            shakeX.animateTo(-5f, tween(55))
+            shakeX.animateTo(5f, tween(70))
+            shakeX.animateTo(-3f, tween(65))
+            shakeX.animateTo(0f, tween(60))
+        }
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val availableForCells = (maxHeight - 286.dp) / 6f
+        val availableForCells = (maxHeight - 330.dp) / 6f
         val availableByWidth = (maxWidth - 34.dp) / 5f
         val cellSize = minOf(60.dp, availableForCells, availableByWidth).coerceAtLeast(38.dp)
         val compact = maxHeight < 600.dp
-        val keyHeight = if (compact) 44.dp else 50.dp
+        val keyHeight = if (compact) 54.dp else 60.dp
 
         Column(
             modifier = Modifier
@@ -51,9 +77,12 @@ fun TermoScreen(viewModel: GameViewModel) {
                 .padding(top = 1.dp, bottom = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(Modifier.height(if (compact) 10.dp else 16.dp))
+
             TermoBoard(
                 termo = termo,
-                cellSize = cellSize
+                cellSize = cellSize,
+                modifier = Modifier.offset { IntOffset(shakeX.value.roundToInt(), 0) }
             )
 
             Text(
@@ -81,7 +110,7 @@ fun TermoScreen(viewModel: GameViewModel) {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if (compact) 46.dp else 52.dp)
+                        .height(if (compact) 50.dp else 54.dp)
                         .clickable(onClick = viewModel::submitTermo),
                     color = if (p.key == "grafite") Color(0xFF171B1F) else p.surface2,
                     shape = RoundedCornerShape(6.dp),
@@ -102,9 +131,13 @@ fun TermoScreen(viewModel: GameViewModel) {
                 }
             } else {
                 Spacer(Modifier.height(7.dp))
-                TermoResultPanel(
-                    viewModel = viewModel,
-                    onShare = {
+                AnimatedVisibility(
+                    visible = termo.finished,
+                    enter = slideInVertically(initialOffsetY = { it / 3 }, animationSpec = tween(220)) + fadeIn(tween(180))
+                ) {
+                    TermoResultPanel(
+                        viewModel = viewModel,
+                        onShare = {
                         val grid = termo.guesses.joinToString("\n") { guess ->
                             guess.marks.joinToString("") { mark ->
                                 when (mark) {
@@ -120,9 +153,10 @@ fun TermoScreen(viewModel: GameViewModel) {
                             type = "text/plain"
                             putExtra(Intent.EXTRA_TEXT, text)
                         }
-                        context.startActivity(Intent.createChooser(intent, "Compartilhar resultado"))
-                    }
-                )
+                            context.startActivity(Intent.createChooser(intent, "Compartilhar resultado"))
+                        }
+                    )
+                }
             }
         }
     }
@@ -131,9 +165,11 @@ fun TermoScreen(viewModel: GameViewModel) {
 @Composable
 private fun TermoBoard(
     termo: com.musicadodia.app.TermoUiState,
-    cellSize: Dp
+    cellSize: Dp,
+    modifier: Modifier = Modifier
 ) {
     Column(
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(3.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -164,12 +200,29 @@ private fun TermoCell(
 ) {
     val p = LocalAppPalette.current
     val graphite = p.key == "grafite"
-    val background = when (mark) {
+    val targetBackground = when (mark) {
         LetterMark.CORRECT -> if (graphite) Color(0xFF2F6F2D) else Color(0xFF538D4E)
         LetterMark.PRESENT -> if (graphite) Color(0xFFC39B0B) else Color(0xFFB59F3B)
         LetterMark.ABSENT -> if (graphite) Color(0xFF171B1F) else Color(0xFF657187)
         LetterMark.EMPTY -> if (graphite) Color(0xFF191D21) else p.surface2
     }
+    val background by animateColorAsState(
+        targetValue = targetBackground,
+        animationSpec = tween(180),
+        label = "termo-cell-color"
+    )
+    val pop = remember { Animatable(1f) }
+
+    LaunchedEffect(letter, mark) {
+        if (letter.isNotBlank() && mark == LetterMark.EMPTY) {
+            pop.snapTo(0.88f)
+            pop.animateTo(1.09f, tween(95))
+            pop.animateTo(1.015f, tween(65))
+        } else {
+            pop.animateTo(1f, tween(120))
+        }
+    }
+
     val border = when {
         mark != LetterMark.EMPTY -> background
         graphite && letter.isNotBlank() -> Color(0xFF3D454C)
@@ -181,6 +234,10 @@ private fun TermoCell(
     Box(
         modifier = Modifier
             .size(size)
+            .graphicsLayer {
+                scaleX = pop.value
+                scaleY = pop.value
+            }
             .background(background, RoundedCornerShape(5.dp))
             .border(2.dp, border, RoundedCornerShape(5.dp)),
         contentAlignment = Alignment.Center
@@ -267,7 +324,7 @@ private fun TermoKey(
             Text(
                 label,
                 color = if (state == LetterMark.EMPTY) p.text else Color.White,
-                fontSize = if (label == "⌫") 18.sp else 12.sp,
+                fontSize = if (label == "⌫") 22.sp else 16.sp,
                 fontWeight = FontWeight.Black
             )
         }

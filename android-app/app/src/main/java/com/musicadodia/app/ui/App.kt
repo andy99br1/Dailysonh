@@ -65,6 +65,13 @@ fun MusicaDoDiaApp(viewModel: GameViewModel) {
             .navigationBarsPadding()
     ) {
         when {
+            destination == AppDestination.HOME -> {
+                NativeHomeScreen(
+                    onMusic = { destination = AppDestination.MUSIC },
+                    onTermo = { destination = AppDestination.TERMO }
+                )
+            }
+
             app.loading && app.music == null -> {
                 Column(
                     modifier = Modifier.align(Alignment.Center),
@@ -100,13 +107,6 @@ fun MusicaDoDiaApp(viewModel: GameViewModel) {
                         Text("Tentar novamente")
                     }
                 }
-            }
-
-            destination == AppDestination.HOME -> {
-                NativeHomeScreen(
-                    onMusic = { destination = AppDestination.MUSIC },
-                    onTermo = { destination = AppDestination.TERMO }
-                )
             }
 
             else -> {

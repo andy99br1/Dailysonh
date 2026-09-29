@@ -6,7 +6,7 @@ var E={
   themeToggle:el("themeToggle"),themeMenu:el("themeMenu"),themeColor:el("themeColor"),
   themeOptions:Array.prototype.slice.call(document.querySelectorAll("[data-theme-choice]")),
   dayChip:el("dayChip"),challengeNumber:el("challengeNumber"),termDate:el("termDate"),attemptLabel:el("attemptLabel"),
-  board:el("termBoard"),keyboard:el("termKeyboard"),message:el("termMessage"),submit:el("termSubmitBtn"),reset:el("termResetBtn"),
+  board:el("termBoard"),keyboard:el("termKeyboard"),message:el("termMessage"),submit:el("termSubmitBtn"),
   result:el("termResult"),resultStatus:el("termResultStatus"),answer:el("termAnswer"),
   share:el("termShareBtn"),resetPreview:el("termResetPreviewBtn"),
   statPlayed:el("statPlayed"),statWinRate:el("statWinRate"),statStreak:el("statStreak"),statBest:el("statBest")
@@ -353,18 +353,6 @@ function resetPreview(){
   row=0;current=emptyCurrent();guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};document.body.classList.remove("termo-finished");
   E.result.classList.add("hidden");E.resetPreview.classList.add("hidden");buildBoard();buildKeyboard();updateAttemptLabel();setMessage("Digite uma palavra de 5 letras.");
 }
-function resetGameForTesting(){
-  if(!challenge)return;
-  document.body.classList.remove("termo-finished");
-  if(!adminPreview){
-    try{localStorage.removeItem(stateKey())}catch(_){}
-  }
-  row=0;current=emptyCurrent();guesses=[];evaluations=[];finished=false;won=false;editIndex=null;keyStates={};
-  E.result.classList.add("hidden");
-  if(E.resetPreview)E.resetPreview.classList.add("hidden");
-  buildBoard();buildKeyboard();updateAttemptLabel();
-  setMessage("Jogo resetado para teste.");
-}
 async function init(){
   loadTheme();buildBoard();buildKeyboard();
   try{
@@ -447,6 +435,5 @@ document.addEventListener("keydown",function(ev){
 E.share.addEventListener("click",share);
 if(E.resetPreview)E.resetPreview.addEventListener("click",resetPreview);
 if(E.submit)E.submit.addEventListener("click",submit);
-if(E.reset)E.reset.addEventListener("click",resetGameForTesting);
 init();
 })();

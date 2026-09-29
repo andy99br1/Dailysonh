@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -64,6 +65,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
@@ -77,6 +79,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.musicadodia.app.GameViewModel
 import com.musicadodia.app.data.RoundMark
+import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 
 @Composable
@@ -884,9 +887,18 @@ private fun RevealSheet(
     val music = viewModel.state.music ?: return
     val song = music.song
     val p = LocalAppPalette.current
+
+    val links = listOf(
+        Triple("YouTube", "youtube", song.youtubeUrl.ifBlank { platformSearchUrl("youtube", song.artist, song.title) }),
+        Triple("Spotify", "spotify", song.spotifyUrl.ifBlank { platformSearchUrl("spotify", song.artist, song.title) }),
+        Triple("Apple Music", "apple", song.appleMusicUrl.ifBlank { platformSearchUrl("apple", song.artist, song.title) }),
+        Triple("Deezer", "deezer", song.deezerUrl.ifBlank { platformSearchUrl("deezer", song.artist, song.title) })
+    )
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
+            .heightIn(max = 500.dp)
             .padding(horizontal = 2.dp, vertical = 8.dp),
         color = p.surface,
         shape = RoundedCornerShape(17.dp),
@@ -906,52 +918,168 @@ private fun RevealSheet(
                 fontWeight = FontWeight.Black
             )
             Text("A música era", color = p.muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Text(song.title, color = p.text, fontSize = 22.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
+
+            if (song.coverUrl.isNotBlank()) {
+                Spacer(Modifier.height(9.dp))
+                AsyncImage(
+                    model = song.coverUrl,
+                    contentDescription = "Capa de ${song.title}",
+                    modifier = Modifier
+                        .size(116.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.dp, p.line, RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(Modifier.height(8.dp))
+            } else {
+                Spacer(Modifier.height(4.dp))
+            }
+
+            Text(
+                song.title,
+                color = p.text,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center
+            )
             Text(song.artist, color = p.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
-            val links = listOf(
-                "YouTube" to song.youtubeUrl,
-                "Spotify" to song.spotifyUrl,
-                "Apple Music" to song.appleMusicUrl,
-                "Deezer" to song.deezerUrl
-            ).filter { it.second.isNotBlank() }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "OUÇA NAS PLATAFORMAS",
+                color = p.muted,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black
+            )
+            Spacer(Modifier.height(6.dp))
 
-            if (links.isNotEmpty()) {
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "OUÇA NAS PLATAFORMAS",
-                    color = p.muted,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Spacer(Modifier.height(6.dp))
-                links.chunked(2).forEach { pair ->
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(7.dp)
-                    ) {
-                        pair.forEach { (name, url) ->
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(39.dp)
-                                    .clip(RoundedCornerShape(11.dp))
-                                    .clickable { openUrl(url) },
-                                color = p.surface2,
-                                shape = RoundedCornerShape(11.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, p.line)
+            links.chunked(2).forEach { pair ->
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    pair.forEach { (name, platform, url) ->
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(11.dp))
+                                .clickable { openUrl(url) },
+                            color = p.surface2,
+                            shape = RoundedCornerShape(11.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, p.line)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(name, color = p.text, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                                }
+                                PlatformLogo(platform)
+                                Spacer(Modifier.width(7.dp))
+                                Text(
+                                    name,
+                                    color = p.text,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black,
+                                    maxLines = 1
+                                )
                             }
                         }
-                        if (pair.size == 1) Spacer(Modifier.weight(1f))
                     }
-                    Spacer(Modifier.height(7.dp))
+                }
+                Spacer(Modifier.height(7.dp))
+            }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(43.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .clickable { viewModel.restartMusicGame() },
+                color = p.guessBackground,
+                shape = RoundedCornerShape(11.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        "TENTAR NOVAMENTE",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PlatformLogo(platform: String) {
+    when (platform) {
+        "youtube" -> {
+            Surface(
+                modifier = Modifier.size(24.dp),
+                color = Color(0xFFFF0033),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("▶", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+        "spotify" -> {
+            Surface(
+                modifier = Modifier.size(24.dp),
+                color = Color(0xFF1ED760),
+                shape = CircleShape
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("≋", color = Color(0xFF111111), fontSize = 17.sp, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+        "apple" -> {
+            Surface(
+                modifier = Modifier.size(24.dp),
+                color = Color(0xFFFA466A),
+                shape = RoundedCornerShape(7.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("♪", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+        else -> {
+            Surface(
+                modifier = Modifier.size(24.dp),
+                color = Color(0xFF8B45D6),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(1.dp)
+                ) {
+                    listOf(6, 9, 12, 8).forEach { h ->
+                        Box(
+                            Modifier
+                                .width(2.dp)
+                                .height(h.dp)
+                                .background(Color.White, RoundedCornerShape(1.dp))
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun platformSearchUrl(platform: String, artist: String, title: String): String {
+    val query = Uri.encode(listOf(artist, title).filter { it.isNotBlank() }.joinToString(" "))
+    return when (platform) {
+        "youtube" -> "https://www.youtube.com/results?search_query=$query"
+        "spotify" -> "https://open.spotify.com/search/$query"
+        "apple" -> "https://music.apple.com/br/search?term=$query"
+        else -> "https://www.deezer.com/search/$query"
     }
 }
 

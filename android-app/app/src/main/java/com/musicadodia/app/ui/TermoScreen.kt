@@ -42,7 +42,8 @@ fun TermoScreen(viewModel: GameViewModel) {
         val availableForCells = (maxHeight - 250.dp) / 6f
         val availableByWidth = (maxWidth - 34.dp) / 5f
         val cellSize = minOf(60.dp, availableForCells, availableByWidth).coerceAtLeast(38.dp)
-        val keyHeight = if (maxHeight < 600.dp) 32.dp else 42.dp
+        val compact = maxHeight < 600.dp
+        val keyHeight = if (compact) 32.dp else 42.dp
 
         Column(
             modifier = Modifier
@@ -81,7 +82,7 @@ fun TermoScreen(viewModel: GameViewModel) {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if (maxHeight < 600.dp) 36.dp else 42.dp)
+                        .height(if (compact) 36.dp else 42.dp)
                         .clickable(onClick = viewModel::submitTermo),
                     color = if (p.key == "grafite") Color(0xFF171B1F) else p.surface2,
                     shape = RoundedCornerShape(6.dp),

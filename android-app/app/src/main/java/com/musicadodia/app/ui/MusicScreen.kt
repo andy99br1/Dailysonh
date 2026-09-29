@@ -4,7 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateColorAsState
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -53,7 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.graphicsLayer
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.FocusRequester
@@ -499,7 +499,7 @@ private fun MusicRoundPill(
             .graphicsLayer {
                 scaleX = targetScale
                 scaleY = targetScale
-                translationY = if (selected) -1.dp.toPx() else 0f
+                translationY = if (selected) -1f else 0f
             }
             .alpha(if (unlocked) 1f else 0.68f)
             .clip(RoundedCornerShape(999.dp))

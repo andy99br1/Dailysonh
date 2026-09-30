@@ -1,0 +1,312 @@
+.home-shell{
+  width:min(860px,100%);
+  min-height:100dvh;
+  margin:0 auto;
+  padding:14px 18px 28px;
+  display:flex;
+  flex-direction:column;
+}
+
+.home-topbar{
+  grid-template-columns:42px 1fr 42px;
+  margin-bottom:0;
+}
+
+.home-topbar-spacer{
+  width:42px;
+  height:42px;
+}
+
+.home-brand{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  min-width:0;
+}
+
+.home-brand img{
+  width:40px;
+  height:40px;
+  display:block;
+  flex:0 0 40px;
+}
+
+.home-brand strong{
+  display:block;
+  font-size:20px;
+  line-height:1;
+  letter-spacing:-.03em;
+  white-space:nowrap;
+}
+
+.home-main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:34px 0 54px;
+}
+
+.home-hero{
+  max-width:620px;
+  margin:0 auto 28px;
+  text-align:center;
+}
+
+.home-kicker{
+  display:inline-flex;
+  align-items:center;
+  min-height:25px;
+  padding:0 10px;
+  margin-bottom:10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  color:var(--muted);
+  background:var(--surface-2);
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.home-hero h1{
+  margin:0;
+  color:var(--text);
+  font-size:clamp(29px,6vw,44px);
+  line-height:.98;
+  letter-spacing:-.045em;
+}
+
+.home-hero p{
+  max-width:500px;
+  margin:12px auto 0;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.45;
+  font-weight:700;
+}
+
+.home-games{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+
+.home-game-card{
+  min-width:0;
+  min-height:300px;
+  padding:22px;
+  border:1px solid var(--line);
+  border-radius:22px;
+  background:var(--surface-2);
+  color:var(--text);
+  text-decoration:none;
+  box-shadow:0 8px 28px var(--shadow);
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.home-game-card::before{
+  content:"";
+  position:absolute;
+  width:210px;
+  height:210px;
+  right:-95px;
+  top:-105px;
+  border-radius:50%;
+  background:color-mix(in srgb,var(--green) 12%,transparent);
+  pointer-events:none;
+}
+
+.home-game-card:hover{
+  transform:translateY(-3px);
+  border-color:color-mix(in srgb,var(--green) 55%,var(--line));
+  box-shadow:0 13px 34px var(--shadow);
+}
+
+.home-game-card:focus-visible{
+  outline:3px solid var(--green);
+  outline-offset:3px;
+}
+
+.home-game-head{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  position:relative;
+  z-index:1;
+}
+
+.home-game-icon{
+  width:54px;
+  height:54px;
+  flex:0 0 54px;
+  display:grid;
+  place-items:center;
+  border-radius:15px;
+  border:1px solid var(--line);
+  background:var(--pill);
+  box-shadow:0 3px 10px var(--shadow);
+}
+
+.home-game-icon img{
+  width:46px;
+  height:46px;
+  display:block;
+}
+
+.home-term-icon{
+  background:#538d4e;
+  color:#fff;
+  border-color:#538d4e;
+  font-size:28px;
+  line-height:1;
+  font-weight:1000;
+}
+
+.home-game-title span{
+  display:block;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+
+.home-game-title h2{
+  margin:3px 0 0;
+  font-size:22px;
+  line-height:1;
+  letter-spacing:-.03em;
+}
+
+.home-game-card p{
+  margin:18px 0 20px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+  font-weight:700;
+}
+
+.home-music-preview{
+  margin-top:auto;
+  height:62px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  gap:7px;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--pill);
+}
+
+.home-music-preview i{
+  width:8px;
+  border-radius:999px;
+  background:var(--green);
+  opacity:.95;
+}
+
+.home-music-preview i:nth-child(1){height:20px}
+.home-music-preview i:nth-child(2){height:37px}
+.home-music-preview i:nth-child(3){height:28px}
+.home-music-preview i:nth-child(4){height:45px}
+.home-music-preview i:nth-child(5){height:31px}
+.home-music-preview i:nth-child(6){height:40px}
+.home-music-preview i:nth-child(7){height:23px}
+
+.home-term-preview{
+  margin-top:auto;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:6px;
+}
+
+.home-term-preview i{
+  aspect-ratio:1;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:var(--pill);
+  color:var(--text);
+  font-style:normal;
+  font-size:18px;
+  font-weight:1000;
+}
+
+.home-term-preview i:first-child{
+  color:#fff;
+  background:#538d4e;
+  border-color:#538d4e;
+}
+
+.home-play{
+  width:100%;
+  min-height:44px;
+  margin-top:14px;
+  border-radius:13px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  color:#fff;
+  background:var(--guess-bg);
+  font-size:11px;
+  font-weight:1000;
+  letter-spacing:.025em;
+}
+
+.home-play::after{
+  content:"›";
+  font-size:20px;
+  line-height:1;
+  transform:translateY(-1px);
+}
+
+.home-footer{
+  display:flex;
+  justify-content:center;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:800;
+  text-align:center;
+}
+
+@media(max-width:640px){
+  .home-shell{padding:10px 14px 20px}
+  .home-main{justify-content:flex-start;padding:26px 0 30px}
+  .home-hero{margin-bottom:20px}
+  .home-hero h1{font-size:31px}
+  .home-hero p{font-size:11px;max-width:330px}
+  .home-games{grid-template-columns:1fr;gap:10px}
+  .home-game-card{min-height:228px;padding:17px;border-radius:18px}
+  .home-game-icon{width:46px;height:46px;flex-basis:46px;border-radius:13px}
+  .home-game-icon img{width:40px;height:40px}
+  .home-term-icon{font-size:24px}
+  .home-game-title h2{font-size:19px}
+  .home-game-card p{margin:13px 0 14px;font-size:10.5px}
+  .home-music-preview{height:50px;padding:7px 10px}
+  .home-music-preview i:nth-child(1){height:16px}
+  .home-music-preview i:nth-child(2){height:30px}
+  .home-music-preview i:nth-child(3){height:23px}
+  .home-music-preview i:nth-child(4){height:36px}
+  .home-music-preview i:nth-child(5){height:25px}
+  .home-music-preview i:nth-child(6){height:32px}
+  .home-music-preview i:nth-child(7){height:18px}
+  .home-term-preview{max-width:250px;width:100%;margin-left:auto;margin-right:auto}
+  .home-term-preview i{font-size:16px}
+  .home-play{min-height:40px;margin-top:11px}
+}
+
+@media(max-width:370px){
+  .home-main{padding-top:18px}
+  .home-hero h1{font-size:27px}
+  .home-game-card{padding:14px}
+}

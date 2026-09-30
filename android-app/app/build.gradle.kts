@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "com.musicadodia.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.musicadodia.app"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 9
-        versionName = "1.1.7"
+        targetSdk = 36
+        versionCode = 10
+        versionName = "1.2.0"
     }
 
     buildTypes {

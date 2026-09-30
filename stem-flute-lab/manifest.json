@@ -1,47 +1,28 @@
 {
-  "version": 2,
-  "mode": "manual-stems",
-  "createdAt": "2026-09-28T05:00:39.518293+00:00",
-  "sourceName": "1790571522213-original-Capital-Inicial-Primeiros-Erros-Chove-Audio-Oficial-ft.-Kiko-Zambianchi-320-Kbps-mp3cut.ne.mp3",
-  "sourcePath": "manual-stems-incoming/1790571522213-vocals-VOCALS-1.mp3",
-  "clipStart": 2.0,
+  "version": 1,
+  "createdAt": "2026-09-30T03:43:46.327618+00:00",
+  "sourceName": "1790739183924-Vitor-e-Leo-Borboletas-Audio-Oficial-320-Kbps.mp3",
+  "sourcePath": "stem-flute-incoming/1790739183924-Vitor-e-Leo-Borboletas-Audio-Oficial-320-Kbps.mp3",
+  "clipStart": 65.0,
   "clipSeconds": 18.0,
   "selection": {
-    "duration": 22.009,
-    "candidates": 5,
-    "score": 0.7667,
+    "duration": 201.572,
+    "candidates": 122,
+    "score": 0.7744,
     "mode": "automatic"
   },
-  "separationModel": "Stems enviados manualmente · sem separação automática",
+  "separationModel": "Hybrid: htdemucs_ft (drums/bass) + BS-Roformer-SW (vocals/instruments)",
   "voiceTransform": "neural stabilized flute (TorchCrepe full + pYIN fallback, no MIDI)",
-  "instrumentBody": "stems originais enviados pelo usuário",
+  "instrumentBody": "recombined accompaniment + filtered residual body restoration",
   "webAudioEncoding": "Ogg Vorbis q8",
   "flute": {
-    "voicedPercent": 55.1,
-    "medianHz": 164.74,
-    "noteSegments": 39,
+    "voicedPercent": 69.1,
+    "medianHz": 267.85,
+    "noteSegments": 134,
     "tracker": "TorchCrepe full + pYIN fallback",
-    "crepeVoicedPercent": 0.0,
-    "pyinVoicedPercent": 37.3
+    "crepeVoicedPercent": 63.4,
+    "pyinVoicedPercent": 6.8
   },
-  "manualStemPaths": {
-    "drums": "manual-stems-incoming/1790571522213-drums-DRUMS_-1.mp3",
-    "bass": "manual-stems-incoming/1790571522213-bass-BASS_C-1.mp3",
-    "guitar": "manual-stems-incoming/1790571522213-guitar-GUITAR-1.mp3",
-    "piano": "manual-stems-incoming/1790571522213-piano-PIANO_-1.mp3",
-    "other": "manual-stems-incoming/1790571522213-other-OTHER_-1.mp3",
-    "vocals": "manual-stems-incoming/1790571522213-vocals-VOCALS-1.mp3",
-    "original": "manual-stems-incoming/1790571522213-original-Capital-Inicial-Primeiros-Erros-Chove-Audio-Oficial-ft.-Kiko-Zambianchi-320-Kbps-mp3cut.ne.mp3"
-  },
-  "availableLayers": [
-    "drums",
-    "bass",
-    "instruments",
-    "guitar",
-    "piano",
-    "other",
-    "flute"
-  ],
   "tracks": [
     {
       "id": "preview",
@@ -70,12 +51,12 @@
     },
     {
       "id": "guitar",
-      "label": "Guitarra / violão",
+      "label": "Guitarra / violão (encorpada)",
       "url": "/stem-flute-lab/guitar.ogg"
     },
     {
       "id": "piano",
-      "label": "Piano / teclas",
+      "label": "Piano / teclas (encorpado)",
       "url": "/stem-flute-lab/piano.ogg"
     },
     {
@@ -85,7 +66,7 @@
     },
     {
       "id": "vocals",
-      "label": "Voz enviada",
+      "label": "Voz isolada (comparação)",
       "url": "/stem-flute-lab/vocals.ogg"
     },
     {

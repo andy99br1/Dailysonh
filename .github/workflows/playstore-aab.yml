@@ -1,0 +1,59 @@
+name: Build Google Play AAB
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "android-app/**"
+      - ".github/workflows/playstore-aab.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-playstore-aab
+  cancel-in-progress: true
+
+jobs:
+  build-aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - name: Android SDK 36
+        run: |
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Build release App Bundle
+        working-directory: android-app
+        run: gradle :app:bundleRelease --no-daemon --stacktrace
+
+      - name: Prepare AAB
+        run: |
+          cp android-app/app/build/outputs/bundle/release/app-release.aab musica-do-dia-playstore-unsigned.aab
+          ls -lh musica-do-dia-playstore-unsigned.aab
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: musica-do-dia-playstore-aab-unsigned
+          path: musica-do-dia-playstore-unsigned.aab
+          if-no-files-found: error
+          retention-days: 30

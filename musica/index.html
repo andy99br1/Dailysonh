@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <base href="/">
+  <meta name="theme-color" content="#202428" id="themeColor">
+  <meta name="description" content="Música do Dia é um jogo musical diário grátis. Ouça bateria, baixo, instrumentos e melodia em camadas e tente adivinhar a música do dia.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="application-name" content="Música do Dia">
+  <meta name="apple-mobile-web-app-title" content="Música do Dia">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Música do Dia">
+  <meta property="og:title" content="Música do Dia — Jogo musical diário">
+  <meta property="og:description" content="Adivinhe a música do dia ouvindo as camadas de bateria, baixo, instrumentos e melodia.">
+  <meta property="og:url" content="https://musicadodia.com/musica/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Música do Dia — Jogo musical diário">
+  <meta name="twitter:description" content="Adivinhe a música do dia, uma camada por vez.">
+  <link rel="canonical" href="https://musicadodia.com/musica/">
+  <link rel="icon" href="/logo.svg?v=20260922-3" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/logo.svg?v=20260922-3">
+  <link rel="manifest" href="/site.webmanifest">
+  <title>Música do Dia — Jogo musical diário</title>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://musicadodia.com/#website",
+        "url": "https://musicadodia.com/musica/",
+        "name": "Música do Dia",
+        "alternateName": "Musica do Dia",
+        "description": "Jogo musical diário para adivinhar a música por camadas de bateria, baixo, instrumentos e melodia.",
+        "inLanguage": "pt-BR"
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://musicadodia.com/musica/#app",
+        "url": "https://musicadodia.com/musica/",
+        "name": "Música do Dia",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Any",
+        "inLanguage": "pt-BR",
+        "description": "Jogo musical diário grátis para descobrir a música do dia ouvindo novas camadas a cada rodada.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "BRL"
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="stylesheet" href="styles.css?v=20260928-8">
+</head>
+<body data-theme="grafite">
+  <main class="shell">
+    <header class="topbar">
+      <div class="theme-picker">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Escolher paleta de cores" title="Escolher cores" aria-expanded="false">
+          <span class="palette-icon" aria-hidden="true">
+            <i></i><i></i><i></i><i></i>
+          </span>
+        </button>
+        <div class="theme-menu hidden" id="themeMenu" aria-label="Paletas de cores">
+          <button class="theme-option" type="button" data-theme-choice="creme"><span class="theme-swatch swatch-creme"></span><span>Creme</span></button>
+          <button class="theme-option" type="button" data-theme-choice="azul"><span class="theme-swatch swatch-azul"></span><span>Azul</span></button>
+          <button class="theme-option" type="button" data-theme-choice="verde"><span class="theme-swatch swatch-verde"></span><span>Verde</span></button>
+          <button class="theme-option" type="button" data-theme-choice="rosa"><span class="theme-swatch swatch-rosa"></span><span>Rosa</span></button>
+          <button class="theme-option" type="button" data-theme-choice="lilas"><span class="theme-swatch swatch-lilas"></span><span>Lilás</span></button>
+          <button class="theme-option" type="button" data-theme-choice="noite"><span class="theme-swatch swatch-noite"></span><span>Noite</span></button>
+          <button class="theme-option" type="button" data-theme-choice="grafite"><span class="theme-swatch swatch-grafite"></span><span>Grafite</span></button>
+        </div>
+      </div>
+
+      <details class="game-menu">
+        <summary class="brand game-menu-trigger" aria-label="Trocar de jogo">
+          <img class="brand-logo" src="/logo.svg?v=20260922-3" width="38" height="38" alt="" aria-hidden="true">
+          <div class="brand-copy">
+            <h1>Música do Dia</h1>
+          </div>
+          <span class="game-menu-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="game-menu-popover" role="menu" aria-label="Escolher jogo">
+          <a class="game-menu-option active" href="/musica/" aria-current="page" role="menuitem">
+            <img class="game-menu-option-icon" src="/logo.svg?v=20260922-3" alt="" aria-hidden="true">
+            <span>Música do Dia</span>
+          </a>
+          <a class="game-menu-option" href="/termo/" role="menuitem">
+            <span class="game-menu-option-icon game-menu-term-icon" aria-hidden="true">T</span>
+            <span>Termo do Dia</span>
+          </a>
+        </div>
+      </details>
+
+      <div class="day-chip" id="dayChip" aria-label="Número do desafio">#—</div>
+    </header>
+
+    <section class="game-card" id="gameCard" aria-live="polite">
+
+      <div class="song-stats" aria-label="Informações da música">
+        <div class="song-stat">
+          <span>Lançamento</span>
+          <strong id="releaseInfo">—</strong>
+        </div>
+        <div class="song-stat">
+          <span>Views no YouTube</span>
+          <strong id="viewsInfo">—</strong>
+        </div>
+        <div class="song-stat">
+          <span>Dificuldade</span>
+          <strong id="difficultyInfo">—</strong>
+        </div>
+      </div>
+
+      <div class="rounds" id="rounds" aria-label="Camadas da música">
+        <div class="round active"><span>1</span><small>Bateria</small></div>
+        <div class="round"><span>2</span><small>Baixo</small></div>
+        <div class="round"><span>3</span><small>Instrumentos</small></div>
+        <div class="round"><span>4</span><small>Melodia</small></div>
+        <div class="round"><span>5</span><small>Revelação</small></div>
+      </div>
+
+      <div class="player-area">
+        <div class="visualizer" id="visualizer" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="player-controls">
+          <div class="volume-control" id="volumeControl">
+            <button class="volume-btn" id="volumeBtn" type="button" aria-label="Ajustar volume" aria-expanded="false" aria-controls="volumePopover" title="Volume">
+              <svg class="volume-icon" viewBox="0 0 32 32" aria-hidden="true">
+                <path d="M5 13h6l7-6v18l-7-6H5z"></path>
+                <path class="volume-wave volume-wave-1" d="M21 12a6 6 0 0 1 0 8"></path>
+                <path class="volume-wave volume-wave-2" d="M24 9a10 10 0 0 1 0 14"></path>
+              </svg>
+            </button>
+            <div class="volume-popover hidden" id="volumePopover">
+              <input class="volume-slider" id="volumeSlider" type="range" min="0" max="100" step="1" value="100" aria-label="Volume do áudio">
+              <span class="volume-value" id="volumeValue">100%</span>
+            </div>
+          </div>
+
+          <button class="seek-circle seek-back" id="rewindBtn" type="button" disabled aria-label="Voltar 5 segundos">
+            <svg class="seek-arrow-svg" viewBox="0 0 32 32" aria-hidden="true">
+              <path class="seek-arc" d="M9.5 8.5H4.5V3.5"></path>
+              <path class="seek-arc" d="M4.8 8.2A11 11 0 1 1 4 20"></path>
+            </svg>
+            <span class="seek-number">5</span>
+          </button>
+
+          <button class="play-btn" id="playBtn" type="button" disabled aria-label="Tocar trecho">
+            <span class="play-symbol" aria-hidden="true"></span>
+          </button>
+
+          <button class="seek-circle seek-forward" id="forwardBtn" type="button" disabled aria-label="Avançar 5 segundos">
+            <svg class="seek-arrow-svg seek-arrow-forward" viewBox="0 0 32 32" aria-hidden="true">
+              <path class="seek-arc" d="M9.5 8.5H4.5V3.5"></path>
+              <path class="seek-arc" d="M4.8 8.2A11 11 0 1 1 4 20"></path>
+            </svg>
+            <span class="seek-number">5</span>
+          </button>
+
+          <button class="repeat-btn" id="repeatBtn" type="button" aria-label="Ativar repetição" aria-pressed="false" title="Repetir faixa">
+            <svg class="repeat-icon" viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M8 10h13.5l-2.8-2.8 1.9-1.9L26.8 11l-6.2 5.7-1.9-1.9 2.8-2.8H8a5 5 0 0 0-5 5v1H0v-1a8 8 0 0 1 8-8Z"></path>
+              <path d="M24 22H10.5l2.8 2.8-1.9 1.9L5.2 21l6.2-5.7 1.9 1.9-2.8 2.8H24a5 5 0 0 0 5-5v-1h3v1a8 8 0 0 1-8 8Z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="audio-progress">
+          <input class="seek-bar" id="seekBar" type="range" min="0" max="1000" value="0" disabled aria-label="Progresso do áudio">
+          <div class="time-row">
+            <span id="elapsedTime">0:00</span>
+            <span id="remainingTime">0:18 restantes</span>
+          </div>
+        </div>
+
+        <div class="primary-actions">
+          <button class="skip-action" id="skipBtn" type="button" disabled>PULAR</button>
+          <button class="guess-action" id="openGuessBtn" type="button" disabled>ADIVINHAR</button>
+        </div>
+      </div>
+
+      <form class="guess-form hidden" id="guessForm">
+        <div class="guess-form-top">
+          <label for="guessInput">Qual é a música?</label>
+          <button class="guess-close" id="closeGuessBtn" type="button" aria-label="Fechar palpite">×</button>
+        </div>
+        <div class="guess-row">
+          <input id="guessInput" autocomplete="off" inputmode="text" placeholder="Digite o nome da música" disabled>
+          <button type="submit" id="guessBtn" disabled>Enviar palpite</button>
+        </div>
+      </form>
+
+      <div class="attempts" id="attempts" aria-label="Tentativas"></div>
+      <div class="message" id="message"></div>
+
+      <section class="reveal hidden" id="reveal">
+        <p class="result-status" id="resultStatus"></p>
+        <p class="reveal-kicker">A música era</p>
+        <div class="reveal-song">
+          <img class="reveal-cover hidden" id="revealCover" alt="" loading="lazy" referrerpolicy="no-referrer">
+          <div class="reveal-song-copy">
+            <h2 id="revealTitle"></h2>
+            <p id="revealArtist"></p>
+          </div>
+        </div>
+
+        <div class="platform-section">
+          <span class="platform-label">Ouça nas plataformas</span>
+          <div class="platform-links">
+            <a class="platform-link platform-youtube" id="youtubeLink" target="_blank" rel="noopener">
+              <svg class="platform-logo" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.4" y="5.4" width="19.2" height="13.2" rx="4.1" fill="currentColor"/><path d="M10 9.1 15.8 12 10 14.9Z" fill="var(--surface-2)"/></svg><span>YouTube</span>
+            </a>
+            <a class="platform-link platform-spotify" id="spotifyLink" target="_blank" rel="noopener">
+              <svg class="platform-logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="currentColor"/><path d="M7.4 9.1c3.4-1 7.2-.7 10 .8M8 12.1c2.8-.7 6-.5 8.4.7M8.8 15c2.2-.5 4.6-.3 6.5.5" fill="none" stroke="var(--surface-2)" stroke-width="1.55" stroke-linecap="round"/></svg><span>Spotify</span>
+            </a>
+            <a class="platform-link platform-apple" id="appleMusicLink" target="_blank" rel="noopener">
+              <svg class="platform-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.8 4.4v10.3a3.4 3.4 0 1 1-1.6-2.9V7.3l-6.4 1.2v7.4a3.4 3.4 0 1 1-1.6-2.9V6.4Z" fill="currentColor"/></svg><span>Apple Music</span>
+            </a>
+            <a class="platform-link platform-deezer" id="deezerLink" target="_blank" rel="noopener">
+              <svg class="platform-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 14.6h4.2V18H3zm0-4.4h4.2v3.2H3zm4.8 2.2H12V18H7.8zm0-6.6H12v5.4H7.8zm4.8 3.2h4.2v9h-4.2zm4.8 2.2h3.6V18h-3.6z" fill="currentColor"/></svg><span>Deezer</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="result-insights">
+          <div class="community-card" id="communityCard">
+            <span class="result-mini-label">Comunidade</span>
+            <strong id="communitySummary">Coletando resultados...</strong>
+            <div class="community-bars hidden" id="communityBars" aria-label="Distribuição dos resultados"></div>
+          </div>
+
+          <div class="next-card">
+            <span class="result-mini-label">Próxima música</span>
+            <strong id="nextChallengeTimer">00:00:00</strong>
+            <small>horário de Brasília</small>
+          </div>
+        </div>
+
+        <div class="reveal-actions">
+          <button class="secondary" id="shareBtn" type="button">Compartilhar</button>
+          <button class="secondary" id="restartBtn" type="button">Jogar novamente</button>
+        </div>
+      </section>
+    </section>
+
+    <footer class="footer-note">
+      <span>Música do Dia · jogo musical diário grátis</span>
+      <span>Uma música nova por dia</span>
+    </footer>
+  </main>
+
+  <script src="app.js?v=20260928-5"></script>
+</body>
+</html>

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "index.html"
+      - "home.css"
       - "styles.css"
       - "app.js"
       - "catalog.json"
@@ -18,6 +19,7 @@ on:
       - "midi-lab/**"
       - "stem-flute-lab/**"
       - "termo/**"
+      - "musica/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
   workflow_run:
@@ -50,12 +52,13 @@ jobs:
       - name: Build static site
         run: |
           mkdir -p _site
-          cp index.html styles.css app.js catalog.json logo.svg robots.txt sitemap.xml site.webmanifest analytics-config.json _site/
+          cp index.html home.css styles.css app.js catalog.json logo.svg robots.txt sitemap.xml site.webmanifest analytics-config.json _site/
           if [ -d central-mdd-7k29 ]; then cp -R central-mdd-7k29 _site/; fi
           if [ -d songs ]; then cp -R songs _site/; fi
           if [ -d midi-lab ]; then cp -R midi-lab _site/; fi
           if [ -d stem-flute-lab ]; then cp -R stem-flute-lab _site/; fi
           if [ -d termo ]; then cp -R termo _site/; fi
+          if [ -d musica ]; then cp -R musica _site/; fi
           touch _site/.nojekyll
 
       - name: Configure Pages

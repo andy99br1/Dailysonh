@@ -466,17 +466,22 @@ body.termo-finished .termo-stats{margin-bottom:7px}
 
 /* Ajustes finais de interação e proporção. */
 body[data-theme] .termo-cell.filled{
-  border-color:rgba(255,255,255,.92);
+  border-color:color-mix(in srgb,var(--text) 36%,var(--line));
+}
+
+body[data-theme="grafite"] .termo-cell.filled{
+  border-color:#3d454c;
 }
 
 body[data-theme] .termo-cell.editing{
-  border-color:#fff;
-  box-shadow:0 0 0 3px rgba(255,255,255,.18);
+  border-color:var(--green);
+  border-width:3px;
+  box-shadow:none;
+  transform:none;
 }
 
 body[data-theme] .termo-cell.editable:focus-visible{
-  outline:2px solid #fff;
-  outline-offset:2px;
+  outline:none;
 }
 
 .termo-cell.correct,

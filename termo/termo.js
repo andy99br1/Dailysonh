@@ -334,7 +334,7 @@ function handleKey(key){
     if(target<0||target>4)return;
     var replacing=Boolean(current[target]);
     current[target]=key;
-    editIndex=target<4?target+1:null;
+    editIndex=Math.min(target+1,4);
     renderCurrent();
     animateCurrentCell(target);
     setMessage(replacing?"Letra trocada.":"Digite uma palavra de 5 letras.");

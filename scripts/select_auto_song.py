@@ -35,15 +35,9 @@ def https_url(value):
     return value
 
 
-def fetch_chart(client_id):
-    params = urllib.parse.urlencode({
-        "client_id": client_id,
-        "format": "json",
-        "limit": 200,
-        "country": "BRA",
-        "order": "trending",
-    })
-    url = "https://api.jamendo.com/v3.0/charts/track/?" + params
+def fetch_json(path, params):
+    query = urllib.parse.urlencode(params)
+    url = "https://api.jamendo.com/v3.0/" + path.lstrip("/") + "?" + query
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "musicadodia-auto-selector/1.0"},
@@ -54,6 +48,32 @@ def fetch_chart(client_id):
     if headers.get("status") not in (None, "success"):
         raise RuntimeError(headers.get("error_message") or "Jamendo API error")
     return data.get("results") or []
+
+
+def fetch_chart(client_id):
+    chart = fetch_json("charts/track/", {
+        "client_id": client_id,
+        "format": "json",
+        "limit": 200,
+        "country": "BRA",
+        "order": "trending",
+    })
+    ids = [str(item.get("id", "")).strip() for item in chart if item.get("id")]
+    if not ids:
+        return []
+
+    tracks = fetch_json("tracks/", {
+        "client_id": client_id,
+        "format": "json",
+        "limit": 200,
+        "id": " ".join(ids),
+        "type": "single albumtrack",
+        "include": "musicinfo",
+        "audiodlformat": "mp32",
+        "imagesize": 300,
+    })
+    by_id = {str(item.get("id", "")).strip(): item for item in tracks}
+    return [by_id[track_id] for track_id in ids if track_id in by_id]
 
 
 def main():
@@ -100,12 +120,17 @@ def main():
             duration = float(track.get("duration") or 0)
         except (TypeError, ValueError):
             duration = 0
+        musicinfo = track.get("musicinfo") if isinstance(track.get("musicinfo"), dict) else {}
+        vocal_kind = str(musicinfo.get("vocalinstrumental", "")).strip().lower()
+        language = str(musicinfo.get("lang", "")).strip().lower()
 
         if not track_id or not title or not artist:
             continue
         if track_id in used_ids or (norm(artist), norm(title)) in used_pairs:
             continue
         if duration < 45:
+            continue
+        if vocal_kind == "instrumental":
             continue
         if track.get("audiodownload_allowed") is not True or not download.startswith("https://"):
             continue
@@ -128,6 +153,7 @@ def main():
             "license_url": license_url,
             "difficulty": "Médio",
             "duration": duration,
+            "language": language,
             "recent_artist": norm(artist) in recent_artists,
         })
 
@@ -135,7 +161,9 @@ def main():
         raise SystemExit("Nenhuma faixa brasileira elegível e reutilizável foi encontrada no provedor.")
 
     fresh_artist = [item for item in candidates if not item["recent_artist"]]
-    pool = fresh_artist or candidates
+    fresh_pt = [item for item in fresh_artist if item.get("language") in ("pt", "pt-br")]
+    any_pt = [item for item in candidates if item.get("language") in ("pt", "pt-br")]
+    pool = fresh_pt or fresh_artist or any_pt or candidates
     top = pool[: min(40, len(pool))]
     seed = int(hashlib.sha256(("musicadodia|" + args.date).encode("utf-8")).hexdigest()[:16], 16)
     selected = dict(top[seed % len(top)])

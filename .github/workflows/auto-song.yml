@@ -1,0 +1,223 @@
+name: Auto prepare daily song
+
+on:
+  schedule:
+    # 18:00 e 20:00 em Brasilia (UTC-3). A segunda execucao funciona como retry.
+    - cron: "0 21,23 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Data do desafio (YYYY-MM-DD). Vazio = amanha em Brasilia"
+        required: false
+        type: string
+      replace:
+        description: "Trocar somente uma escolha automatica ja existente"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dailysonh-auto-song
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: Resolve target date
+        id: target
+        shell: bash
+        env:
+          INPUT_DATE: ${{ inputs.date }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_DATE:-}" ]; then
+            TARGET_DATE="$INPUT_DATE"
+          else
+            TARGET_DATE="$(TZ=America/Sao_Paulo date -d tomorrow +%F)"
+          fi
+          if [[ ! "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "Data invalida: $TARGET_DATE"
+            exit 1
+          fi
+          echo "date=$TARGET_DATE" >> "$GITHUB_OUTPUT"
+          echo "Preparando fallback automatico para $TARGET_DATE"
+
+      - name: Check provider configuration
+        id: provider
+        shell: bash
+        env:
+          JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}
+        run: |
+          if [ -z "${JAMENDO_CLIENT_ID:-}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::JAMENDO_CLIENT_ID ainda nao foi configurado. A automacao ficara em espera."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Choose Brazilian song
+        id: pick
+        if: steps.provider.outputs.configured == 'true'
+        shell: bash
+        env:
+          JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}
+          TARGET_DATE: ${{ steps.target.outputs.date }}
+          REPLACE: ${{ inputs.replace }}
+        run: |
+          set -euo pipefail
+          ARGS=(--catalog catalog.json --date "$TARGET_DATE" --client-id "$JAMENDO_CLIENT_ID" --output auto-selection.json)
+          if [ "${REPLACE:-false}" = "true" ]; then ARGS+=(--replace); fi
+          python scripts/select_auto_song.py "${ARGS[@]}"
+          STATUS="$(python -c 'import json; print(json.load(open("auto-selection.json"))["status"])')"
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          if [ "$STATUS" = "skip" ]; then
+            REASON="$(python -c 'import json; print(json.load(open("auto-selection.json")).get("reason",""))')"
+            echo "::notice::Fallback automatico ignorado: $REASON"
+          fi
+
+      - name: Cache separation models
+        if: steps.pick.outputs.status == 'selected'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/torch/hub/checkpoints
+            ~/.cache/audio-separator-models
+          key: stem-flute-hybrid-roformer-v1
+
+      - name: FFmpeg
+        if: steps.pick.outputs.status == 'selected'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Python audio dependencies
+        if: steps.pick.outputs.status == 'selected'
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio torchcodec
+          pip install "numpy<2" "demucs==4.0.1" "librosa>=0.10,<0.12" "soundfile>=0.12" "scipy>=1.10" "torchcrepe==0.0.24"
+
+      - name: Install isolated BS-RoFormer environment
+        if: steps.pick.outputs.status == 'selected'
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/audio-separator-env"
+          "$RUNNER_TEMP/audio-separator-env/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/audio-separator-env/bin/pip" install --index-url https://download.pytorch.org/whl/cpu torch
+          "$RUNNER_TEMP/audio-separator-env/bin/pip" install "audio-separator[cpu]==0.47.0"
+          echo "AUDIO_SEPARATOR_BIN=$RUNNER_TEMP/audio-separator-env/bin/audio-separator" >> "$GITHUB_ENV"
+
+      - name: Download licensed source audio
+        id: audio
+        if: steps.pick.outputs.status == 'selected'
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUDIO_URL="$(python -c 'import json; print(json.load(open("auto-selection.json"))["audio_url"])')"
+          PROVIDER_ID="$(python -c 'import json; print(json.load(open("auto-selection.json"))["provider_id"])')"
+          case "$AUDIO_URL" in
+            https://*.jamendo.com/*|https://*.storage.jamendo.com/*) ;;
+            *) echo "Fonte de audio inesperada: $AUDIO_URL"; exit 1 ;;
+          esac
+          OUT="$RUNNER_TEMP/auto-song-$PROVIDER_ID.mp3"
+          curl --fail --location --retry 3 --connect-timeout 20 "$AUDIO_URL" -o "$OUT"
+          ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$OUT"
+          echo "file=$OUT" >> "$GITHUB_OUTPUT"
+          echo "provider_id=$PROVIDER_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Build Stem + Flute game
+        if: steps.pick.outputs.status == 'selected'
+        shell: bash
+        env:
+          AUDIO_FILE: ${{ steps.audio.outputs.file }}
+          PROVIDER_ID: ${{ steps.audio.outputs.provider_id }}
+        run: |
+          set -euo pipefail
+          python scripts/stem_flute_lab.py             --file "$AUDIO_FILE"             --source-path "jamendo:$PROVIDER_ID"
+
+      - name: Create automatic publish request
+        if: steps.pick.outputs.status == 'selected'
+        shell: bash
+        env:
+          TARGET_DATE: ${{ steps.target.outputs.date }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import time
+          from pathlib import Path
+
+          selection = json.loads(Path("auto-selection.json").read_text(encoding="utf-8"))
+          manifest = json.loads(Path("stem-flute-lab/manifest.json").read_text(encoding="utf-8"))
+
+          request = {
+              "title": selection["title"],
+              "artist": selection["artist"],
+              "date": os.environ["TARGET_DATE"],
+              "releaseYear": selection.get("release_year", ""),
+              "difficulty": selection.get("difficulty", "Médio"),
+              "youtubeViews": "",
+              "youtubeUrl": "",
+              "coverUrl": selection.get("cover_url", ""),
+              "spotifyUrl": "",
+              "appleMusicUrl": "",
+              "deezerUrl": "",
+              "expectedCreatedAt": manifest.get("createdAt", ""),
+              "selectedLayers": ["drums", "bass", "guitar", "piano", "flute"],
+              "selectedLayerLabels": ["Bateria", "Baixo", "Guitarra / violão", "Piano / teclas", "Melodia / flauta"],
+              "autoGenerated": True,
+              "autoReplace": bool(selection.get("auto_replace")),
+              "reviewStatus": "pending",
+              "autoProvider": selection.get("provider", ""),
+              "autoProviderId": selection.get("provider_id", ""),
+              "autoLicenseUrl": selection.get("license_url", ""),
+              "autoSourceUrl": selection.get("source_url", ""),
+              "autoPreparedAt": manifest.get("createdAt", ""),
+              "nonce": str(time.time_ns()),
+          }
+          Path(".stem-flute-lab").mkdir(parents=True, exist_ok=True)
+          Path(".stem-flute-lab/publish.json").write_text(
+              json.dumps(request, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(request, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Commit prepared automatic song
+        if: steps.pick.outputs.status == 'selected'
+        shell: bash
+        env:
+          TARGET_DATE: ${{ steps.target.outputs.date }}
+        run: |
+          set -euo pipefail
+          git config user.name "dailysonh-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add stem-flute-lab/ .stem-flute-lab/publish.json
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteracao para publicar."
+            exit 0
+          fi
+
+          git commit -m "Prepare automatic song for $TARGET_DATE"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main

@@ -1732,3 +1732,18 @@ body[data-theme="grafite"] .repeat-btn:not([aria-pressed="true"]){
     height:32px;
   }
 }
+
+
+.auto-license-note {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: .76rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.auto-license-note a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: dailysonh-auto-song
+  group: stem-flute-lab
   cancel-in-progress: false
 
 jobs:

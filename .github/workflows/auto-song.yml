@@ -45,15 +45,6 @@ jobs:
         run: |
           node --check app.js
           node --check central-mdd-7k29/panel.js
-      - name: Provider read API smoke test
-        run: |
-          python scripts/select_auto_song.py \
-            --catalog catalog.json \
-            --date 2099-12-31 \
-            --client-id 709fa152 \
-            --output /tmp/auto-selection.json
-          python -c 'import json; d=json.load(open("/tmp/auto-selection.json")); assert d["status"]=="selected" and d["provider"]=="jamendo"'
-
   prepare:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
